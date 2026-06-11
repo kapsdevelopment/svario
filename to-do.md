@@ -10,7 +10,7 @@ Arbeidsliste for MVP: Flutter-app for iOS, Android og web med Supabase Auth, Pos
 - [x] Opprette `.env.example` med tomme, trygge variabelnavn.
 - [x] Scaffold Flutter-prosjekt i repoet.
 - [x] Legge til basispakker: Supabase, routing, state management, charts, CSV og PDF.
-- [ ] Sette opp grunnleggende mappe-/modulstruktur.
+- [x] Sette opp grunnleggende mappe-/modulstruktur.
 
 ## 2. Supabase og database
 
@@ -26,8 +26,8 @@ Arbeidsliste for MVP: Flutter-app for iOS, Android og web med Supabase Auth, Pos
 
 ## 3. Flutter app-skall
 
-- [ ] Sette opp Supabase-initiering fra miljøverdier.
-- [ ] Sette opp routing for admin og offentlig respondentflyt.
+- [x] Sette opp Supabase-initiering fra miljøverdier.
+- [x] Sette opp routing for admin og offentlig respondentflyt.
 - [ ] Lage auth-flyt med e-post/passord for admin.
 - [ ] Lage felles layout for desktop, tablet og mobil.
 - [ ] Lage nordisk, profesjonelt tema med dempede naturfarger.

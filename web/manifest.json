@@ -1,11 +1,11 @@
 {
-    "name": "svario",
-    "short_name": "svario",
+    "name": "Svario",
+    "short_name": "Svario",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F4F1EA",
+    "theme_color": "#183A34",
+    "description": "Svario questionnaire app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
