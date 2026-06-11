@@ -1,6 +1,6 @@
 # Svario To-do
 
-Arbeidsliste for MVP: Flutter-app for iOS, Android og web med Supabase Auth, Postgres/RLS og GitHub Pages-hostet web.
+Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHub Pages-hostet web.
 
 ## 1. Repo og prosjektoppsett
 
@@ -8,9 +8,9 @@ Arbeidsliste for MVP: Flutter-app for iOS, Android og web med Supabase Auth, Pos
 - [x] Legge lokale Supabase-hemmeligheter i `.env.local`.
 - [x] Ignorere lokale env-filer og genererte filer i `.gitignore`.
 - [x] Opprette `.env.example` med tomme, trygge variabelnavn.
-- [x] Scaffold Flutter-prosjekt i repoet.
-- [x] Legge til basispakker: Supabase, routing, state management, charts, CSV og PDF.
-- [x] Sette opp grunnleggende mappe-/modulstruktur.
+- [x] Pivote fra Flutter til React/Vite/TypeScript.
+- [x] Legge til basispakker: Supabase, routing, state/query, charts, CSV og PDF.
+- [x] Sette opp grunnleggende horisontal mappe-/modulstruktur.
 
 ## 2. Supabase og database
 
@@ -24,9 +24,9 @@ Arbeidsliste for MVP: Flutter-app for iOS, Android og web med Supabase Auth, Pos
 - [ ] Lage policies for innlogget admin/eier.
 - [ ] Lage trygg offentlig lesing/innsending via RPC eller tilsvarende kontrollert API.
 
-## 3. Flutter app-skall
+## 3. Web app-skall
 
-- [x] Sette opp Supabase-initiering fra miljøverdier.
+- [x] Sette opp Supabase-klient fra Vite-miljøverdier.
 - [x] Sette opp routing for admin og offentlig respondentflyt.
 - [ ] Lage auth-flyt med e-post/passord for admin.
 - [ ] Lage felles layout for desktop, tablet og mobil.
@@ -76,15 +76,15 @@ Arbeidsliste for MVP: Flutter-app for iOS, Android og web med Supabase Auth, Pos
 
 ## 8. Deploy og drift
 
-- [ ] Sette opp GitHub Pages-build for Flutter web.
-- [ ] Konfigurere base-href for repo-hosting.
+- [ ] Sette opp GitHub Pages-build for Vite.
+- [ ] Konfigurere Vite base path for repo-hosting.
 - [ ] Bruke hash-ruting for stabile offentlige lenker.
-- [ ] Legge Supabase URL og anon key inn som GitHub repository variables/secrets.
+- [ ] Legge Supabase URL og publishable/anon key inn som GitHub repository variables/secrets.
 - [ ] Dokumentere lokal kjøring og deploy i README.
 
 ## 9. Testing og kvalitet
 
-- [ ] Kjøre `flutter analyze`.
+- [ ] Kjøre `npm run build`.
 - [ ] Lage målrettede tester for validering og skjemalogikk.
 - [ ] Teste RLS/policies for eier, ikke-eier og anonym bruker.
 - [ ] Teste adminflyt manuelt på desktop web.

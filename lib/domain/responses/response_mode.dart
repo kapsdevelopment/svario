@@ -1,4 +1,0 @@
-enum ResponseMode {
-  anonymous,
-  identified,
-}

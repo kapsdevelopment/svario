@@ -1,6 +1,6 @@
 # Agents Guide
 
-Svario is a Flutter and Supabase questionnaire app for iOS, Android and web. The backend is Supabase/Postgres with Row Level Security, and the web app is expected to be deployable to GitHub Pages.
+Svario is a React, Vite and Supabase questionnaire app. The backend is Supabase/Postgres with Row Level Security, and the web app is expected to be deployable to GitHub Pages.
 
 ## Working Rules
 
@@ -10,11 +10,11 @@ Svario is a Flutter and Supabase questionnaire app for iOS, Android and web. The
 - Use `.env.local` for local secrets and keep `.env.example` safe and placeholder-only.
 - Use Supabase migrations for database schema changes.
 - Keep RLS enabled on app tables and prefer explicit policies over broad public access.
-- Do not run `dart format` unless the user explicitly asks for it.
+- This is now a React/Vite web app, not a Flutter app; do not run `dart format`.
 
 ## Verification
 
-- Prefer `flutter analyze` for quick static checks.
+- Prefer `npm run build` for TypeScript and production-build checks.
 - Add targeted tests when changing validation, routing, survey logic or database-facing behavior.
 - For Supabase changes, verify migrations and RLS behavior for owner, non-owner and anonymous access.
 
