@@ -5,6 +5,7 @@ Svario is a Flutter and Supabase questionnaire app for iOS, Android and web. The
 ## Working Rules
 
 - Keep changes scoped to the current task and follow existing project patterns as they appear.
+- Follow the layered architecture notes in `architecture.md`.
 - Do not commit secrets, database passwords, service-role keys or real production credentials.
 - Use `.env.local` for local secrets and keep `.env.example` safe and placeholder-only.
 - Use Supabase migrations for database schema changes.
