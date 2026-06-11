@@ -4,6 +4,7 @@
 *.swo
 .idea/
 .vscode/
+*.iml
 
 # Dart and Flutter
 .dart_tool/

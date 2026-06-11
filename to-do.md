@@ -8,7 +8,7 @@ Arbeidsliste for MVP: Flutter-app for iOS, Android og web med Supabase Auth, Pos
 - [x] Legge lokale Supabase-hemmeligheter i `.env.local`.
 - [x] Ignorere lokale env-filer og genererte filer i `.gitignore`.
 - [x] Opprette `.env.example` med tomme, trygge variabelnavn.
-- [ ] Scaffold Flutter-prosjekt i repoet.
+- [x] Scaffold Flutter-prosjekt i repoet.
 - [ ] Legge til basispakker: Supabase, routing, state management, charts, CSV og PDF.
 - [ ] Sette opp grunnleggende mappe-/modulstruktur.
 
