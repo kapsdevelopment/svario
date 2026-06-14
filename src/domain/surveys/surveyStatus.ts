@@ -1,1 +1,3 @@
-export type SurveyStatus = 'draft' | 'published' | 'closed';
+import type { Enums } from '../../data/supabase/database.types';
+
+export type SurveyStatus = Enums<'survey_status'>;

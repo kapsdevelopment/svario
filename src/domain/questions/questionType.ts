@@ -1,3 +1,3 @@
 import type { Enums } from '../../data/supabase/database.types';
 
-export type ResponseMode = Enums<'survey_response_mode'>;
+export type QuestionType = Enums<'question_type'>;
