@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { createHashRouter, Navigate } from 'react-router-dom';
 
 import { AppShell } from '../presentation/shared/layout/AppShell';
+import { RequireAuth } from './RequireAuth';
 import { routes } from './routes';
 
 const DashboardPage = lazy(() =>
@@ -50,7 +51,11 @@ export const router = createHashRouter([
     element: page(<LoginPage />),
   },
   {
-    element: <AppShell />,
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
       {
         path: routes.dashboard,

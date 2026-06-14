@@ -2,12 +2,15 @@ import {
   BarChart3,
   ClipboardList,
   LayoutDashboard,
+  LogOut,
   Plus,
   UserRound,
 } from 'lucide-react';
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { useAuth } from '../../../application/auth/AuthProvider';
 
 const navItems = [
   {
@@ -28,6 +31,20 @@ const navItems = [
 ];
 
 export function AppShell() {
+  const auth = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const userEmail = auth.user?.email ?? 'Innlogget admin';
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+
+    try {
+      await auth.signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -55,6 +72,22 @@ export function AppShell() {
           <Plus size={18} aria-hidden="true" />
           Nytt skjema
         </NavLink>
+
+        <div className="sidebar-account">
+          <div>
+            <span>Admin</span>
+            <strong>{userEmail}</strong>
+          </div>
+          <button
+            aria-label="Logg ut"
+            className="icon-button"
+            disabled={isSigningOut}
+            onClick={handleSignOut}
+            type="button"
+          >
+            <LogOut size={19} aria-hidden="true" />
+          </button>
+        </div>
       </aside>
 
       <main className="app-main">

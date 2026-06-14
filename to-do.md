@@ -31,7 +31,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Sette opp Supabase-klient fra Vite-miljøverdier.
 - [x] Sette opp routing for admin og offentlig respondentflyt.
 - [x] Legge inn første sett med nordiske bakgrunnsbilder for login, respondentflyt og dashboard.
-- [ ] Lage auth-flyt med e-post/passord for admin.
+- [x] Lage auth-flyt med e-post/passord og magic link for admin.
 - [ ] Lage felles layout for desktop, tablet og mobil.
 - [ ] Lage nordisk, profesjonelt tema med dempede naturfarger.
 - [ ] Lage navigasjon for dashboard, skjemaer, resultater og profil.
