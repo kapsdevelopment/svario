@@ -10,6 +10,7 @@ Svario is a React, Vite and Supabase questionnaire app. The backend is Supabase/
 - Use `.env.local` for local secrets and keep `.env.example` safe and placeholder-only.
 - Use Supabase migrations for database schema changes.
 - Keep RLS enabled on app tables and prefer explicit policies over broad public access.
+- Keep the Svario domain user/account id separate from `auth.users.id`; app ownership should point at the domain account id, not the raw Supabase Auth id.
 - This is now a React/Vite web app, not a Flutter app; do not run `dart format`.
 
 ## Verification
