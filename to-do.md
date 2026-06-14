@@ -79,11 +79,11 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 
 ## 8. Deploy og drift
 
-- [ ] Sette opp GitHub Pages-build for Vite.
-- [ ] Konfigurere Vite base path for repo-hosting.
-- [ ] Bruke hash-ruting for stabile offentlige lenker.
+- [x] Sette opp GitHub Pages-build for Vite.
+- [x] Konfigurere Vite base path for repo-hosting.
+- [x] Bruke hash-ruting for stabile offentlige lenker.
 - [ ] Legge Supabase URL og publishable/anon key inn som GitHub repository variables/secrets.
-- [ ] Dokumentere lokal kjøring og deploy i README.
+- [x] Dokumentere lokal kjøring og deploy i README.
 
 ## 9. Testing og kvalitet
 

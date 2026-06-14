@@ -39,3 +39,28 @@ Build for production:
 ```bash
 npm run build
 ```
+
+Build the GitHub Pages variant locally:
+
+```bash
+npm run build:pages
+```
+
+## GitHub Pages
+
+The repository deploys the web app from `.github/workflows/deploy-pages.yml`.
+For the project site at `kapsdevelopment/svario`, Vite builds with base path
+`/svario/`.
+
+In GitHub, configure:
+
+- Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+- Settings -> Secrets and variables -> Actions -> Variables:
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+In Supabase Auth Redirect URLs, add:
+
+```text
+https://kapsdevelopment.github.io/svario/**
+```

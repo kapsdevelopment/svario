@@ -55,7 +55,7 @@ export function LoginPage() {
       await auth.signUpWithPassword(
         email.trim(),
         password,
-        getAuthRedirectUrl(routes.dashboard),
+        getAuthRedirectUrl(),
       );
       setMessage('Sjekk e-posten din.');
     });
@@ -66,7 +66,7 @@ export function LoginPage() {
     await submitAuthAction(async () => {
       await auth.signInWithMagicLink(
         email.trim(),
-        getAuthRedirectUrl(routes.dashboard),
+        getAuthRedirectUrl(),
       );
       setMessage('Magic link er sendt.');
     });

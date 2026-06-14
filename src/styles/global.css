@@ -157,7 +157,7 @@ h2 {
   min-height: 100vh;
   background:
     linear-gradient(180deg, rgba(244, 241, 234, 0.94), rgba(244, 241, 234, 0.87)),
-    url("/images/svario-plateau-background.png") center / cover;
+    url("../assets/images/svario-plateau-background.png") center / cover;
 }
 
 .page {
@@ -199,7 +199,7 @@ h2 {
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(23, 32, 29, 0.84), rgba(23, 32, 29, 0.2)),
-    url("/images/svario-landscape-background.png") center / cover;
+    url("../assets/images/svario-landscape-background.png") center / cover;
   box-shadow: 0 22px 55px rgba(30, 43, 37, 0.16);
   color: #fffdf8;
   padding: 28px;
@@ -465,11 +465,11 @@ textarea {
 }
 
 .image-page--pine {
-  background-image: url("/images/svario-pine-forest-background.png");
+  background-image: url("../assets/images/svario-pine-forest-background.png");
 }
 
 .image-page--fjord {
-  background-image: url("/images/svario-fjord-background.png");
+  background-image: url("../assets/images/svario-fjord-background.png");
 }
 
 .image-page .panel {
