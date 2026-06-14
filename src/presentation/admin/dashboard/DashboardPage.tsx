@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { BarChart3 } from 'lucide-react';
 
 import { routes } from '../../../app/routes';
 import { Panel } from '../../shared/components/Panel';
@@ -11,7 +12,7 @@ const activeSurveys = [
 
 export function DashboardPage() {
   return (
-    <div className="page">
+    <div className="page page--dashboard">
       <header className="page-header">
         <div>
           <p className="eyebrow">Oversikt</p>
@@ -21,6 +22,18 @@ export function DashboardPage() {
           Nytt skjema
         </Link>
       </header>
+
+      <section className="dashboard-hero" aria-labelledby="dashboard-current-title">
+        <div>
+          <p className="eyebrow">Pågår nå</p>
+          <h2 id="dashboard-current-title">Medarbeiderpuls juni</h2>
+          <p>126 svar samlet inn. Svarraten ligger over snittet for de siste skjemaene.</p>
+        </div>
+        <Link className="button dashboard-hero__action" to={routes.results('demo')}>
+          <BarChart3 size={18} aria-hidden="true" />
+          Se resultater
+        </Link>
+      </section>
 
       <div className="metric-grid">
         <Panel title="Besvarelser" subtitle="248 denne måneden" />

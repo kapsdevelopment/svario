@@ -17,6 +17,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #f4f1ea;
 }
 
 button,
@@ -118,6 +119,10 @@ h2 {
 
 .app-main {
   min-width: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(244, 241, 234, 0.94), rgba(244, 241, 234, 0.87)),
+    url("/images/svario-plateau-background.png") center / cover;
 }
 
 .page {
@@ -148,6 +153,45 @@ h2 {
   gap: 16px;
 }
 
+.dashboard-hero {
+  display: flex;
+  min-height: 220px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 253, 248, 0.44);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(23, 32, 29, 0.84), rgba(23, 32, 29, 0.2)),
+    url("/images/svario-landscape-background.png") center / cover;
+  box-shadow: 0 22px 55px rgba(30, 43, 37, 0.16);
+  color: #fffdf8;
+  padding: 28px;
+}
+
+.dashboard-hero h2 {
+  max-width: 620px;
+  font-size: clamp(1.55rem, 2.2vw, 2.1rem);
+}
+
+.dashboard-hero p:not(.eyebrow) {
+  max-width: 620px;
+  margin-top: 10px;
+  color: rgba(255, 253, 248, 0.82);
+}
+
+.dashboard-hero .eyebrow {
+  color: #d8a17d;
+}
+
+.dashboard-hero__action {
+  flex: 0 0 auto;
+  border-color: rgba(255, 253, 248, 0.62);
+  background: rgba(255, 253, 248, 0.92);
+  color: #183a34;
+}
+
 .stack {
   display: grid;
   gap: 12px;
@@ -157,6 +201,7 @@ h2 {
   border: 1px solid #d9d3c7;
   border-radius: 8px;
   background: #fffdf8;
+  box-shadow: 0 16px 38px rgba(30, 43, 37, 0.07);
   padding: 20px;
 }
 
@@ -269,6 +314,47 @@ textarea {
   width: min(100%, 720px);
 }
 
+.image-page {
+  position: relative;
+  isolation: isolate;
+  background-position: center;
+  background-size: cover;
+}
+
+.image-page::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(244, 241, 234, 0.9), rgba(244, 241, 234, 0.45)),
+    linear-gradient(0deg, rgba(23, 32, 29, 0.2), rgba(23, 32, 29, 0.04));
+  content: "";
+}
+
+.image-page--pine {
+  background-image: url("/images/svario-pine-forest-background.png");
+}
+
+.image-page--fjord {
+  background-image: url("/images/svario-fjord-background.png");
+}
+
+.image-page .panel {
+  background: rgba(255, 253, 248, 0.88);
+  box-shadow: 0 24px 70px rgba(20, 30, 26, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.respondent-card > .eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid rgba(255, 253, 248, 0.58);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.68);
+  backdrop-filter: blur(12px);
+  padding: 6px 10px;
+}
+
 .likert {
   border: 0;
   margin: 0;
@@ -347,6 +433,17 @@ textarea {
 
   .metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-hero {
+    display: grid;
+    min-height: 260px;
+    align-content: end;
+    padding: 22px;
+  }
+
+  .dashboard-hero__action {
+    width: 100%;
   }
 
   .bottom-nav {

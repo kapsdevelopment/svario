@@ -6,7 +6,7 @@ export function RespondentPage() {
   const { slug = 'demo' } = useParams();
 
   return (
-    <main className="respondent-page">
+    <main className="respondent-page image-page image-page--fjord">
       <div className="respondent-card">
         <p className="eyebrow">Svario</p>
         <Panel title="Medarbeiderpuls" subtitle={slug}>
