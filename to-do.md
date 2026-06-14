@@ -16,9 +16,9 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 
 - [x] Initialisere lokal Supabase CLI-struktur i repoet.
 - [x] Koble Supabase CLI til prosjektet.
-- [ ] Lage første database-migration.
+- [x] Lage første database-migration.
 - [ ] Modellere tabeller for profiler, skjemaer, seksjoner, spørsmål, alternativer, besvarelser og svar.
-- [ ] Modellere domenebruker separat fra Supabase Auth-bruker med `app_users`, `account_auth_users`, `accounts`, `profiles` og `user_identities`.
+- [x] Modellere domenebruker separat fra Supabase Auth-bruker med `app_users`, `account_auth_users`, `accounts`, `profiles` og `user_identities`.
 - [ ] Legge inn enum/statusfelt for `draft`, `published` og `closed`.
 - [ ] Legge inn støtte for valgfri `starts_at` og `ends_at`.
 - [ ] Legge inn støtte for anonyme og identifiserte besvarelser.
