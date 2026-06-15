@@ -84,7 +84,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Vise flervalg som stolpe- og/eller kakediagram.
 - [x] Vise skalafordeling og snitt.
 - [x] Vise fritekstsvar i liste.
-- [ ] Lage enkel wordcloud for fritekstsvar.
+- [x] Lage enkel wordcloud for fritekstsvar.
 - [x] Sørge for at resultater kun er synlige for skjemaeier.
 
 ## 8. Eksport

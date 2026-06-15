@@ -1010,6 +1010,91 @@ select {
   gap: 10px;
 }
 
+.word-cloud-block {
+  display: grid;
+  gap: 12px;
+  border-bottom: 1px solid #e6e0d6;
+  margin-bottom: 16px;
+  padding: 2px 0 18px;
+}
+
+.word-cloud-block__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.word-cloud-block__header span:first-child {
+  color: #183a34;
+  font-weight: 900;
+}
+
+.word-cloud-block__header span:last-child {
+  color: #607681;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.word-cloud {
+  display: flex;
+  min-height: 128px;
+  align-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.word-cloud__word {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  overflow-wrap: anywhere;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.05;
+}
+
+.word-cloud__word--weight-1 {
+  font-size: 0.88rem;
+}
+
+.word-cloud__word--weight-2 {
+  font-size: 1.05rem;
+}
+
+.word-cloud__word--weight-3 {
+  font-size: 1.28rem;
+}
+
+.word-cloud__word--weight-4 {
+  font-size: 1.52rem;
+}
+
+.word-cloud__word--weight-5 {
+  font-size: 1.86rem;
+}
+
+.word-cloud__word--tone-1 {
+  color: #183a34;
+}
+
+.word-cloud__word--tone-2 {
+  color: #4f6c5d;
+}
+
+.word-cloud__word--tone-3 {
+  color: #375c68;
+}
+
+.word-cloud__word--tone-4 {
+  color: #7a5b45;
+}
+
+.word-cloud__word--tone-5 {
+  color: #607681;
+}
+
 .free-text-results article {
   border: 1px solid #e6e0d6;
   border-radius: 8px;

@@ -12,6 +12,10 @@ import {
 
 import { routes } from '../../../app/routes';
 import {
+  buildFreeTextWordCloud,
+  type FreeTextWordCloudItem,
+} from '../../../application/surveys/buildFreeTextWordCloud';
+import {
   buildSurveyResultsCsv,
   createSurveyResultsCsvFileName,
 } from '../../../application/surveys/exportSurveyResultsCsv';
@@ -267,17 +271,46 @@ function FreeTextResultView({ results }: { results: SurveyQuestionResult['freeTe
     );
   }
 
+  const wordCloud = buildFreeTextWordCloud(results);
+
   return (
-    <div className="free-text-results">
-      {results.map((result) => (
-        <article key={result.answerId}>
-          <p>{result.text}</p>
-          <span>
-            {result.respondentLabel ?? 'Anonymt svar'} ·{' '}
-            {formatDateTime(result.submittedAt)}
+    <>
+      {wordCloud.length > 0 ? <WordCloud items={wordCloud} /> : null}
+
+      <div className="free-text-results">
+        {results.map((result) => (
+          <article key={result.answerId}>
+            <p>{result.text}</p>
+            <span>
+              {result.respondentLabel ?? 'Anonymt svar'} ·{' '}
+              {formatDateTime(result.submittedAt)}
+            </span>
+          </article>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function WordCloud({ items }: { items: FreeTextWordCloudItem[] }) {
+  return (
+    <div className="word-cloud-block">
+      <div className="word-cloud-block__header">
+        <span>Ordsky</span>
+        <span>{items.length} ord</span>
+      </div>
+      <div className="word-cloud" aria-label="Ordsky for fritekstsvar">
+        {items.map((item) => (
+          <span
+            aria-label={`${item.word}, ${formatWordCount(item.count)}`}
+            className={`word-cloud__word word-cloud__word--weight-${item.weight} word-cloud__word--tone-${item.tone}`}
+            key={item.word}
+            title={`${item.word}: ${formatWordCount(item.count)}`}
+          >
+            {item.word}
           </span>
-        </article>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -337,6 +370,10 @@ function formatDateTime(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function formatWordCount(count: number) {
+  return count === 1 ? '1 gang' : `${count} ganger`;
 }
 
 function getErrorMessage(error: unknown) {
