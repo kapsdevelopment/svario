@@ -19,6 +19,11 @@ type SummaryStat = {
   value: string;
 };
 
+type PreparedPdfTableRow = {
+  cellLines: string[][];
+  rowHeight: number;
+};
+
 const colors = {
   ink: '#17201d',
   pine: '#183a34',
@@ -194,12 +199,22 @@ class PdfReportWriter {
   }
 
   addQuestionResults(results: SurveyResults) {
-    this.addSectionHeading('Spørsmål og svar');
-
     if (results.questionResults.length === 0) {
+      this.ensureSpace(this.measureSectionHeadingHeight('Spørsmål og svar') + 23);
+      this.addSectionHeading('Spørsmål og svar');
       this.addMutedLine('Skjemaet har ingen spørsmål ennå.');
       return;
     }
+
+    this.ensureSpace(
+      this.measureSectionHeadingHeight('Spørsmål og svar') +
+        this.measureQuestionKeepHeight(
+          results.questionResults[0],
+          1,
+          results.responseCount,
+        ),
+    );
+    this.addSectionHeading('Spørsmål og svar');
 
     const sectionTitleById = new Map(
       results.sections
@@ -216,6 +231,10 @@ class PdfReportWriter {
           : null;
 
         if (sectionTitle) {
+          this.ensureSpace(
+            this.measureSubsectionHeadingHeight(sectionTitle) +
+              this.measureQuestionKeepHeight(result, index + 1, results.responseCount),
+          );
           this.addSubsectionHeading(sectionTitle);
         }
       }
@@ -249,7 +268,7 @@ class PdfReportWriter {
     index: number,
     responseCount: number,
   ) {
-    this.ensureSpace(82);
+    this.ensureSpace(this.measureQuestionKeepHeight(result, index, responseCount));
     this.addGap(8);
     this.addWrappedText(`Spørsmål ${index}`, {
       color: colors.muted,
@@ -304,17 +323,15 @@ class PdfReportWriter {
   }
 
   private addChoiceResults(results: SurveyChoiceResult[]) {
+    const rows = this.getChoiceRows(results);
+
     this.addTable(
       [
         { header: 'Alternativ', width: this.contentWidth - 148 },
         { align: 'right', header: 'Svar', width: 64 },
         { align: 'right', header: 'Andel', width: 84 },
       ],
-      results.map((result) => [
-        result.label,
-        String(result.count),
-        formatPercentage(result.percentage),
-      ]),
+      rows,
       'Ingen alternativer er registrert.',
     );
   }
@@ -323,6 +340,8 @@ class PdfReportWriter {
     results: SurveyLikertResult[],
     average: number | null,
   ) {
+    const rows = this.getLikertRows(results);
+
     this.addWrappedText(
       `Gjennomsnitt: ${
         average === null ? 'Ingen svar' : average.toLocaleString('nb-NO')
@@ -341,11 +360,7 @@ class PdfReportWriter {
         { align: 'right', header: 'Svar', width: 64 },
         { align: 'right', header: 'Andel', width: 84 },
       ],
-      results.map((result) => [
-        String(result.value),
-        String(result.count),
-        formatPercentage(result.percentage),
-      ]),
+      rows,
       'Ingen skalaverdier er registrert.',
     );
   }
@@ -357,7 +372,7 @@ class PdfReportWriter {
     }
 
     results.forEach((result, index) => {
-      this.ensureSpace(58);
+      this.ensureSpace(this.measureFreeTextResultHeight(result));
       this.addWrappedText(
         `${result.respondentLabel ?? `Svar ${index + 1}`} - ${formatDateTime(
           result.submittedAt,
@@ -381,7 +396,7 @@ class PdfReportWriter {
   }
 
   private addSectionHeading(title: string) {
-    this.ensureSpace(40);
+    this.ensureSpace(this.measureSectionHeadingHeight(title));
     this.addGap(8);
     this.addWrappedText(title, {
       color: colors.pine,
@@ -393,7 +408,7 @@ class PdfReportWriter {
   }
 
   private addSubsectionHeading(title: string) {
-    this.ensureSpace(34);
+    this.ensureSpace(this.measureSubsectionHeadingHeight(title));
     this.addWrappedText(title, {
       color: colors.moss,
       fontSize: 11,
@@ -413,17 +428,7 @@ class PdfReportWriter {
       return;
     }
 
-    const preparedRows = rows.map((row) => {
-      const cellLines = row.map((cell, columnIndex) =>
-        this.wrapText(cell, columns[columnIndex].width - 16),
-      );
-      const rowHeight = Math.max(
-        28,
-        Math.max(...cellLines.map((lines) => lines.length)) * 12 + 16,
-      );
-
-      return { cellLines, rowHeight };
-    });
+    const preparedRows = this.prepareTableRows(columns, rows);
     const firstRowHeight = preparedRows[0]?.rowHeight ?? 0;
 
     if (
@@ -470,6 +475,343 @@ class PdfReportWriter {
     });
 
     this.addGap(12);
+  }
+
+  private measureQuestionKeepHeight(
+    result: SurveyQuestionResult,
+    index: number,
+    responseCount: number,
+  ) {
+    const fullHeight = this.measureQuestionHeight(result, index, responseCount);
+    const minHeight =
+      this.measureQuestionIntroHeight(result, index, responseCount) +
+      this.measureQuestionFirstResponseHeight(result);
+
+    return fullHeight <= this.bodyHeight
+      ? fullHeight
+      : Math.min(minHeight, this.bodyHeight);
+  }
+
+  private measureQuestionHeight(
+    result: SurveyQuestionResult,
+    index: number,
+    responseCount: number,
+  ) {
+    return (
+      this.measureQuestionIntroHeight(result, index, responseCount) +
+      this.measureQuestionResponsesHeight(result) +
+      this.measureSkippedHeight(result) +
+      18
+    );
+  }
+
+  private measureQuestionIntroHeight(
+    result: SurveyQuestionResult,
+    index: number,
+    responseCount: number,
+  ) {
+    const metaGapAfter = result.question.description ? 8 : 12;
+
+    return (
+      8 +
+      this.measureWrappedTextHeight(`Spørsmål ${index}`, {
+        fontSize: 8,
+        fontStyle: 'bold',
+        gapAfter: 5,
+        lineHeight: 11,
+      }) +
+      this.measureWrappedTextHeight(result.question.prompt, {
+        fontSize: 14,
+        fontStyle: 'bold',
+        gapAfter: 5,
+        lineHeight: 18,
+      }) +
+      this.measureWrappedTextHeight(
+        `${questionTypeLabel[result.question.type]} - ${result.answeredCount}/${responseCount} besvart`,
+        {
+          fontSize: 9,
+          gapAfter: metaGapAfter,
+          lineHeight: 12,
+        },
+      ) +
+      (result.question.description
+        ? this.measureWrappedTextHeight(result.question.description, {
+            fontSize: 9,
+            gapAfter: 12,
+            lineHeight: 13,
+          })
+        : 0)
+    );
+  }
+
+  private measureQuestionResponsesHeight(result: SurveyQuestionResult) {
+    if (result.question.type === 'multiple_choice') {
+      return this.measureChoiceResultsHeight(result.choiceResults);
+    }
+
+    if (result.question.type === 'likert_scale') {
+      return this.measureLikertResultsHeight(
+        result.likertResults,
+        result.likertAverage,
+      );
+    }
+
+    return this.measureFreeTextResultsHeight(result.freeTextResults);
+  }
+
+  private measureQuestionFirstResponseHeight(result: SurveyQuestionResult) {
+    if (result.question.type === 'multiple_choice') {
+      return this.measureChoiceResultsStartHeight(result.choiceResults);
+    }
+
+    if (result.question.type === 'likert_scale') {
+      return this.measureLikertResultsStartHeight(
+        result.likertResults,
+        result.likertAverage,
+      );
+    }
+
+    return this.measureFreeTextResultsStartHeight(result.freeTextResults);
+  }
+
+  private measureChoiceResultsHeight(results: SurveyChoiceResult[]) {
+    const rows = this.getChoiceRows(results);
+
+    if (rows.length === 0) {
+      return this.measureMutedLineHeight('Ingen alternativer er registrert.');
+    }
+
+    return this.measureTableHeight(
+      [
+        { header: 'Alternativ', width: this.contentWidth - 148 },
+        { align: 'right', header: 'Svar', width: 64 },
+        { align: 'right', header: 'Andel', width: 84 },
+      ],
+      rows,
+    );
+  }
+
+  private measureChoiceResultsStartHeight(results: SurveyChoiceResult[]) {
+    const rows = this.getChoiceRows(results);
+
+    if (rows.length === 0) {
+      return this.measureMutedLineHeight('Ingen alternativer er registrert.');
+    }
+
+    return this.measureTableStartHeight(
+      [
+        { header: 'Alternativ', width: this.contentWidth - 148 },
+        { align: 'right', header: 'Svar', width: 64 },
+        { align: 'right', header: 'Andel', width: 84 },
+      ],
+      rows,
+    );
+  }
+
+  private measureLikertResultsHeight(
+    results: SurveyLikertResult[],
+    average: number | null,
+  ) {
+    return (
+      this.measureLikertAverageHeight(average) +
+      this.measureTableHeight(
+        [
+          { header: 'Verdi', width: this.contentWidth - 148 },
+          { align: 'right', header: 'Svar', width: 64 },
+          { align: 'right', header: 'Andel', width: 84 },
+        ],
+        this.getLikertRows(results),
+      )
+    );
+  }
+
+  private measureLikertResultsStartHeight(
+    results: SurveyLikertResult[],
+    average: number | null,
+  ) {
+    return (
+      this.measureLikertAverageHeight(average) +
+      this.measureTableStartHeight(
+        [
+          { header: 'Verdi', width: this.contentWidth - 148 },
+          { align: 'right', header: 'Svar', width: 64 },
+          { align: 'right', header: 'Andel', width: 84 },
+        ],
+        this.getLikertRows(results),
+      )
+    );
+  }
+
+  private measureLikertAverageHeight(average: number | null) {
+    return this.measureWrappedTextHeight(
+      `Gjennomsnitt: ${
+        average === null ? 'Ingen svar' : average.toLocaleString('nb-NO')
+      }`,
+      {
+        fontSize: 10,
+        fontStyle: 'bold',
+        gapAfter: 8,
+        lineHeight: 14,
+      },
+    );
+  }
+
+  private measureFreeTextResultsHeight(results: SurveyFreeTextResult[]) {
+    if (results.length === 0) {
+      return this.measureMutedLineHeight('Ingen fritekstsvar ennå.');
+    }
+
+    return results.reduce(
+      (height, result) => height + this.measureFreeTextResultHeight(result),
+      0,
+    );
+  }
+
+  private measureFreeTextResultsStartHeight(results: SurveyFreeTextResult[]) {
+    if (results.length === 0) {
+      return this.measureMutedLineHeight('Ingen fritekstsvar ennå.');
+    }
+
+    return this.measureFreeTextResultHeight(results[0]);
+  }
+
+  private measureFreeTextResultHeight(result: SurveyFreeTextResult) {
+    return (
+      this.measureWrappedTextHeight(
+        `${result.respondentLabel ?? 'Svar'} - ${formatDateTime(result.submittedAt)}`,
+        {
+          fontSize: 8,
+          fontStyle: 'bold',
+          gapAfter: 4,
+          lineHeight: 11,
+        },
+      ) +
+      this.measureWrappedTextHeight(result.text, {
+        fontSize: 10,
+        gapAfter: 8,
+        lineHeight: 14,
+      }) +
+      8
+    );
+  }
+
+  private measureSkippedHeight(result: SurveyQuestionResult) {
+    if (result.skippedCount === 0) {
+      return 0;
+    }
+
+    return this.measureMutedLineHeight(
+      `${result.skippedCount} uten svar på dette spørsmålet.`,
+    );
+  }
+
+  private measureSectionHeadingHeight(title: string) {
+    return (
+      8 +
+      this.measureWrappedTextHeight(title, {
+        fontSize: 15,
+        fontStyle: 'bold',
+        gapAfter: 10,
+        lineHeight: 19,
+      })
+    );
+  }
+
+  private measureSubsectionHeadingHeight(title: string) {
+    return this.measureWrappedTextHeight(title, {
+      fontSize: 11,
+      fontStyle: 'bold',
+      gapAfter: 8,
+      lineHeight: 15,
+    });
+  }
+
+  private measureMutedLineHeight(text: string) {
+    return this.measureWrappedTextHeight(text, {
+      fontSize: 9,
+      gapAfter: 10,
+      lineHeight: 13,
+    });
+  }
+
+  private measureWrappedTextHeight(
+    text: string,
+    options: {
+      fontSize: number;
+      fontStyle?: 'bold' | 'normal';
+      gapAfter?: number;
+      lineHeight: number;
+      width?: number;
+    },
+  ) {
+    this.setTextStyle(options.fontSize, options.fontStyle ?? 'normal');
+    return (
+      this.wrapText(text, options.width ?? this.contentWidth).length *
+        options.lineHeight +
+      (options.gapAfter ?? 0)
+    );
+  }
+
+  private measureTableHeight(columns: PdfColumn[], rows: string[][]) {
+    if (rows.length === 0) {
+      return this.measureMutedLineHeight('Ingen data.');
+    }
+
+    const preparedRows = this.prepareTableRows(columns, rows);
+    return (
+      tableHeaderHeight +
+      preparedRows.reduce((height, row) => height + row.rowHeight, 0) +
+      tableStartPadding +
+      12
+    );
+  }
+
+  private measureTableStartHeight(columns: PdfColumn[], rows: string[][]) {
+    if (rows.length === 0) {
+      return this.measureMutedLineHeight('Ingen data.');
+    }
+
+    return (
+      tableHeaderHeight +
+      this.prepareTableRows(columns, rows)[0].rowHeight +
+      tableStartPadding +
+      12
+    );
+  }
+
+  private prepareTableRows(
+    columns: PdfColumn[],
+    rows: string[][],
+  ): PreparedPdfTableRow[] {
+    this.setTextStyle(9, 'normal', colors.ink);
+
+    return rows.map((row) => {
+      const cellLines = row.map((cell, columnIndex) =>
+        this.wrapText(cell, columns[columnIndex].width - 16),
+      );
+      const rowHeight = Math.max(
+        28,
+        Math.max(...cellLines.map((lines) => lines.length)) * 12 + 16,
+      );
+
+      return { cellLines, rowHeight };
+    });
+  }
+
+  private getChoiceRows(results: SurveyChoiceResult[]) {
+    return results.map((result) => [
+      result.label,
+      String(result.count),
+      formatPercentage(result.percentage),
+    ]);
+  }
+
+  private getLikertRows(results: SurveyLikertResult[]) {
+    return results.map((result) => [
+      String(result.value),
+      String(result.count),
+      formatPercentage(result.percentage),
+    ]);
   }
 
   private drawTableHeader(columns: PdfColumn[]) {
@@ -577,6 +919,10 @@ class PdfReportWriter {
 
   private get bottomY() {
     return this.pageHeight - margins.page - margins.footer;
+  }
+
+  private get bodyHeight() {
+    return this.bottomY - margins.page;
   }
 }
 
