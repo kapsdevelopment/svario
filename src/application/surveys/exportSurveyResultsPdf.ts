@@ -1,5 +1,9 @@
 import { jsPDF } from 'jspdf';
 
+import {
+  buildFreeTextWordCloud,
+  type FreeTextWordCloudItem,
+} from './buildFreeTextWordCloud';
 import type {
   SurveyChoiceResult,
   SurveyFreeTextResult,
@@ -24,6 +28,15 @@ type PreparedPdfTableRow = {
   rowHeight: number;
 };
 
+type PdfWordCloudItem = FreeTextWordCloudItem & {
+  fontSize: number;
+  height: number;
+  rotation: number;
+  width: number;
+  x: number;
+  y: number;
+};
+
 const colors = {
   ink: '#17201d',
   pine: '#183a34',
@@ -34,6 +47,13 @@ const colors = {
   soft: '#f3f0e8',
   white: '#ffffff',
 };
+const wordCloudToneColors = {
+  1: colors.pine,
+  2: colors.moss,
+  3: '#375c68',
+  4: '#7a5b45',
+  5: colors.muted,
+} satisfies Record<FreeTextWordCloudItem['tone'], string>;
 
 const margins = {
   page: 48,
@@ -41,6 +61,15 @@ const margins = {
 };
 const tableHeaderHeight = 26;
 const tableStartPadding = 48;
+const wordCloudHeight = 166;
+const wordCloudPadding = 14;
+const wordCloudFontSizes = {
+  1: 9,
+  2: 12,
+  3: 16,
+  4: 22,
+  5: 30,
+} satisfies Record<FreeTextWordCloudItem['weight'], number>;
 
 export function buildSurveyResultsPdf(
   results: SurveyResults,
@@ -224,6 +253,8 @@ class PdfReportWriter {
     let currentSectionId: string | null = null;
 
     results.questionResults.forEach((result, index) => {
+      let startsAfterHeading = index === 0;
+
       if (result.question.sectionId !== currentSectionId) {
         currentSectionId = result.question.sectionId;
         const sectionTitle = currentSectionId
@@ -236,10 +267,16 @@ class PdfReportWriter {
               this.measureQuestionKeepHeight(result, index + 1, results.responseCount),
           );
           this.addSubsectionHeading(sectionTitle);
+          startsAfterHeading = true;
         }
       }
 
-      this.addQuestionResult(result, index + 1, results.responseCount);
+      this.addQuestionResult(
+        result,
+        index + 1,
+        results.responseCount,
+        startsAfterHeading ? 'start' : 'full',
+      );
     });
   }
 
@@ -267,8 +304,13 @@ class PdfReportWriter {
     result: SurveyQuestionResult,
     index: number,
     responseCount: number,
+    keepMode: 'full' | 'start' = 'full',
   ) {
-    this.ensureSpace(this.measureQuestionKeepHeight(result, index, responseCount));
+    this.ensureSpace(
+      keepMode === 'start'
+        ? this.measureQuestionStartKeepHeight(result, index, responseCount)
+        : this.measureQuestionKeepHeight(result, index, responseCount),
+    );
     this.addGap(8);
     this.addWrappedText(`Spørsmål ${index}`, {
       color: colors.muted,
@@ -371,6 +413,12 @@ class PdfReportWriter {
       return;
     }
 
+    const wordCloud = buildFreeTextWordCloud(results);
+
+    if (wordCloud.length > 0) {
+      this.addWordCloud(wordCloud);
+    }
+
     results.forEach((result, index) => {
       this.ensureSpace(this.measureFreeTextResultHeight(result));
       this.addWrappedText(
@@ -393,6 +441,47 @@ class PdfReportWriter {
       });
       this.addRule(8);
     });
+  }
+
+  private addWordCloud(items: FreeTextWordCloudItem[]) {
+    const placedItems = this.buildWordCloudLayout(items);
+
+    if (placedItems.length === 0) {
+      return;
+    }
+
+    const headerHeight = 19;
+    this.ensureSpace(headerHeight + wordCloudHeight + 18);
+
+    this.setTextStyle(9, 'bold', colors.pine);
+    this.doc.text('Ordsky', margins.page, this.y + 10);
+    this.setTextStyle(8, 'bold', colors.muted);
+    this.doc.text(`${placedItems.length} ord`, margins.page + this.contentWidth, this.y + 10, {
+      align: 'right',
+    });
+    this.y += headerHeight;
+
+    this.doc.setFillColor(colors.paper);
+    this.doc.roundedRect(
+      margins.page,
+      this.y,
+      this.contentWidth,
+      wordCloudHeight,
+      8,
+      8,
+      'F',
+    );
+
+    placedItems.forEach((item) => {
+      this.setTextStyle(item.fontSize, 'bold', wordCloudToneColors[item.tone]);
+      this.doc.text(item.word, margins.page + item.x, this.y + item.y, {
+        align: 'center',
+        angle: item.rotation,
+        baseline: 'middle',
+      });
+    });
+
+    this.y += wordCloudHeight + 18;
   }
 
   private addSectionHeading(title: string) {
@@ -483,13 +572,27 @@ class PdfReportWriter {
     responseCount: number,
   ) {
     const fullHeight = this.measureQuestionHeight(result, index, responseCount);
-    const minHeight =
-      this.measureQuestionIntroHeight(result, index, responseCount) +
-      this.measureQuestionFirstResponseHeight(result);
+    const minHeight = this.measureQuestionStartKeepHeight(
+      result,
+      index,
+      responseCount,
+    );
 
     return fullHeight <= this.bodyHeight
       ? fullHeight
       : Math.min(minHeight, this.bodyHeight);
+  }
+
+  private measureQuestionStartKeepHeight(
+    result: SurveyQuestionResult,
+    index: number,
+    responseCount: number,
+  ) {
+    return Math.min(
+      this.measureQuestionIntroHeight(result, index, responseCount) +
+        this.measureQuestionFirstResponseHeight(result),
+      this.bodyHeight,
+    );
   }
 
   private measureQuestionHeight(
@@ -661,9 +764,11 @@ class PdfReportWriter {
       return this.measureMutedLineHeight('Ingen fritekstsvar ennå.');
     }
 
+    const wordCloudHeight = this.measureWordCloudHeight(results);
+
     return results.reduce(
       (height, result) => height + this.measureFreeTextResultHeight(result),
-      0,
+      wordCloudHeight,
     );
   }
 
@@ -672,7 +777,10 @@ class PdfReportWriter {
       return this.measureMutedLineHeight('Ingen fritekstsvar ennå.');
     }
 
-    return this.measureFreeTextResultHeight(results[0]);
+    const wordCloudHeight = this.measureWordCloudHeight(results);
+    return wordCloudHeight > 0
+      ? wordCloudHeight
+      : this.measureFreeTextResultHeight(results[0]);
   }
 
   private measureFreeTextResultHeight(result: SurveyFreeTextResult) {
@@ -693,6 +801,10 @@ class PdfReportWriter {
       }) +
       8
     );
+  }
+
+  private measureWordCloudHeight(results: SurveyFreeTextResult[]) {
+    return buildFreeTextWordCloud(results).length > 0 ? 19 + wordCloudHeight + 18 : 0;
   }
 
   private measureSkippedHeight(result: SurveyQuestionResult) {
@@ -917,6 +1029,146 @@ class PdfReportWriter {
     this.y = margins.page;
   }
 
+  private buildWordCloudLayout(items: FreeTextWordCloudItem[]) {
+    const placedItems: PdfWordCloudItem[] = [];
+
+    items.forEach((item, index) => {
+      const fontSize = this.getWordCloudFontSize(item);
+      const rotation = this.getWordCloudRotation(item, index);
+      const bounds = this.estimateWordCloudBounds(item.word, fontSize, rotation);
+      const position = this.findWordCloudPosition(
+        bounds,
+        placedItems,
+        item.word,
+        index,
+      );
+
+      if (!position) {
+        return;
+      }
+
+      placedItems.push({
+        ...item,
+        ...bounds,
+        ...position,
+        fontSize,
+        rotation,
+      });
+    });
+
+    return placedItems;
+  }
+
+  private getWordCloudFontSize(item: FreeTextWordCloudItem) {
+    const baseSize = wordCloudFontSizes[item.weight];
+    let adjustedSize = baseSize;
+
+    if (item.word.length > 15) {
+      adjustedSize = Math.round(baseSize * 0.82);
+    } else if (item.word.length > 11) {
+      adjustedSize = Math.round(baseSize * 0.9);
+    }
+
+    const maxWordWidth = this.contentWidth * 0.48;
+    const widthLimitedSize = Math.floor(
+      maxWordWidth / Math.max(1, item.word.length * 0.58),
+    );
+    return Math.max(7, Math.min(adjustedSize, widthLimitedSize));
+  }
+
+  private getWordCloudRotation(item: FreeTextWordCloudItem, index: number) {
+    if (index < 5) {
+      return 0;
+    }
+
+    const rotations = [0, 0, 0, -10, 10, -16, 16, -24, 24];
+    return rotations[(hashWord(item.word) + index) % rotations.length];
+  }
+
+  private estimateWordCloudBounds(
+    word: string,
+    fontSize: number,
+    rotation: number,
+  ) {
+    const textWidth = Math.max(fontSize * 1.8, word.length * fontSize * 0.56);
+    const textHeight = fontSize * 0.84;
+    const radians = (Math.abs(rotation) * Math.PI) / 180;
+    const width =
+      Math.cos(radians) * textWidth + Math.sin(radians) * textHeight + 4;
+    const height =
+      Math.sin(radians) * textWidth + Math.cos(radians) * textHeight + 3;
+
+    return { height, width };
+  }
+
+  private findWordCloudPosition(
+    bounds: Pick<PdfWordCloudItem, 'height' | 'width'>,
+    placedItems: PdfWordCloudItem[],
+    word: string,
+    index: number,
+  ) {
+    const centerX = this.contentWidth / 2;
+    const centerY = wordCloudHeight / 2;
+    const startAngle = ((hashWord(word) % 360) * Math.PI) / 180;
+
+    if (index === 0) {
+      return { x: centerX, y: centerY };
+    }
+
+    for (let step = 0; step < 2600; step += 1) {
+      const angle = startAngle + step * 0.38;
+      const radius = step * 0.23;
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius * 0.55;
+
+      if (this.canPlaceWordCloudItem(x, y, bounds, placedItems)) {
+        return { x: Math.round(x), y: Math.round(y) };
+      }
+    }
+
+    return null;
+  }
+
+  private canPlaceWordCloudItem(
+    x: number,
+    y: number,
+    bounds: Pick<PdfWordCloudItem, 'height' | 'width'>,
+    placedItems: PdfWordCloudItem[],
+  ) {
+    const candidate = {
+      bottom: y + bounds.height / 2,
+      left: x - bounds.width / 2,
+      right: x + bounds.width / 2,
+      top: y - bounds.height / 2,
+    };
+
+    if (
+      candidate.left < wordCloudPadding ||
+      candidate.right > this.contentWidth - wordCloudPadding ||
+      candidate.top < wordCloudPadding ||
+      candidate.bottom > wordCloudHeight - wordCloudPadding
+    ) {
+      return false;
+    }
+
+    return placedItems.every((item) => {
+      const padding = 1.5;
+      const existing = {
+        bottom: item.y + item.height / 2 + padding,
+        left: item.x - item.width / 2 - padding,
+        right: item.x + item.width / 2 + padding,
+        top: item.y - item.height / 2 - padding,
+      };
+
+      return (
+        candidate.right < existing.left ||
+        candidate.left > existing.right ||
+        candidate.bottom < existing.top ||
+        candidate.top > existing.bottom
+      );
+    });
+  }
+
   private get bottomY() {
     return this.pageHeight - margins.page - margins.footer;
   }
@@ -982,6 +1234,13 @@ function sanitizeFileNamePart(value: string) {
     .replace(/-+$/g, '');
 
   return normalizedValue || 'svario';
+}
+
+function hashWord(word: string) {
+  return [...word].reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    7,
+  );
 }
 
 function formatDateStamp(value: Date) {
