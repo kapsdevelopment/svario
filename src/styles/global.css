@@ -1037,42 +1037,25 @@ select {
 }
 
 .word-cloud {
-  display: flex;
-  min-height: 128px;
-  align-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 16px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.word-cloud__canvas {
+  display: block;
+  width: 100%;
+  height: clamp(230px, 34vw, 360px);
 }
 
 .word-cloud__word {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
+  fill: currentColor;
   overflow-wrap: anywhere;
   font-weight: 900;
   letter-spacing: 0;
-  line-height: 1.05;
-}
-
-.word-cloud__word--weight-1 {
-  font-size: 0.88rem;
-}
-
-.word-cloud__word--weight-2 {
-  font-size: 1.05rem;
-}
-
-.word-cloud__word--weight-3 {
-  font-size: 1.28rem;
-}
-
-.word-cloud__word--weight-4 {
-  font-size: 1.52rem;
-}
-
-.word-cloud__word--weight-5 {
-  font-size: 1.86rem;
+  paint-order: stroke fill;
+  stroke: rgba(253, 251, 247, 0.82);
+  stroke-linejoin: round;
+  stroke-width: 5px;
 }
 
 .word-cloud__word--tone-1 {

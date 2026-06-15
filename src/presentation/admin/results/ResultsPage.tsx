@@ -293,25 +293,198 @@ function FreeTextResultView({ results }: { results: SurveyQuestionResult['freeTe
 }
 
 function WordCloud({ items }: { items: FreeTextWordCloudItem[] }) {
+  const placedItems = buildWordCloudLayout(items);
+
   return (
     <div className="word-cloud-block">
       <div className="word-cloud-block__header">
         <span>Ordsky</span>
-        <span>{items.length} ord</span>
+        <span>{placedItems.length} ord</span>
       </div>
       <div className="word-cloud" aria-label="Ordsky for fritekstsvar">
-        {items.map((item) => (
-          <span
-            aria-label={`${item.word}, ${formatWordCount(item.count)}`}
-            className={`word-cloud__word word-cloud__word--weight-${item.weight} word-cloud__word--tone-${item.tone}`}
-            key={item.word}
-            title={`${item.word}: ${formatWordCount(item.count)}`}
-          >
-            {item.word}
-          </span>
-        ))}
+        <svg
+          aria-label={`Ordsky med ${placedItems.length} ord`}
+          className="word-cloud__canvas"
+          role="img"
+          viewBox={`0 0 ${wordCloudWidth} ${wordCloudHeight}`}
+        >
+          {placedItems.map((item) => (
+            <text
+              className={`word-cloud__word word-cloud__word--tone-${item.tone}`}
+              dominantBaseline="middle"
+              key={item.word}
+              style={{ fontSize: `${item.fontSize}px` }}
+              textAnchor="middle"
+              transform={`translate(${item.x} ${item.y}) rotate(${item.rotation})`}
+            >
+              <title>{`${item.word}: ${formatWordCount(item.count)}`}</title>
+              {item.word}
+            </text>
+          ))}
+        </svg>
       </div>
     </div>
+  );
+}
+
+type PlacedWordCloudItem = FreeTextWordCloudItem & {
+  fontSize: number;
+  height: number;
+  rotation: number;
+  width: number;
+  x: number;
+  y: number;
+};
+
+const wordCloudWidth = 960;
+const wordCloudHeight = 400;
+const wordCloudPadding = 22;
+const wordCloudFontSizes = {
+  1: 16,
+  2: 22,
+  3: 30,
+  4: 42,
+  5: 58,
+} satisfies Record<FreeTextWordCloudItem['weight'], number>;
+
+function buildWordCloudLayout(
+  items: FreeTextWordCloudItem[],
+): PlacedWordCloudItem[] {
+  const placedItems: PlacedWordCloudItem[] = [];
+
+  for (const [index, item] of items.entries()) {
+    const fontSize = getCloudFontSize(item);
+    const rotation = getCloudRotation(item, index);
+    const bounds = estimateCloudWordBounds(item.word, fontSize, rotation);
+    const position = findCloudWordPosition(bounds, placedItems, item.word, index);
+
+    if (!position) {
+      continue;
+    }
+
+    placedItems.push({
+      ...item,
+      ...bounds,
+      ...position,
+      fontSize,
+      rotation,
+    });
+  }
+
+  return placedItems;
+}
+
+function getCloudFontSize(item: FreeTextWordCloudItem) {
+  const baseSize = wordCloudFontSizes[item.weight];
+  let adjustedSize = baseSize;
+
+  if (item.word.length > 15) {
+    adjustedSize = Math.round(baseSize * 0.82);
+  } else if (item.word.length > 11) {
+    adjustedSize = Math.round(baseSize * 0.9);
+  }
+
+  const widthLimitedSize = Math.floor(420 / Math.max(1, item.word.length * 0.58));
+  return Math.max(14, Math.min(adjustedSize, widthLimitedSize));
+}
+
+function getCloudRotation(item: FreeTextWordCloudItem, index: number) {
+  if (index < 5) {
+    return 0;
+  }
+
+  const rotations = [0, 0, 0, -10, 10, -16, 16, -24, 24];
+  return rotations[(hashWord(item.word) + index) % rotations.length];
+}
+
+function estimateCloudWordBounds(
+  word: string,
+  fontSize: number,
+  rotation: number,
+) {
+  const textWidth = Math.max(fontSize * 1.8, word.length * fontSize * 0.56);
+  const textHeight = fontSize * 0.84;
+  const radians = (Math.abs(rotation) * Math.PI) / 180;
+  const width =
+    Math.cos(radians) * textWidth + Math.sin(radians) * textHeight + 8;
+  const height =
+    Math.sin(radians) * textWidth + Math.cos(radians) * textHeight + 6;
+
+  return { height, width };
+}
+
+function findCloudWordPosition(
+  bounds: Pick<PlacedWordCloudItem, 'height' | 'width'>,
+  placedItems: PlacedWordCloudItem[],
+  word: string,
+  index: number,
+) {
+  const centerX = wordCloudWidth / 2;
+  const centerY = wordCloudHeight / 2;
+  const startAngle = ((hashWord(word) % 360) * Math.PI) / 180;
+
+  if (index === 0) {
+    return { x: centerX, y: centerY };
+  }
+
+  for (let step = 0; step < 2600; step += 1) {
+    const angle = startAngle + step * 0.38;
+    const radius = step * 0.42;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius * 0.55;
+
+    if (canPlaceCloudWord(x, y, bounds, placedItems)) {
+      return { x: Math.round(x), y: Math.round(y) };
+    }
+  }
+
+  return null;
+}
+
+function canPlaceCloudWord(
+  x: number,
+  y: number,
+  bounds: Pick<PlacedWordCloudItem, 'height' | 'width'>,
+  placedItems: PlacedWordCloudItem[],
+) {
+  const candidate = {
+    bottom: y + bounds.height / 2,
+    left: x - bounds.width / 2,
+    right: x + bounds.width / 2,
+    top: y - bounds.height / 2,
+  };
+
+  if (
+    candidate.left < wordCloudPadding ||
+    candidate.right > wordCloudWidth - wordCloudPadding ||
+    candidate.top < wordCloudPadding ||
+    candidate.bottom > wordCloudHeight - wordCloudPadding
+  ) {
+    return false;
+  }
+
+  return placedItems.every((item) => {
+    const padding = 2;
+    const existing = {
+      bottom: item.y + item.height / 2 + padding,
+      left: item.x - item.width / 2 - padding,
+      right: item.x + item.width / 2 + padding,
+      top: item.y - item.height / 2 - padding,
+    };
+
+    return (
+      candidate.right < existing.left ||
+      candidate.left > existing.right ||
+      candidate.bottom < existing.top ||
+      candidate.top > existing.bottom
+    );
+  });
+}
+
+function hashWord(word: string) {
+  return [...word].reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    7,
   );
 }
 
