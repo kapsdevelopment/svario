@@ -26,7 +26,20 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage policies for innlogget admin/eier.
 - [ ] Lage trygg offentlig lesing/innsending via RPC eller tilsvarende kontrollert API.
 
-## 3. Web app-skall
+## 3. Sikkerhet, personvern og tillit
+
+- [x] Lage første offentlige sikkerhetsside for Svario.
+- [x] Lage første offentlig landingsside og koble sikkerhetssiden inn som underside.
+- [ ] Lage en lett `SECURITY.md`/trust-center-plan som forklarer sikkerhetsmodell, datalagring, RLS, tilgangsstyring, backup, logging, hendelseshåndtering og kundens/personvernansvarliges ansvar.
+- [ ] Dokumentere Supabase-region, DPA, underleverandører, kryptering i transitt og kryptering av lagrede data før produksjonssetting.
+- [ ] Avklare produksjonskrav for admin-auth: vurdere/aktivere MFA for adminer, e-postbekreftelse, secure password change og korrekte production redirect URLs. MFA skal ikke blokkere utviklingsløpet før produksjonssetting.
+- [ ] Velge bevisst passordpolicy for adminer. Ikke stramme inn bare for strenghets skyld; vurder reell sikkerhetsgevinst opp mot magic link, MFA ved produksjon, rate limits og session-kontroller.
+- [ ] Lage RLS-/tilgangstester for eier, ikke-eier og anonym bruker på identitet, skjema, spørsmål, svar og resultater.
+- [ ] Kjøre Supabase advisors/security checks før produksjonssetting og følge opp funn.
+- [ ] Lage slette-/eksport-/retention-plan for persondata og anonyme besvarelser.
+- [ ] Lage enkel incident response-rutine for mistanke om datalekkasjer, feilsendt tilgang eller eksponerte nøkler.
+
+## 4. Web app-skall
 
 - [x] Sette opp Supabase-klient fra Vite-miljøverdier.
 - [x] Sette opp routing for admin og offentlig respondentflyt.
@@ -36,20 +49,21 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [ ] Lage nordisk, profesjonelt tema med dempede naturfarger.
 - [ ] Lage navigasjon for dashboard, skjemaer, resultater og profil.
 
-## 4. Admin og skjemabygger
+## 5. Admin og skjemabygger
 
-- [ ] Lage dashboard med nøkkeltall og siste aktivitet.
-- [ ] Lage oversikt over aktive, historiske og utkast-skjemaer.
-- [ ] Lage opprettelse av nytt spørreskjema.
+- [x] Lage dashboard med nøkkeltall og siste aktivitet.
+- [x] Lage oversikt over aktive, historiske og utkast-skjemaer.
+- [x] Lage opprettelse av nytt spørreskjema.
+- [x] Lage første redigeringsside for draft-skjema.
 - [ ] Støtte seksjoner i skjema.
-- [ ] Støtte spørsmålstypene flervalg, fritekst og Likert 1-5.
-- [ ] Støtte enkeltvalg og flervalg per flervalgsspørsmål.
-- [ ] Støtte anonymisert eller identifisert besvarelse per skjema.
-- [ ] Støtte valgfri tidsavgrensning.
+- [x] Støtte spørsmålstypene flervalg, fritekst og Likert 1-5.
+- [x] Støtte enkeltvalg og flervalg per flervalgsspørsmål.
+- [x] Støtte anonymisert eller identifisert besvarelse per skjema.
+- [x] Støtte valgfri tidsavgrensning.
 - [ ] Lage publiseringsflyt og delbar lenke.
 - [ ] Låse strukturfelter etter publisering med innsendte svar.
 
-## 5. Respondentflyt
+## 6. Respondentflyt
 
 - [ ] Lage offentlig besvarelsesside via delbar lenke.
 - [ ] Vise skjema-seksjoner og spørsmål intuitivt på mobil og desktop.
@@ -60,7 +74,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [ ] Lagre svar samlet ved innsending.
 - [ ] Vise enkel kvittering etter innsending.
 
-## 6. Resultater og visualisering
+## 7. Resultater og visualisering
 
 - [ ] Lage resultatside for innlogget admin.
 - [ ] Vise totaler, svarvolum og status.
@@ -70,29 +84,30 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [ ] Lage enkel wordcloud for fritekstsvar.
 - [ ] Sørge for at resultater kun er synlige for skjemaeier.
 
-## 7. Eksport
+## 8. Eksport
 
 - [ ] Lage CSV-eksport av resultater.
 - [ ] Lage enkel PDF-rapport.
 - [ ] Sikre at anonym eksport ikke inneholder identifiserende respondentfelt.
 - [ ] Teste eksport med norske tegn.
 
-## 8. Deploy og drift
+## 9. Deploy og drift
 
 - [x] Sette opp GitHub Pages-build for Vite.
 - [x] Konfigurere Vite base path for repo-hosting.
 - [x] Bruke hash-ruting for stabile offentlige lenker.
-- [ ] Legge Supabase URL og publishable/anon key inn som GitHub repository variables/secrets.
+- [x] Legge Supabase URL og publishable/anon key inn som GitHub repository variables/secrets.
+- [ ] Justere GitHub Pages/Vite-build for custom domain `svario.no` når DNS er verifisert.
 - [x] Dokumentere lokal kjøring og deploy i README.
 
-## 9. Testing og kvalitet
+## 10. Testing og kvalitet
 
-- [ ] Kjøre `npm run build`.
+- [x] Kjøre `npm run build`.
 - [ ] Lage målrettede tester for validering og skjemalogikk.
 - [ ] Teste RLS/policies for eier, ikke-eier og anonym bruker.
 - [ ] Teste adminflyt manuelt på desktop web.
 - [ ] Teste respondentflyt manuelt på mobil web.
-- [ ] Teste web build før deploy.
+- [x] Teste web build før deploy.
 
 ## Ikke i MVP
 

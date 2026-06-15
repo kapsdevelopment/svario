@@ -1,6 +1,6 @@
 import { KeyRound, LogIn, Mail, Send, UserPlus } from 'lucide-react';
 import { type FormEvent, useMemo, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
@@ -198,6 +198,10 @@ export function LoginPage() {
         {errorMessage ? (
           <p className="form-alert form-alert--error">{errorMessage}</p>
         ) : null}
+
+        <div className="auth-support-links">
+          <Link to={routes.security}>Les om sikkerhet og personvern</Link>
+        </div>
       </Panel>
     </main>
   );

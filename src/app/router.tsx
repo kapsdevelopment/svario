@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { createHashRouter, Navigate } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 
 import { AppShell } from '../presentation/shared/layout/AppShell';
 import { RequireAuth } from './RequireAuth';
@@ -13,6 +13,11 @@ const DashboardPage = lazy(() =>
 const LoginPage = lazy(() =>
   import('../presentation/admin/auth/LoginPage').then((module) => ({
     default: module.LoginPage,
+  })),
+);
+const LandingPage = lazy(() =>
+  import('../presentation/public/landing/LandingPage').then((module) => ({
+    default: module.LandingPage,
   })),
 );
 const ProfilePage = lazy(() =>
@@ -30,6 +35,11 @@ const SurveyCreatePage = lazy(() =>
     default: module.SurveyCreatePage,
   })),
 );
+const SurveyEditorPage = lazy(() =>
+  import('../presentation/admin/surveys/SurveyEditorPage').then((module) => ({
+    default: module.SurveyEditorPage,
+  })),
+);
 const SurveyListPage = lazy(() =>
   import('../presentation/admin/surveys/SurveyListPage').then((module) => ({
     default: module.SurveyListPage,
@@ -40,15 +50,24 @@ const RespondentPage = lazy(() =>
     default: module.RespondentPage,
   })),
 );
+const SecurityPage = lazy(() =>
+  import('../presentation/public/security/SecurityPage').then((module) => ({
+    default: module.SecurityPage,
+  })),
+);
 
 export const router = createHashRouter([
   {
     path: '/',
-    element: <Navigate to={routes.dashboard} replace />,
+    element: page(<LandingPage />),
   },
   {
     path: routes.login,
     element: page(<LoginPage />),
+  },
+  {
+    path: routes.security,
+    element: page(<SecurityPage />),
   },
   {
     element: (
@@ -68,6 +87,10 @@ export const router = createHashRouter([
       {
         path: routes.newSurvey,
         element: page(<SurveyCreatePage />),
+      },
+      {
+        path: '/surveys/:surveyId/edit',
+        element: page(<SurveyEditorPage />),
       },
       {
         path: '/surveys/:surveyId/results',

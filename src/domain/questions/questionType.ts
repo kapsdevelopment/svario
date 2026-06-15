@@ -1,3 +1,1 @@
-import type { Enums } from '../../data/supabase/database.types';
-
-export type QuestionType = Enums<'question_type'>;
+export type QuestionType = 'multiple_choice' | 'free_text' | 'likert_1_5';
