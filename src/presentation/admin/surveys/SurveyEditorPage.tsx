@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   CheckCircle2,
+  Layers2,
   ListChecks,
   Plus,
   Trash2,
@@ -11,11 +12,15 @@ import { Link, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAddSurveyQuestion } from '../../../application/surveys/useAddSurveyQuestion';
+import { useAddSurveySection } from '../../../application/surveys/useAddSurveySection';
 import { useDeleteSurveyQuestion } from '../../../application/surveys/useDeleteSurveyQuestion';
+import { useDeleteSurveySection } from '../../../application/surveys/useDeleteSurveySection';
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
 import type {
   QuestionType,
+  SurveyEditor,
   SurveyQuestion,
+  SurveySection,
   SurveySummary,
 } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
@@ -68,46 +73,98 @@ export function SurveyEditorPage() {
   );
 }
 
-function SurveyEditorContent({ survey }: { survey: SurveySummary & { questions: SurveyQuestion[] } }) {
+function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
+  const addSection = useAddSurveySection(survey.id);
   const addQuestion = useAddSurveyQuestion(survey.id);
+  const deleteSection = useDeleteSurveySection(survey.id);
   const deleteQuestion = useDeleteSurveyQuestion(survey.id);
 
+  const [sectionTitle, setSectionTitle] = useState('');
+  const [sectionDescription, setSectionDescription] = useState('');
   const [type, setType] = useState<QuestionType>('multiple_choice');
+  const [sectionId, setSectionId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
   const [description, setDescription] = useState('');
   const [isRequired, setIsRequired] = useState(true);
   const [allowMultiple, setAllowMultiple] = useState(false);
   const [optionText, setOptionText] = useState('Ja\nNei');
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [sectionValidationError, setSectionValidationError] = useState<
+    string | null
+  >(null);
+  const [questionValidationError, setQuestionValidationError] = useState<
+    string | null
+  >(null);
 
   const isDraft = survey.status === 'draft';
+  const selectedSectionId = survey.sections.some((section) => section.id === sectionId)
+    ? sectionId
+    : null;
+  const questionGroups = useMemo(
+    () => groupQuestionsBySection(survey.sections, survey.questions),
+    [survey.questions, survey.sections],
+  );
   const optionLabels = useMemo(
     () => optionText.split('\n').map((line) => line.trim()).filter(Boolean),
     [optionText],
   );
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleAddSection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setValidationError(null);
+    setSectionValidationError(null);
 
     if (!isDraft) {
-      setValidationError('Publiserte og lukkede skjemaer kan ikke endres her.');
+      setSectionValidationError(
+        'Publiserte og lukkede skjemaer kan ikke endres her.',
+      );
+      return;
+    }
+
+    if (!sectionTitle.trim()) {
+      setSectionValidationError('Seksjonen må ha en tittel.');
+      return;
+    }
+
+    try {
+      await addSection.mutateAsync({
+        surveyId: survey.id,
+        title: sectionTitle,
+        description: sectionDescription,
+      });
+    } catch {
+      return;
+    }
+
+    setSectionTitle('');
+    setSectionDescription('');
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setQuestionValidationError(null);
+
+    if (!isDraft) {
+      setQuestionValidationError(
+        'Publiserte og lukkede skjemaer kan ikke endres her.',
+      );
       return;
     }
 
     if (!prompt.trim()) {
-      setValidationError('Spørsmålet må ha en tekst.');
+      setQuestionValidationError('Spørsmålet må ha en tekst.');
       return;
     }
 
     if (type === 'multiple_choice' && optionLabels.length < 2) {
-      setValidationError('Flervalgsspørsmål må ha minst to alternativer.');
+      setQuestionValidationError(
+        'Flervalgsspørsmål må ha minst to alternativer.',
+      );
       return;
     }
 
     try {
       await addQuestion.mutateAsync({
         surveyId: survey.id,
+        sectionId: selectedSectionId,
         type,
         prompt,
         description,
@@ -139,6 +196,22 @@ function SurveyEditorContent({ survey }: { survey: SurveySummary & { questions: 
     }
   }
 
+  async function handleDeleteSection(section: SurveySection) {
+    const shouldDelete = window.confirm(
+      `Slette seksjonen "${section.title ?? 'Uten tittel'}"? Spørsmål flyttes til uten seksjon.`,
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      await deleteSection.mutateAsync(section.id);
+    } catch {
+      return;
+    }
+  }
+
   return (
     <>
       <div className="metric-grid">
@@ -157,9 +230,98 @@ function SurveyEditorContent({ survey }: { survey: SurveySummary & { questions: 
         </div>
       </Panel>
 
+      <Panel
+        title="Seksjoner"
+        subtitle={
+          survey.sections.length === 0
+            ? 'Valgfritt, men nyttig for lengre skjemaer'
+            : `${survey.sections.length} seksjoner`
+        }
+      >
+        <form className="form-stack" onSubmit={handleAddSection}>
+          <div className="form-grid form-grid--two">
+            <label>
+              Tittel
+              <input
+                type="text"
+                value={sectionTitle}
+                disabled={!isDraft || addSection.isPending}
+                placeholder="Om arbeidsmiljøet"
+                onChange={(event) => setSectionTitle(event.target.value)}
+              />
+            </label>
+            <label>
+              Beskrivelse
+              <input
+                type="text"
+                value={sectionDescription}
+                disabled={!isDraft || addSection.isPending}
+                placeholder="Kort intro til denne delen"
+                onChange={(event) => setSectionDescription(event.target.value)}
+              />
+            </label>
+          </div>
+          {sectionValidationError ? (
+            <div className="form-alert form-alert--error" role="alert">
+              {sectionValidationError}
+            </div>
+          ) : null}
+          {addSection.isError ? (
+            <div className="form-alert form-alert--error" role="alert">
+              {getErrorMessage(addSection.error)}
+            </div>
+          ) : null}
+          {deleteSection.isError ? (
+            <div className="form-alert form-alert--error" role="alert">
+              {getErrorMessage(deleteSection.error)}
+            </div>
+          ) : null}
+          <div className="form-actions">
+            <button
+              className="button button--secondary"
+              type="submit"
+              disabled={!isDraft || addSection.isPending}
+            >
+              <Layers2 size={18} aria-hidden="true" />
+              {addSection.isPending ? 'Legger til...' : 'Legg til seksjon'}
+            </button>
+          </div>
+        </form>
+
+        {survey.sections.length > 0 ? (
+          <div className="section-list">
+            {survey.sections.map((section) => (
+              <article className="section-card" key={section.id}>
+                <div>
+                  <h3>{section.title ?? 'Uten tittel'}</h3>
+                  {section.description ? <p>{section.description}</p> : null}
+                </div>
+                <button
+                  className="icon-button"
+                  type="button"
+                  disabled={!isDraft || deleteSection.isPending}
+                  aria-label={`Slett seksjonen ${
+                    section.title ?? 'uten tittel'
+                  }`}
+                  onClick={() => handleDeleteSection(section)}
+                >
+                  <Trash2 size={18} aria-hidden="true" />
+                </button>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </Panel>
+
       <Panel title="Legg til spørsmål">
         <form className="form-stack" onSubmit={handleSubmit}>
-          <div className="form-grid form-grid--two">
+          <div
+            className={
+              survey.sections.length > 0
+                ? 'form-grid'
+                : 'form-grid form-grid--two'
+            }
+          >
             <label>
               Spørsmålstype
               <select
@@ -172,6 +334,27 @@ function SurveyEditorContent({ survey }: { survey: SurveySummary & { questions: 
                 <option value="likert_1_5">Likert 1-5</option>
               </select>
             </label>
+            {survey.sections.length > 0 ? (
+              <label>
+                Seksjon
+                <select
+                  value={selectedSectionId ?? 'none'}
+                  disabled={!isDraft || addQuestion.isPending}
+                  onChange={(event) =>
+                    setSectionId(
+                      event.target.value === 'none' ? null : event.target.value,
+                    )
+                  }
+                >
+                  <option value="none">Uten seksjon</option>
+                  {survey.sections.map((section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.title ?? 'Uten tittel'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
               Spørsmål
               <input
@@ -226,9 +409,9 @@ function SurveyEditorContent({ survey }: { survey: SurveySummary & { questions: 
               </label>
             ) : null}
           </div>
-          {validationError ? (
+          {questionValidationError ? (
             <div className="form-alert form-alert--error" role="alert">
-              {validationError}
+              {questionValidationError}
             </div>
           ) : null}
           {addQuestion.isError ? (
@@ -263,15 +446,28 @@ function SurveyEditorContent({ survey }: { survey: SurveySummary & { questions: 
         }
       >
         <div className="question-list">
-          {survey.questions.map((question) => (
-            <QuestionCard
-              key={question.id}
-              question={question}
-              disabled={!isDraft || deleteQuestion.isPending}
-              onDelete={handleDelete}
-            />
+          {questionGroups.map((group) => (
+            <section className="question-group" key={group.id}>
+              <div className="question-group__header">
+                <h3>{group.title}</h3>
+                {group.description ? <p>{group.description}</p> : null}
+              </div>
+              {group.questions.map((question) => (
+                <QuestionCard
+                  key={question.id}
+                  question={question}
+                  disabled={!isDraft || deleteQuestion.isPending}
+                  onDelete={handleDelete}
+                />
+              ))}
+              {group.questions.length === 0 ? (
+                <div className="question-group__empty">
+                  Ingen spørsmål i denne seksjonen ennå.
+                </div>
+              ) : null}
+            </section>
           ))}
-          {survey.questions.length === 0 ? (
+          {survey.questions.length === 0 && survey.sections.length === 0 ? (
             <div className="empty-state">
               <ListChecks size={28} aria-hidden="true" />
               <p>Legg inn første spørsmål for å forme respondentflyten.</p>
@@ -332,6 +528,32 @@ function QuestionCard({
       </div>
     </article>
   );
+}
+
+function groupQuestionsBySection(
+  sections: SurveySection[],
+  questions: SurveyQuestion[],
+) {
+  const unsectionedQuestions = questions.filter(
+    (question) => question.sectionId === null,
+  );
+  const groups = sections.map((section) => ({
+    id: section.id,
+    title: section.title ?? 'Uten tittel',
+    description: section.description,
+    questions: questions.filter((question) => question.sectionId === section.id),
+  }));
+
+  if (unsectionedQuestions.length > 0 || sections.length === 0) {
+    groups.push({
+      id: 'unsectioned',
+      title: 'Uten seksjon',
+      description: null,
+      questions: unsectionedQuestions,
+    });
+  }
+
+  return groups;
 }
 
 const statusLabel = {

@@ -25,8 +25,8 @@ http://localhost:5173/**
 http://127.0.0.1:5173/**
 ```
 
-If Vite chooses another local port, add that port too. For GitHub Pages, add the
-final `https://<user>.github.io/<repo>/**` URL.
+If Vite chooses another local port, add that port too. For the deployed custom
+domain, add `https://svario.no/**`.
 
 Start the dev server:
 
@@ -49,8 +49,8 @@ npm run build:pages
 ## GitHub Pages
 
 The repository deploys the web app from `.github/workflows/deploy-pages.yml`.
-For the project site at `kapsdevelopment/svario`, Vite builds with base path
-`/svario/`.
+The Pages site uses the custom domain `svario.no`, so Vite builds with root
+base path `/`.
 
 In GitHub, configure:
 
@@ -62,5 +62,5 @@ In GitHub, configure:
 In Supabase Auth Redirect URLs, add:
 
 ```text
-https://kapsdevelopment.github.io/svario/**
+https://svario.no/**
 ```

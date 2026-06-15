@@ -1,9 +1,11 @@
 import type {
+  AddSurveySectionInput,
   AddSurveyQuestionInput,
   CreateSurveyDraftInput,
   SurveyEditor,
   SurveyQuestion,
   SurveyQuestionOption,
+  SurveySection,
   SurveySummary,
 } from '../../domain/surveys/survey';
 import { supabase } from '../supabase/client';
@@ -37,6 +39,11 @@ type QuestionRow = Pick<
   | 'sort_order'
 >;
 
+type SectionRow = Pick<
+  Tables<'survey_sections'>,
+  'id' | 'survey_id' | 'title' | 'description' | 'sort_order'
+>;
+
 type QuestionOptionRow = Pick<
   Tables<'question_options'>,
   'id' | 'question_id' | 'label' | 'value' | 'sort_order'
@@ -44,6 +51,7 @@ type QuestionOptionRow = Pick<
 
 const surveySummarySelect =
   'id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
+const sectionSelect = 'id, survey_id, title, description, sort_order';
 const questionSelect =
   'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, sort_order';
 const questionOptionSelect = 'id, question_id, label, value, sort_order';
@@ -109,6 +117,16 @@ export async function getSurveyEditor(surveyId: string): Promise<SurveyEditor> {
     throw surveyError;
   }
 
+  const { data: sections, error: sectionsError } = await client
+    .from('survey_sections')
+    .select(sectionSelect)
+    .eq('survey_id', surveyId)
+    .order('sort_order', { ascending: true });
+
+  if (sectionsError) {
+    throw sectionsError;
+  }
+
   const { data: questions, error: questionsError } = await client
     .from('questions')
     .select(questionSelect)
@@ -124,10 +142,51 @@ export async function getSurveyEditor(surveyId: string): Promise<SurveyEditor> {
 
   return {
     ...mapSurveySummary(survey),
+    sections: (sections ?? []).map(mapSection),
     questions: (questions ?? []).map((question) =>
       mapQuestion(question, options.get(question.id) ?? []),
     ),
   };
+}
+
+export async function addSurveySection(
+  input: AddSurveySectionInput,
+): Promise<SurveySection> {
+  const client = requireSurveyClient();
+  const title = input.title.trim();
+
+  if (!title) {
+    throw new Error('Seksjonen må ha en tittel.');
+  }
+
+  const { data, error } = await client
+    .from('survey_sections')
+    .insert({
+      survey_id: input.surveyId,
+      title,
+      description: normalizeOptionalText(input.description),
+      sort_order: await getNextSectionSortOrder(input.surveyId),
+    })
+    .select(sectionSelect)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapSection(data);
+}
+
+export async function deleteSurveySection(sectionId: string): Promise<void> {
+  const client = requireSurveyClient();
+  const { error } = await client
+    .from('survey_sections')
+    .delete()
+    .eq('id', sectionId);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function addSurveyQuestion(
@@ -150,6 +209,7 @@ export async function addSurveyQuestion(
   const sortOrder = await getNextQuestionSortOrder(input.surveyId);
   const questionPayload: TablesInsert<'questions'> = {
     survey_id: input.surveyId,
+    section_id: input.sectionId,
     type: input.type,
     prompt,
     description: normalizeOptionalText(input.description),
@@ -199,6 +259,16 @@ function mapSurveySummary(row: SurveyRow): SurveySummary {
     publishedAt: row.published_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+function mapSection(row: SectionRow): SurveySection {
+  return {
+    id: row.id,
+    surveyId: row.survey_id,
+    title: row.title,
+    description: row.description,
+    sortOrder: row.sort_order,
   };
 }
 
@@ -262,6 +332,23 @@ async function getNextQuestionSortOrder(surveyId: string) {
   const client = requireSurveyClient();
   const { data, error } = await client
     .from('questions')
+    .select('sort_order')
+    .eq('survey_id', surveyId)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? data.sort_order + 1 : 0;
+}
+
+async function getNextSectionSortOrder(surveyId: string) {
+  const client = requireSurveyClient();
+  const { data, error } = await client
+    .from('survey_sections')
     .select('sort_order')
     .eq('survey_id', surveyId)
     .order('sort_order', { ascending: false })

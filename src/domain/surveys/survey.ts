@@ -27,6 +27,14 @@ export type CreateSurveyDraftInput = {
   endsAt: string | null;
 };
 
+export type SurveySection = {
+  id: string;
+  surveyId: string;
+  title: string | null;
+  description: string | null;
+  sortOrder: number;
+};
+
 export type SurveyQuestionOption = {
   id: string;
   questionId: string;
@@ -49,11 +57,19 @@ export type SurveyQuestion = {
 };
 
 export type SurveyEditor = SurveySummary & {
+  sections: SurveySection[];
   questions: SurveyQuestion[];
+};
+
+export type AddSurveySectionInput = {
+  surveyId: string;
+  title: string;
+  description: string | null;
 };
 
 export type AddSurveyQuestionInput = {
   surveyId: string;
+  sectionId: string | null;
   type: QuestionType;
   prompt: string;
   description: string | null;
