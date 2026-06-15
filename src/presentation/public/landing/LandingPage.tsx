@@ -52,6 +52,7 @@ export function LandingPage() {
             <button onClick={() => scrollToSection('produkt')} type="button">
               Produkt
             </button>
+            <Link to={routes.privacy}>Personvern</Link>
             <Link to={routes.security}>Sikkerhet</Link>
             <Link className="button button--secondary" to={routes.login}>
               Logg inn
@@ -125,6 +126,20 @@ export function LandingPage() {
         <Link className="button button--primary" to={routes.security}>
           Les sikkerhetssiden
           <LockKeyhole size={18} aria-hidden="true" />
+        </Link>
+      </section>
+
+      <section className="marketing-data-promise">
+        <div>
+          <p className="eyebrow">Databruk</p>
+          <h2>Dataene dine er ikke produktet vårt</h2>
+          <p>
+            Svario skal ikke selge data, vise skjult markedsføring eller bruke
+            besvarelser til andre formål enn selve spørreskjematjenesten.
+          </p>
+        </div>
+        <Link className="button button--secondary" to={routes.privacy}>
+          Les personvernloftet
         </Link>
       </section>
 

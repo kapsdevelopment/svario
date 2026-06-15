@@ -1081,6 +1081,7 @@ select {
 .marketing-intro,
 .marketing-benefits,
 .marketing-trust,
+.marketing-data-promise,
 .marketing-preview {
   width: min(100% - 56px, 1120px);
   margin: 0 auto;
@@ -1205,6 +1206,26 @@ select {
   color: #183a34;
 }
 
+.marketing-data-promise {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  border-top: 1px solid #d9d3c7;
+  margin-bottom: 48px;
+  padding-top: 28px;
+}
+
+.marketing-data-promise p:not(.eyebrow) {
+  max-width: 690px;
+  margin-top: 12px;
+  color: #33443e;
+}
+
+.marketing-data-promise .button {
+  flex: 0 0 auto;
+}
+
 .marketing-preview {
   padding-bottom: 54px;
 }
@@ -1231,6 +1252,14 @@ select {
   background:
     linear-gradient(180deg, rgba(244, 241, 234, 0.92), rgba(244, 241, 234, 0.98) 520px),
     url("../assets/images/svario-coastal-background.png") top center / cover no-repeat;
+  color: #17201d;
+}
+
+.privacy-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(244, 241, 234, 0.94), rgba(244, 241, 234, 0.98) 560px),
+    url("../assets/images/svario-pine-forest-background.png") top center / cover no-repeat;
   color: #17201d;
 }
 
@@ -1278,9 +1307,13 @@ select {
 }
 
 .security-hero,
+.privacy-hero,
 .security-section,
+.privacy-section,
 .security-control-grid,
+.privacy-promise-grid,
 .security-band,
+.privacy-band,
 .security-footer {
   width: min(100% - 56px, 1120px);
   margin: 0 auto;
@@ -1293,6 +1326,25 @@ select {
   align-items: end;
   gap: 32px;
   padding: 84px 0 52px;
+}
+
+.privacy-hero {
+  display: grid;
+  min-height: 430px;
+  align-items: end;
+  padding: 82px 0 52px;
+}
+
+.privacy-hero h1 {
+  max-width: 780px;
+  font-size: 3.4rem;
+}
+
+.privacy-hero p:not(.eyebrow) {
+  max-width: 740px;
+  margin-top: 18px;
+  color: #33443e;
+  font-size: 1.12rem;
 }
 
 .security-hero__content h1 {
@@ -1394,6 +1446,13 @@ select {
   padding: 0 0 48px;
 }
 
+.privacy-promise-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 0 48px;
+}
+
 .security-control {
   min-height: 244px;
   border: 1px solid #d9d3c7;
@@ -1403,7 +1462,20 @@ select {
   padding: 20px;
 }
 
+.privacy-promise {
+  min-height: 250px;
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.92);
+  box-shadow: 0 16px 38px rgba(30, 43, 37, 0.07);
+  padding: 20px;
+}
+
 .security-control svg {
+  color: #4f6c5d;
+}
+
+.privacy-promise svg {
   color: #4f6c5d;
 }
 
@@ -1411,12 +1483,23 @@ select {
   margin-top: 18px;
 }
 
+.privacy-promise h2 {
+  margin-top: 18px;
+  font-size: 1.25rem;
+}
+
 .security-control p {
   margin-top: 10px;
   color: #596962;
 }
 
+.privacy-promise p {
+  margin-top: 10px;
+  color: #596962;
+}
+
 .security-checklist,
+.privacy-no-list,
 .security-status-list,
 .security-source-list {
   display: grid;
@@ -1424,6 +1507,7 @@ select {
 }
 
 .security-checklist div,
+.privacy-no-list div,
 .security-status-list div,
 .security-source-list a {
   display: grid;
@@ -1436,6 +1520,7 @@ select {
 }
 
 .security-checklist div:first-child,
+.privacy-no-list div:first-child,
 .security-status-list div:first-child,
 .security-source-list a:first-child {
   border-top: 0;
@@ -1444,6 +1529,32 @@ select {
 
 .security-checklist svg {
   color: #4f6c5d;
+}
+
+.privacy-no-list svg {
+  color: #4f6c5d;
+}
+
+.privacy-section {
+  border-top: 1px solid #d9d3c7;
+  padding: 48px 0;
+}
+
+.privacy-section--split {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.68fr) minmax(0, 1fr);
+  gap: 48px;
+}
+
+.privacy-section h2,
+.privacy-band h2 {
+  font-size: 1.45rem;
+}
+
+.privacy-copy {
+  display: grid;
+  gap: 16px;
+  color: #33443e;
 }
 
 .security-band {
@@ -1460,13 +1571,42 @@ select {
   padding: 28px;
 }
 
+.privacy-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(24, 58, 52, 0.95), rgba(61, 86, 78, 0.9)),
+    #183a34;
+  color: #fffdf8;
+  margin-bottom: 48px;
+  padding: 28px;
+}
+
 .security-band .eyebrow {
+  color: #d8a17d;
+}
+
+.privacy-band .eyebrow {
   color: #d8a17d;
 }
 
 .security-band p {
   margin-top: 12px;
   color: rgba(255, 253, 248, 0.78);
+}
+
+.privacy-band p {
+  max-width: 760px;
+  margin-top: 12px;
+  color: rgba(255, 253, 248, 0.78);
+}
+
+.privacy-band svg {
+  flex: 0 0 auto;
+  color: #d8a17d;
 }
 
 .security-status-list div {
@@ -1581,7 +1721,7 @@ select {
   .security-topbar__nav,
   .marketing-topbar__nav {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -1614,6 +1754,7 @@ select {
   .marketing-intro,
   .marketing-benefits,
   .marketing-trust,
+  .marketing-data-promise,
   .marketing-preview {
     width: min(100% - 40px, 1120px);
   }
@@ -1653,14 +1794,24 @@ select {
     display: grid;
   }
 
-  .marketing-trust .button {
+  .marketing-data-promise {
+    display: grid;
+    gap: 18px;
+  }
+
+  .marketing-trust .button,
+  .marketing-data-promise .button {
     width: 100%;
   }
 
   .security-hero,
+  .privacy-hero,
   .security-section,
+  .privacy-section,
   .security-control-grid,
+  .privacy-promise-grid,
   .security-band,
+  .privacy-band,
   .security-footer {
     width: min(100% - 40px, 1120px);
   }
@@ -1679,18 +1830,38 @@ select {
     font-size: 1rem;
   }
 
+  .privacy-hero {
+    min-height: auto;
+    padding: 52px 0 38px;
+  }
+
+  .privacy-hero h1 {
+    font-size: 2.25rem;
+  }
+
+  .privacy-hero p:not(.eyebrow) {
+    font-size: 1rem;
+  }
+
   .security-section--split,
+  .privacy-section--split,
   .security-band {
     grid-template-columns: 1fr;
     gap: 22px;
   }
 
-  .security-control-grid {
+  .security-control-grid,
+  .privacy-promise-grid {
     grid-template-columns: 1fr;
   }
 
-  .security-control {
+  .security-control,
+  .privacy-promise {
     min-height: auto;
+  }
+
+  .privacy-band {
+    display: grid;
   }
 
   .security-footer {

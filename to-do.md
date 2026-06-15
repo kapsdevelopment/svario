@@ -30,6 +30,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 
 - [x] Lage første offentlige sikkerhetsside for Svario.
 - [x] Lage første offentlig landingsside og koble sikkerhetssiden inn som underside.
+- [x] Lage offentlig personvern-/databrukside for Svario sitt datalofte.
 - [ ] Lage en lett `SECURITY.md`/trust-center-plan som forklarer sikkerhetsmodell, datalagring, RLS, tilgangsstyring, backup, logging, hendelseshåndtering og kundens/personvernansvarliges ansvar.
 - [ ] Dokumentere Supabase-region, DPA, underleverandører, kryptering i transitt og kryptering av lagrede data før produksjonssetting.
 - [ ] Avklare produksjonskrav for admin-auth: vurdere/aktivere MFA for adminer, e-postbekreftelse, secure password change og korrekte production redirect URLs. MFA skal ikke blokkere utviklingsløpet før produksjonssetting.
@@ -89,7 +90,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 ## 8. Eksport
 
 - [x] Lage CSV-eksport av resultater.
-- [ ] Lage enkel PDF-rapport.
+- [x] Lage enkel PDF-rapport.
 - [x] Sikre at anonym eksport ikke inneholder identifiserende respondentfelt.
 - [ ] Teste eksport med norske tegn.
 

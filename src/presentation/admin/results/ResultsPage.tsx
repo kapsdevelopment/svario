@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, MessageSquareText } from 'lucide-react';
+import { ArrowLeft, Download, FileText, MessageSquareText } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Bar,
@@ -22,6 +22,7 @@ import type {
   SurveyQuestionResult,
   SurveyResults,
 } from '../../../domain/surveys/survey';
+import { downloadBlobFile } from '../../../infrastructure/files/downloadBlobFile';
 import { downloadTextFile } from '../../../infrastructure/files/downloadTextFile';
 import { Panel } from '../../shared/components/Panel';
 
@@ -77,6 +78,16 @@ function ResultsContent({ results }: { results: SurveyResults }) {
     });
   }
 
+  async function handleDownloadPdf() {
+    const { buildSurveyResultsPdf, createSurveyResultsPdfFileName } =
+      await import('../../../application/surveys/exportSurveyResultsPdf');
+
+    downloadBlobFile({
+      blob: buildSurveyResultsPdf(results),
+      fileName: createSurveyResultsPdfFileName(results),
+    });
+  }
+
   return (
     <>
       <div className="metric-grid">
@@ -110,19 +121,30 @@ function ResultsContent({ results }: { results: SurveyResults }) {
         title="Eksport"
         subtitle={
           results.responseCount === 0
-            ? 'CSV blir tilgjengelig når skjemaet har svar'
-            : 'Last ned rådata med én rad per besvarelse'
+            ? 'Eksport blir tilgjengelig når skjemaet har svar'
+            : 'Last ned rådata eller en enkel rapport'
         }
         action={
-          <button
-            className="button button--secondary"
-            type="button"
-            disabled={results.responseCount === 0}
-            onClick={handleDownloadCsv}
-          >
-            <Download size={18} aria-hidden="true" />
-            Last ned CSV
-          </button>
+          <div className="inline-actions">
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={results.responseCount === 0}
+              onClick={handleDownloadCsv}
+            >
+              <Download size={18} aria-hidden="true" />
+              CSV
+            </button>
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={results.responseCount === 0}
+              onClick={handleDownloadPdf}
+            >
+              <FileText size={18} aria-hidden="true" />
+              PDF
+            </button>
+          </div>
         }
       />
     </>

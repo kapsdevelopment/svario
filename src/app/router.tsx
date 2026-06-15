@@ -20,6 +20,11 @@ const LandingPage = lazy(() =>
     default: module.LandingPage,
   })),
 );
+const PrivacyPage = lazy(() =>
+  import('../presentation/public/privacy/PrivacyPage').then((module) => ({
+    default: module.PrivacyPage,
+  })),
+);
 const ProfilePage = lazy(() =>
   import('../presentation/admin/profile/ProfilePage').then((module) => ({
     default: module.ProfilePage,
@@ -64,6 +69,10 @@ export const router = createHashRouter([
   {
     path: routes.login,
     element: page(<LoginPage />),
+  },
+  {
+    path: routes.privacy,
+    element: page(<PrivacyPage />),
   },
   {
     path: routes.security,

@@ -95,6 +95,7 @@ export function SecurityPage() {
             Status
           </button>
           <Link to={routes.home}>Forside</Link>
+          <Link to={routes.privacy}>Personvern</Link>
           <Link className="button button--secondary" to={routes.login}>
             Logg inn
           </Link>
