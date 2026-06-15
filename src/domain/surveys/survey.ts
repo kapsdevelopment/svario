@@ -2,7 +2,17 @@ export type SurveyStatus = 'draft' | 'published' | 'closed';
 
 export type SurveyResponseMode = 'anonymous' | 'identified';
 
-export type QuestionType = 'multiple_choice' | 'free_text' | 'likert_1_5';
+export type QuestionType = 'multiple_choice' | 'free_text' | 'likert_scale';
+
+export const questionScaleDefaults = {
+  min: 1,
+  max: 5,
+} as const;
+
+export const questionScaleLimits = {
+  min: 0,
+  max: 10,
+} as const;
 
 export type SurveySummary = {
   id: string;
@@ -52,11 +62,18 @@ export type SurveyQuestion = {
   description: string | null;
   isRequired: boolean;
   allowMultiple: boolean;
+  scaleMin: number | null;
+  scaleMax: number | null;
   sortOrder: number;
   options: SurveyQuestionOption[];
 };
 
 export type SurveyEditor = SurveySummary & {
+  sections: SurveySection[];
+  questions: SurveyQuestion[];
+};
+
+export type PublishedSurvey = Omit<SurveySummary, 'createdAt' | 'updatedAt'> & {
   sections: SurveySection[];
   questions: SurveyQuestion[];
 };
@@ -75,5 +92,76 @@ export type AddSurveyQuestionInput = {
   description: string | null;
   isRequired: boolean;
   allowMultiple: boolean;
+  scaleMin?: number | null;
+  scaleMax?: number | null;
   optionLabels: string[];
 };
+
+export type SubmitSurveyAnswerInput = {
+  questionId: string;
+  freeText?: string | null;
+  likertValue?: number | null;
+  optionIds?: string[];
+};
+
+export type SubmitSurveyResponseInput = {
+  surveySlug: string;
+  answers: SubmitSurveyAnswerInput[];
+  respondentName: string | null;
+  respondentEmail: string | null;
+  metadata?: Record<string, string>;
+};
+
+export type SurveyChoiceResult = {
+  optionId: string;
+  label: string;
+  count: number;
+  percentage: number;
+};
+
+export type SurveyLikertResult = {
+  value: number;
+  count: number;
+  percentage: number;
+};
+
+export type SurveyFreeTextResult = {
+  answerId: string;
+  responseId: string;
+  submittedAt: string;
+  respondentLabel: string | null;
+  text: string;
+};
+
+export type SurveyQuestionResult = {
+  question: SurveyQuestion;
+  answeredCount: number;
+  skippedCount: number;
+  choiceResults: SurveyChoiceResult[];
+  likertAverage: number | null;
+  likertResults: SurveyLikertResult[];
+  freeTextResults: SurveyFreeTextResult[];
+};
+
+export type SurveyResults = SurveySummary & {
+  sections: SurveySection[];
+  responseCount: number;
+  lastSubmittedAt: string | null;
+  questionResults: SurveyQuestionResult[];
+};
+
+export function getQuestionScaleValues(
+  question: Pick<SurveyQuestion, 'scaleMax' | 'scaleMin'>,
+) {
+  return createScaleValues(
+    question.scaleMin ?? questionScaleDefaults.min,
+    question.scaleMax ?? questionScaleDefaults.max,
+  );
+}
+
+export function createScaleValues(scaleMin: number, scaleMax: number) {
+  return Array.from(
+    { length: Math.max(0, scaleMax - scaleMin + 1) },
+    (_, index) => scaleMin + index,
+  );
+}

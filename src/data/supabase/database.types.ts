@@ -286,6 +286,8 @@ export type Database = {
           id: string
           is_required: boolean
           prompt: string
+          scale_max: number | null
+          scale_min: number | null
           section_id: string | null
           sort_order: number
           survey_id: string
@@ -299,6 +301,8 @@ export type Database = {
           id?: string
           is_required?: boolean
           prompt: string
+          scale_max?: number | null
+          scale_min?: number | null
           section_id?: string | null
           sort_order?: number
           survey_id: string
@@ -312,6 +316,8 @@ export type Database = {
           id?: string
           is_required?: boolean
           prompt?: string
+          scale_max?: number | null
+          scale_min?: number | null
           section_id?: string | null
           sort_order?: number
           survey_id?: string
@@ -588,10 +594,24 @@ export type Database = {
         }
         Returns: string
       }
+      submit_survey_response: {
+        Args: {
+          p_answers: Json
+          p_metadata?: Json
+          p_respondent_email?: string | null
+          p_respondent_name?: string | null
+          p_survey_slug: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_status: "active" | "blocked" | "pending_delete" | "deleted"
-      question_type: "multiple_choice" | "free_text" | "likert_1_5"
+      question_type:
+        | "multiple_choice"
+        | "free_text"
+        | "likert_1_5"
+        | "likert_scale"
       survey_response_mode: "anonymous" | "identified"
       survey_status: "draft" | "published" | "closed"
     }
@@ -725,7 +745,12 @@ export const Constants = {
   public: {
     Enums: {
       account_status: ["active", "blocked", "pending_delete", "deleted"],
-      question_type: ["multiple_choice", "free_text", "likert_1_5"],
+      question_type: [
+        "multiple_choice",
+        "free_text",
+        "likert_1_5",
+        "likert_scale",
+      ],
       survey_response_mode: ["anonymous", "identified"],
       survey_status: ["draft", "published", "closed"],
     },

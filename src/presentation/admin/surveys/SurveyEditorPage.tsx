@@ -1,9 +1,12 @@
 import {
   ArrowLeft,
-  CheckCircle2,
+  Copy,
+  ExternalLink,
   Layers2,
   ListChecks,
   Plus,
+  Send,
+  SlidersHorizontal,
   Trash2,
   Type,
 } from 'lucide-react';
@@ -15,21 +18,30 @@ import { useAddSurveyQuestion } from '../../../application/surveys/useAddSurveyQ
 import { useAddSurveySection } from '../../../application/surveys/useAddSurveySection';
 import { useDeleteSurveyQuestion } from '../../../application/surveys/useDeleteSurveyQuestion';
 import { useDeleteSurveySection } from '../../../application/surveys/useDeleteSurveySection';
+import { usePublishSurvey } from '../../../application/surveys/usePublishSurvey';
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
-import type {
-  QuestionType,
-  SurveyEditor,
-  SurveyQuestion,
-  SurveySection,
-  SurveySummary,
+import {
+  questionScaleDefaults,
+  questionScaleLimits,
+  type QuestionType,
+  type SurveyEditor,
+  type SurveyQuestion,
+  type SurveySection,
+  type SurveySummary,
 } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
 const questionTypeLabels = {
   multiple_choice: 'Flervalg',
   free_text: 'Fritekst',
-  likert_1_5: 'Likert 1-5',
+  likert_scale: 'Skala',
 } satisfies Record<QuestionType, string>;
+
+const scalePresets = [
+  { label: 'Likert 1-5', min: 1, max: 5 },
+  { label: 'Likert 1-7', min: 1, max: 7 },
+  { label: 'Skala 1-4', min: 1, max: 4 },
+] as const;
 
 export function SurveyEditorPage() {
   const { surveyId } = useParams();
@@ -78,6 +90,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const addQuestion = useAddSurveyQuestion(survey.id);
   const deleteSection = useDeleteSurveySection(survey.id);
   const deleteQuestion = useDeleteSurveyQuestion(survey.id);
+  const publishSurvey = usePublishSurvey(survey.id);
 
   const [sectionTitle, setSectionTitle] = useState('');
   const [sectionDescription, setSectionDescription] = useState('');
@@ -88,14 +101,25 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [isRequired, setIsRequired] = useState(true);
   const [allowMultiple, setAllowMultiple] = useState(false);
   const [optionText, setOptionText] = useState('Ja\nNei');
+  const [scaleMin, setScaleMin] = useState<number>(questionScaleDefaults.min);
+  const [scaleMax, setScaleMax] = useState<number>(questionScaleDefaults.max);
   const [sectionValidationError, setSectionValidationError] = useState<
     string | null
   >(null);
   const [questionValidationError, setQuestionValidationError] = useState<
     string | null
   >(null);
+  const [publishValidationError, setPublishValidationError] = useState<
+    string | null
+  >(null);
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
 
-  const isDraft = survey.status === 'draft';
+  const currentStatus = publishSurvey.data?.status ?? survey.status;
+  const publishedAt = publishSurvey.data?.publishedAt ?? survey.publishedAt;
+  const isDraft = currentStatus === 'draft';
+  const isPublished = currentStatus === 'published';
+  const canPublish = isDraft && survey.questions.length > 0;
+  const shareUrl = useMemo(() => createShareUrl(survey.slug), [survey.slug]);
   const selectedSectionId = survey.sections.some((section) => section.id === sectionId)
     ? sectionId
     : null;
@@ -106,6 +130,13 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const optionLabels = useMemo(
     () => optionText.split('\n').map((line) => line.trim()).filter(Boolean),
     [optionText],
+  );
+  const selectedScalePreset = useMemo(
+    () =>
+      scalePresets.find(
+        (preset) => preset.min === scaleMin && preset.max === scaleMax,
+      ),
+    [scaleMax, scaleMin],
   );
 
   async function handleAddSection(event: FormEvent<HTMLFormElement>) {
@@ -138,6 +169,19 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     setSectionDescription('');
   }
 
+  function handleScalePresetChange(value: string) {
+    const preset = scalePresets.find(
+      (currentPreset) => getScalePresetValue(currentPreset) === value,
+    );
+
+    if (!preset) {
+      return;
+    }
+
+    setScaleMin(preset.min);
+    setScaleMax(preset.max);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setQuestionValidationError(null);
@@ -161,6 +205,15 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       return;
     }
 
+    if (type === 'likert_scale') {
+      const scaleError = getScaleValidationError(scaleMin, scaleMax);
+
+      if (scaleError) {
+        setQuestionValidationError(scaleError);
+        return;
+      }
+    }
+
     try {
       await addQuestion.mutateAsync({
         surveyId: survey.id,
@@ -170,6 +223,8 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         description,
         isRequired,
         allowMultiple,
+        scaleMin: type === 'likert_scale' ? scaleMin : null,
+        scaleMax: type === 'likert_scale' ? scaleMax : null,
         optionLabels,
       });
     } catch {
@@ -180,6 +235,55 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     setDescription('');
     setAllowMultiple(false);
     setOptionText('Ja\nNei');
+  }
+
+  async function handlePublish() {
+    setPublishValidationError(null);
+    setPublishMessage(null);
+
+    if (!isDraft) {
+      setPublishValidationError('Bare utkast kan publiseres her.');
+      return;
+    }
+
+    if (survey.questions.length === 0) {
+      setPublishValidationError(
+        'Skjemaet må ha minst ett spørsmål før publisering.',
+      );
+      return;
+    }
+
+    const shouldPublish = window.confirm(
+      'Publisere skjemaet nå? Respondentlenken blir aktiv med en gang.',
+    );
+
+    if (!shouldPublish) {
+      return;
+    }
+
+    try {
+      await publishSurvey.mutateAsync();
+      setPublishMessage('Skjemaet er publisert. Lenken er aktiv.');
+    } catch {
+      return;
+    }
+  }
+
+  async function handleCopyShareUrl() {
+    setPublishValidationError(null);
+    setPublishMessage(null);
+
+    if (!navigator.clipboard) {
+      setPublishValidationError('Kopiering støttes ikke i denne nettleseren.');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setPublishMessage('Lenken er kopiert.');
+    } catch {
+      setPublishValidationError('Kunne ikke kopiere lenken automatisk.');
+    }
   }
 
   async function handleDelete(question: SurveyQuestion) {
@@ -215,7 +319,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   return (
     <>
       <div className="metric-grid">
-        <Panel title="Status" subtitle={statusLabel[survey.status]} />
+        <Panel title="Status" subtitle={statusLabel[currentStatus]} />
         <Panel title="Besvarelser" subtitle={responseModeLabel[survey.responseMode]} />
         <Panel title="Spørsmål" subtitle={`${survey.questions.length} totalt`} />
       </div>
@@ -223,11 +327,93 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       <Panel title="Grunninfo" subtitle={formatSurveyWindow(survey)}>
         {survey.description ? <p>{survey.description}</p> : null}
         <div className="status-row">
-          <span className={`status-pill status-pill--${survey.status}`}>
-            {statusLabel[survey.status]}
+          <span className={`status-pill status-pill--${currentStatus}`}>
+            {statusLabel[currentStatus]}
           </span>
           <span>{survey.slug}</span>
         </div>
+      </Panel>
+
+      <Panel
+        title="Publisering"
+        subtitle={
+          isPublished
+            ? 'Delbar lenke er aktiv'
+            : 'Publiser når skjemaet er klart'
+        }
+      >
+        <div className="publish-block">
+          <div className="publish-block__intro">
+            <p>
+              {isPublished
+                ? 'Skjemaet kan nå åpnes av respondenter med lenken.'
+                : 'Utkast er kun synlig i admin. Publisering låser denne første versjonen for respondenter.'}
+            </p>
+            {publishedAt ? (
+              <span>Publisert {formatDateTime(publishedAt)}</span>
+            ) : null}
+          </div>
+
+          {isPublished ? (
+            <div className="share-link-row">
+              <input
+                aria-label="Delbar respondentlenke"
+                readOnly
+                value={shareUrl}
+              />
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Kopier respondentlenke"
+                onClick={handleCopyShareUrl}
+              >
+                <Copy size={18} aria-hidden="true" />
+              </button>
+              <a
+                className="icon-button"
+                href={shareUrl}
+                rel="noreferrer"
+                target="_blank"
+                aria-label="Åpne respondentlenke"
+              >
+                <ExternalLink size={18} aria-hidden="true" />
+              </a>
+            </div>
+          ) : (
+            <div className="form-actions">
+              <button
+                className="button button--primary"
+                type="button"
+                disabled={!canPublish || publishSurvey.isPending}
+                onClick={handlePublish}
+              >
+                <Send size={18} aria-hidden="true" />
+                {publishSurvey.isPending ? 'Publiserer...' : 'Publiser skjema'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {isDraft && survey.questions.length === 0 ? (
+          <div className="form-alert form-alert--error" role="alert">
+            Legg til minst ett spørsmål før publisering.
+          </div>
+        ) : null}
+        {publishValidationError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {publishValidationError}
+          </div>
+        ) : null}
+        {publishSurvey.isError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {getErrorMessage(publishSurvey.error)}
+          </div>
+        ) : null}
+        {publishMessage ? (
+          <div className="form-alert form-alert--success" role="status">
+            {publishMessage}
+          </div>
+        ) : null}
       </Panel>
 
       <Panel
@@ -331,7 +517,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               >
                 <option value="multiple_choice">Flervalg</option>
                 <option value="free_text">Fritekst</option>
-                <option value="likert_1_5">Likert 1-5</option>
+                <option value="likert_scale">Skala</option>
               </select>
             </label>
             {survey.sections.length > 0 ? (
@@ -386,6 +572,55 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 onChange={(event) => setOptionText(event.target.value)}
               />
             </label>
+          ) : null}
+          {type === 'likert_scale' ? (
+            <div className="form-grid">
+              <label>
+                Hurtigvalg
+                <select
+                  value={
+                    selectedScalePreset
+                      ? getScalePresetValue(selectedScalePreset)
+                      : 'custom'
+                  }
+                  disabled={!isDraft || addQuestion.isPending}
+                  onChange={(event) => handleScalePresetChange(event.target.value)}
+                >
+                  {scalePresets.map((preset) => (
+                    <option key={getScalePresetValue(preset)} value={getScalePresetValue(preset)}>
+                      {preset.label}
+                    </option>
+                  ))}
+                  <option value="custom">Egendefinert</option>
+                </select>
+              </label>
+              <label>
+                Fra
+                <input
+                  type="number"
+                  min={questionScaleLimits.min}
+                  max={questionScaleLimits.max}
+                  value={scaleMin}
+                  disabled={!isDraft || addQuestion.isPending}
+                  onChange={(event) =>
+                    setScaleMin(parseScaleInput(event.target.value, scaleMin))
+                  }
+                />
+              </label>
+              <label>
+                Til
+                <input
+                  type="number"
+                  min={questionScaleLimits.min}
+                  max={questionScaleLimits.max}
+                  value={scaleMax}
+                  disabled={!isDraft || addQuestion.isPending}
+                  onChange={(event) =>
+                    setScaleMax(parseScaleInput(event.target.value, scaleMax))
+                  }
+                />
+              </label>
+            </div>
           ) : null}
           <div className="checkbox-row">
             <label>
@@ -493,8 +728,8 @@ function QuestionCard({
       <div className="question-card__icon" aria-hidden="true">
         {question.type === 'free_text' ? (
           <Type size={20} />
-        ) : question.type === 'likert_1_5' ? (
-          <CheckCircle2 size={20} />
+        ) : question.type === 'likert_scale' ? (
+          <SlidersHorizontal size={20} />
         ) : (
           <ListChecks size={20} />
         )}
@@ -516,6 +751,9 @@ function QuestionCard({
         <div className="status-row">
           <span>{questionTypeLabels[question.type]}</span>
           <span>{question.isRequired ? 'Påkrevd' : 'Valgfri'}</span>
+          {question.type === 'likert_scale' ? (
+            <span>{formatQuestionScale(question)}</span>
+          ) : null}
           {question.allowMultiple ? <span>Flere valg</span> : null}
         </div>
         {question.options.length > 0 ? (
@@ -556,6 +794,41 @@ function groupQuestionsBySection(
   return groups;
 }
 
+function getScalePresetValue(preset: (typeof scalePresets)[number]) {
+  return `${preset.min}:${preset.max}`;
+}
+
+function parseScaleInput(value: string, fallback: number) {
+  if (value.trim() === '') {
+    return fallback;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+}
+
+function getScaleValidationError(scaleMin: number, scaleMax: number) {
+  if (!Number.isInteger(scaleMin) || !Number.isInteger(scaleMax)) {
+    return 'Skalaen må bruke hele tall.';
+  }
+
+  if (scaleMin < questionScaleLimits.min || scaleMax > questionScaleLimits.max) {
+    return `Skalaen må være mellom ${questionScaleLimits.min} og ${questionScaleLimits.max}.`;
+  }
+
+  if (scaleMin >= scaleMax) {
+    return 'Skalaen må ha lavere minimumsverdi enn maksimumsverdi.';
+  }
+
+  return null;
+}
+
+function formatQuestionScale(question: SurveyQuestion) {
+  const scaleMin = question.scaleMin ?? questionScaleDefaults.min;
+  const scaleMax = question.scaleMax ?? questionScaleDefaults.max;
+  return `Skala ${scaleMin}-${scaleMax}`;
+}
+
 const statusLabel = {
   draft: 'Utkast',
   published: 'Publisert',
@@ -589,6 +862,26 @@ function formatDate(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('nb-NO', {
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+function createShareUrl(slug: string) {
+  const respondentPath = routes.respondent(slug);
+
+  if (typeof window === 'undefined') {
+    return `#${respondentPath}`;
+  }
+
+  return `${window.location.origin}${window.location.pathname}#${respondentPath}`;
 }
 
 function getErrorMessage(error: unknown) {

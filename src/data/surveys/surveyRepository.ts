@@ -1,15 +1,25 @@
-import type {
-  AddSurveySectionInput,
-  AddSurveyQuestionInput,
-  CreateSurveyDraftInput,
-  SurveyEditor,
-  SurveyQuestion,
-  SurveyQuestionOption,
-  SurveySection,
-  SurveySummary,
+import {
+  getQuestionScaleValues,
+  questionScaleDefaults,
+  questionScaleLimits,
+  type AddSurveySectionInput,
+  type AddSurveyQuestionInput,
+  type CreateSurveyDraftInput,
+  type PublishedSurvey,
+  type QuestionType,
+  type SubmitSurveyResponseInput,
+  type SurveyEditor,
+  type SurveyFreeTextResult,
+  type SurveyLikertResult,
+  type SurveyQuestion,
+  type SurveyQuestionOption,
+  type SurveyQuestionResult,
+  type SurveyResults,
+  type SurveySection,
+  type SurveySummary,
 } from '../../domain/surveys/survey';
-import { supabase } from '../supabase/client';
-import type { Tables, TablesInsert } from '../supabase/database.types';
+import { publicSupabase, supabase } from '../supabase/client';
+import type { Json, Tables, TablesInsert } from '../supabase/database.types';
 
 type SurveyRow = Pick<
   Tables<'surveys'>,
@@ -36,6 +46,8 @@ type QuestionRow = Pick<
   | 'description'
   | 'is_required'
   | 'allow_multiple'
+  | 'scale_min'
+  | 'scale_max'
   | 'sort_order'
 >;
 
@@ -49,12 +61,36 @@ type QuestionOptionRow = Pick<
   'id' | 'question_id' | 'label' | 'value' | 'sort_order'
 >;
 
+type SurveyResponseRow = Pick<
+  Tables<'survey_responses'>,
+  | 'id'
+  | 'survey_id'
+  | 'response_mode'
+  | 'respondent_name'
+  | 'respondent_email'
+  | 'submitted_at'
+>;
+
+type AnswerRow = Pick<
+  Tables<'answers'>,
+  'id' | 'response_id' | 'question_id' | 'free_text' | 'likert_value'
+>;
+
+type AnswerOptionRow = Pick<
+  Tables<'answer_options'>,
+  'answer_id' | 'option_id'
+>;
+
 const surveySummarySelect =
   'id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
 const sectionSelect = 'id, survey_id, title, description, sort_order';
 const questionSelect =
-  'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, sort_order';
+  'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, scale_min, scale_max, sort_order';
 const questionOptionSelect = 'id, question_id, label, value, sort_order';
+const surveyResponseSelect =
+  'id, survey_id, response_mode, respondent_name, respondent_email, submitted_at';
+const answerSelect = 'id, response_id, question_id, free_text, likert_value';
+const answerOptionSelect = 'answer_id, option_id';
 
 export async function listMySurveys(): Promise<SurveySummary[]> {
   const client = requireSurveyClient();
@@ -149,6 +185,138 @@ export async function getSurveyEditor(surveyId: string): Promise<SurveyEditor> {
   };
 }
 
+export async function publishSurvey(surveyId: string): Promise<SurveySummary> {
+  const client = requireSurveyClient();
+  const { count, error: countError } = await client
+    .from('questions')
+    .select('id', { count: 'exact', head: true })
+    .eq('survey_id', surveyId);
+
+  if (countError) {
+    throw countError;
+  }
+
+  if ((count ?? 0) === 0) {
+    throw new Error('Skjemaet må ha minst ett spørsmål før publisering.');
+  }
+
+  const { data, error } = await client
+    .from('surveys')
+    .update({
+      status: 'published',
+      published_at: new Date().toISOString(),
+    })
+    .eq('id', surveyId)
+    .eq('status', 'draft')
+    .select(surveySummarySelect)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapSurveySummary(data);
+}
+
+export async function getPublishedSurveyBySlug(
+  slug: string,
+): Promise<PublishedSurvey> {
+  const client = requirePublicSurveyClient();
+  const normalizedSlug = slug.trim().toLocaleLowerCase('nb-NO');
+
+  const { data: survey, error: surveyError } = await client
+    .from('surveys')
+    .select(
+      'id, title, description, slug, status, response_mode, starts_at, ends_at, published_at',
+    )
+    .eq('slug', normalizedSlug)
+    .single();
+
+  if (surveyError) {
+    throw surveyError;
+  }
+
+  const { data: sections, error: sectionsError } = await client
+    .from('survey_sections')
+    .select(sectionSelect)
+    .eq('survey_id', survey.id)
+    .order('sort_order', { ascending: true });
+
+  if (sectionsError) {
+    throw sectionsError;
+  }
+
+  const { data: questions, error: questionsError } = await client
+    .from('questions')
+    .select(questionSelect)
+    .eq('survey_id', survey.id)
+    .order('sort_order', { ascending: true });
+
+  if (questionsError) {
+    throw questionsError;
+  }
+
+  const questionIds = (questions ?? []).map((question) => question.id);
+  const options = await listQuestionOptions(questionIds, client);
+
+  return {
+    id: survey.id,
+    title: survey.title,
+    description: survey.description,
+    slug: survey.slug,
+    status: survey.status,
+    responseMode: survey.response_mode,
+    startsAt: survey.starts_at,
+    endsAt: survey.ends_at,
+    publishedAt: survey.published_at,
+    sections: (sections ?? []).map(mapSection),
+    questions: (questions ?? []).map((question) =>
+      mapQuestion(question, options.get(question.id) ?? []),
+    ),
+  };
+}
+
+export async function submitSurveyResponse(
+  input: SubmitSurveyResponseInput,
+): Promise<string> {
+  const client = requirePublicSurveyClient();
+  const { data, error } = await client.rpc('submit_survey_response', {
+    p_survey_slug: input.surveySlug,
+    p_answers: input.answers.map((answer) => ({
+      questionId: answer.questionId,
+      freeText: answer.freeText ?? null,
+      likertValue: answer.likertValue ?? null,
+      optionIds: answer.optionIds ?? [],
+    })) as Json,
+    p_respondent_name: normalizeOptionalText(input.respondentName),
+    p_respondent_email: normalizeOptionalText(input.respondentEmail),
+    p_metadata: (input.metadata ?? {}) as Json,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getSurveyResults(surveyId: string): Promise<SurveyResults> {
+  const editor = await getSurveyEditor(surveyId);
+  const responses = await listSurveyResponses(surveyId);
+  const responseIds = responses.map((response) => response.id);
+  const answers = await listAnswers(responseIds);
+  const answerIds = answers.map((answer) => answer.id);
+  const answerOptions = await listAnswerOptions(answerIds);
+  const { questions, ...survey } = editor;
+
+  return {
+    ...survey,
+    responseCount: responses.length,
+    lastSubmittedAt: responses[0]?.submitted_at ?? null,
+    questionResults: buildQuestionResults(questions, responses, answers, answerOptions),
+  };
+}
+
 export async function addSurveySection(
   input: AddSurveySectionInput,
 ): Promise<SurveySection> {
@@ -206,6 +374,11 @@ export async function addSurveyQuestion(
     throw new Error('Flervalgsspørsmål må ha minst to alternativer.');
   }
 
+  const scale =
+    input.type === 'likert_scale'
+      ? normalizeQuestionScale(input.scaleMin, input.scaleMax)
+      : { scaleMin: null, scaleMax: null };
+
   const sortOrder = await getNextQuestionSortOrder(input.surveyId);
   const questionPayload: TablesInsert<'questions'> = {
     survey_id: input.surveyId,
@@ -215,6 +388,8 @@ export async function addSurveyQuestion(
     description: normalizeOptionalText(input.description),
     is_required: input.isRequired,
     allow_multiple: input.type === 'multiple_choice' ? input.allowMultiple : false,
+    scale_min: scale.scaleMin,
+    scale_max: scale.scaleMax,
     sort_order: sortOrder,
   };
 
@@ -276,18 +451,36 @@ function mapQuestion(
   row: QuestionRow,
   options: SurveyQuestionOption[],
 ): SurveyQuestion {
+  const type = mapQuestionType(row.type);
+
   return {
     id: row.id,
     surveyId: row.survey_id,
     sectionId: row.section_id,
-    type: row.type,
+    type,
     prompt: row.prompt,
     description: row.description,
     isRequired: row.is_required,
     allowMultiple: row.allow_multiple,
+    scaleMin:
+      type === 'likert_scale'
+        ? row.scale_min ?? questionScaleDefaults.min
+        : null,
+    scaleMax:
+      type === 'likert_scale'
+        ? row.scale_max ?? questionScaleDefaults.max
+        : null,
     sortOrder: row.sort_order,
     options,
   };
+}
+
+function mapQuestionType(type: QuestionRow['type']): QuestionType {
+  if (type === 'likert_1_5') {
+    return 'likert_scale';
+  }
+
+  return type;
 }
 
 function mapQuestionOption(row: QuestionOptionRow): SurveyQuestionOption {
@@ -300,12 +493,14 @@ function mapQuestionOption(row: QuestionOptionRow): SurveyQuestionOption {
   };
 }
 
-async function listQuestionOptions(questionIds: string[]) {
+async function listQuestionOptions(
+  questionIds: string[],
+  client = requireSurveyClient(),
+) {
   if (questionIds.length === 0) {
     return new Map<string, SurveyQuestionOption[]>();
   }
 
-  const client = requireSurveyClient();
   const { data, error } = await client
     .from('question_options')
     .select(questionOptionSelect)
@@ -326,6 +521,215 @@ async function listQuestionOptions(questionIds: string[]) {
   }
 
   return optionsByQuestion;
+}
+
+async function listSurveyResponses(surveyId: string): Promise<SurveyResponseRow[]> {
+  const client = requireSurveyClient();
+  const { data, error } = await client
+    .from('survey_responses')
+    .select(surveyResponseSelect)
+    .eq('survey_id', surveyId)
+    .order('submitted_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+async function listAnswers(responseIds: string[]): Promise<AnswerRow[]> {
+  if (responseIds.length === 0) {
+    return [];
+  }
+
+  const client = requireSurveyClient();
+  const { data, error } = await client
+    .from('answers')
+    .select(answerSelect)
+    .in('response_id', responseIds);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+async function listAnswerOptions(answerIds: string[]): Promise<AnswerOptionRow[]> {
+  if (answerIds.length === 0) {
+    return [];
+  }
+
+  const client = requireSurveyClient();
+  const { data, error } = await client
+    .from('answer_options')
+    .select(answerOptionSelect)
+    .in('answer_id', answerIds);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+function buildQuestionResults(
+  questions: SurveyQuestion[],
+  responses: SurveyResponseRow[],
+  answers: AnswerRow[],
+  answerOptions: AnswerOptionRow[],
+): SurveyQuestionResult[] {
+  const answersByQuestion = groupBy(answers, (answer) => answer.question_id);
+  const answerOptionsByAnswer = groupBy(
+    answerOptions,
+    (answerOption) => answerOption.answer_id,
+  );
+  const responseById = new Map(
+    responses.map((response) => [response.id, response]),
+  );
+
+  return questions.map((question) => {
+    const questionAnswers = answersByQuestion.get(question.id) ?? [];
+    const answeredCount = questionAnswers.length;
+    const skippedCount = Math.max(0, responses.length - answeredCount);
+
+    return {
+      question,
+      answeredCount,
+      skippedCount,
+      choiceResults: buildChoiceResults(
+        question,
+        questionAnswers,
+        answerOptionsByAnswer,
+      ),
+      likertAverage: buildLikertAverage(questionAnswers),
+      likertResults: buildLikertResults(question, questionAnswers),
+      freeTextResults: buildFreeTextResults(questionAnswers, responseById),
+    };
+  });
+}
+
+function buildChoiceResults(
+  question: SurveyQuestion,
+  answers: AnswerRow[],
+  answerOptionsByAnswer: Map<string, AnswerOptionRow[]>,
+) {
+  if (question.type !== 'multiple_choice') {
+    return [];
+  }
+
+  const optionCounts = new Map<string, number>();
+  let selectedOptionCount = 0;
+
+  for (const answer of answers) {
+    for (const answerOption of answerOptionsByAnswer.get(answer.id) ?? []) {
+      selectedOptionCount += 1;
+      optionCounts.set(
+        answerOption.option_id,
+        (optionCounts.get(answerOption.option_id) ?? 0) + 1,
+      );
+    }
+  }
+
+  return question.options.map((option) => {
+    const count = optionCounts.get(option.id) ?? 0;
+
+    return {
+      optionId: option.id,
+      label: option.label,
+      count,
+      percentage: calculatePercentage(count, selectedOptionCount),
+    };
+  });
+}
+
+function buildLikertAverage(answers: AnswerRow[]) {
+  const values = answers
+    .map((answer) => answer.likert_value)
+    .filter((value): value is number => value !== null);
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  const sum = values.reduce((currentSum, value) => currentSum + value, 0);
+  return Number((sum / values.length).toFixed(1));
+}
+
+function buildLikertResults(
+  question: SurveyQuestion,
+  answers: AnswerRow[],
+): SurveyLikertResult[] {
+  if (question.type !== 'likert_scale') {
+    return [];
+  }
+
+  const values = answers
+    .map((answer) => answer.likert_value)
+    .filter((value): value is number => value !== null);
+
+  return getQuestionScaleValues(question).map((value) => {
+    const count = values.filter((answerValue) => answerValue === value).length;
+
+    return {
+      value,
+      count,
+      percentage: calculatePercentage(count, values.length),
+    };
+  });
+}
+
+function buildFreeTextResults(
+  answers: AnswerRow[],
+  responseById: Map<string, SurveyResponseRow>,
+): SurveyFreeTextResult[] {
+  return answers
+    .filter((answer) => answer.free_text !== null && answer.free_text.trim() !== '')
+    .map((answer) => {
+      const response = responseById.get(answer.response_id);
+
+      return {
+        answerId: answer.id,
+        responseId: answer.response_id,
+        submittedAt: response?.submitted_at ?? '',
+        respondentLabel: response ? getRespondentLabel(response) : null,
+        text: answer.free_text ?? '',
+      };
+    })
+    .sort((left, right) => right.submittedAt.localeCompare(left.submittedAt));
+}
+
+function getRespondentLabel(response: SurveyResponseRow) {
+  if (response.response_mode === 'anonymous') {
+    return null;
+  }
+
+  return response.respondent_name ?? response.respondent_email ?? 'Identifisert svar';
+}
+
+function calculatePercentage(count: number, total: number) {
+  if (total === 0) {
+    return 0;
+  }
+
+  return Math.round((count / total) * 100);
+}
+
+function groupBy<TValue>(
+  values: TValue[],
+  getKey: (value: TValue) => string,
+) {
+  const groupedValues = new Map<string, TValue[]>();
+
+  for (const value of values) {
+    const key = getKey(value);
+    const existingValues = groupedValues.get(key) ?? [];
+    existingValues.push(value);
+    groupedValues.set(key, existingValues);
+  }
+
+  return groupedValues;
 }
 
 async function getNextQuestionSortOrder(surveyId: string) {
@@ -392,6 +796,36 @@ function normalizeOptionalText(value: string | null) {
   return trimmed ? trimmed : null;
 }
 
+function normalizeQuestionScale(
+  scaleMin: number | null | undefined,
+  scaleMax: number | null | undefined,
+) {
+  const normalizedMin = scaleMin ?? questionScaleDefaults.min;
+  const normalizedMax = scaleMax ?? questionScaleDefaults.max;
+
+  if (!Number.isInteger(normalizedMin) || !Number.isInteger(normalizedMax)) {
+    throw new Error('Skalaen må bruke hele tall.');
+  }
+
+  if (
+    normalizedMin < questionScaleLimits.min ||
+    normalizedMax > questionScaleLimits.max
+  ) {
+    throw new Error(
+      `Skalaen må være mellom ${questionScaleLimits.min} og ${questionScaleLimits.max}.`,
+    );
+  }
+
+  if (normalizedMin >= normalizedMax) {
+    throw new Error('Skalaen må ha lavere minimumsverdi enn maksimumsverdi.');
+  }
+
+  return {
+    scaleMin: normalizedMin,
+    scaleMax: normalizedMax,
+  };
+}
+
 function normalizeOptionLabels(values: string[]) {
   return values
     .map((value) => value.trim())
@@ -443,4 +877,12 @@ function requireSurveyClient() {
   }
 
   return supabase;
+}
+
+function requirePublicSurveyClient() {
+  if (!publicSupabase) {
+    throw new Error('Supabase er ikke konfigurert.');
+  }
+
+  return publicSupabase;
 }

@@ -24,7 +24,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Legge inn støtte for anonyme og identifiserte besvarelser.
 - [x] Aktivere RLS på alle app-tabeller.
 - [x] Lage policies for innlogget admin/eier.
-- [ ] Lage trygg offentlig lesing/innsending via RPC eller tilsvarende kontrollert API.
+- [x] Lage trygg offentlig lesing/innsending via RPC eller tilsvarende kontrollert API.
 
 ## 3. Sikkerhet, personvern og tillit
 
@@ -56,33 +56,33 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage opprettelse av nytt spørreskjema.
 - [x] Lage første redigeringsside for draft-skjema.
 - [x] Støtte seksjoner i skjema.
-- [x] Støtte spørsmålstypene flervalg, fritekst og Likert 1-5.
+- [x] Støtte spørsmålstypene flervalg, fritekst og konfigurerbar skala.
 - [x] Støtte enkeltvalg og flervalg per flervalgsspørsmål.
 - [x] Støtte anonymisert eller identifisert besvarelse per skjema.
 - [x] Støtte valgfri tidsavgrensning.
-- [ ] Lage publiseringsflyt og delbar lenke.
+- [x] Lage publiseringsflyt og delbar lenke.
 - [ ] Låse strukturfelter etter publisering med innsendte svar.
 
 ## 6. Respondentflyt
 
-- [ ] Lage offentlig besvarelsesside via delbar lenke.
-- [ ] Vise skjema-seksjoner og spørsmål intuitivt på mobil og desktop.
-- [ ] Validere påkrevde spørsmål før innsending.
-- [ ] Kreve navn eller e-post for identifiserte skjemaer.
-- [ ] Ikke lagre respondentidentitet for anonyme skjemaer.
-- [ ] Håndtere utløpte, ikke-startede, lukkede og ukjente skjemaer.
-- [ ] Lagre svar samlet ved innsending.
-- [ ] Vise enkel kvittering etter innsending.
+- [x] Lage offentlig besvarelsesside via delbar lenke.
+- [x] Vise skjema-seksjoner og spørsmål intuitivt på mobil og desktop.
+- [x] Validere påkrevde spørsmål før innsending.
+- [x] Kreve navn eller e-post for identifiserte skjemaer.
+- [x] Ikke lagre respondentidentitet for anonyme skjemaer.
+- [x] Håndtere utløpte, ikke-startede, lukkede og ukjente skjemaer.
+- [x] Lagre svar samlet ved innsending.
+- [x] Vise enkel kvittering etter innsending.
 
 ## 7. Resultater og visualisering
 
-- [ ] Lage resultatside for innlogget admin.
-- [ ] Vise totaler, svarvolum og status.
-- [ ] Vise flervalg som stolpe- og/eller kakediagram.
-- [ ] Vise Likert-fordeling og snitt.
-- [ ] Vise fritekstsvar i liste.
+- [x] Lage resultatside for innlogget admin.
+- [x] Vise totaler, svarvolum og status.
+- [x] Vise flervalg som stolpe- og/eller kakediagram.
+- [x] Vise skalafordeling og snitt.
+- [x] Vise fritekstsvar i liste.
 - [ ] Lage enkel wordcloud for fritekstsvar.
-- [ ] Sørge for at resultater kun er synlige for skjemaeier.
+- [x] Sørge for at resultater kun er synlige for skjemaeier.
 
 ## 8. Eksport
 
