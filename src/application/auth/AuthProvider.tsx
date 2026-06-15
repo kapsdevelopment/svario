@@ -20,6 +20,7 @@ import {
   signUpWithPassword as signUpWithPasswordRequest,
   subscribeToAuthChanges,
   type DomainAccount,
+  updatePassword as updatePasswordRequest,
 } from '../../data/auth/authRepository';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'misconfigured';
@@ -43,6 +44,7 @@ type AuthContextValue = AuthState & {
     redirectTo: string,
   ) => Promise<void>;
   signInWithMagicLink: (email: string, redirectTo: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -181,6 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword: signInWithPasswordRequest,
       signUpWithPassword: signUpWithPasswordRequest,
       signInWithMagicLink: signInWithMagicLinkRequest,
+      updatePassword: updatePasswordRequest,
       signOut: signOutRequest,
     }),
     [state],

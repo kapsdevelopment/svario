@@ -14,6 +14,8 @@ import {
   type SurveyQuestion,
   type SurveyQuestionOption,
   type SurveyQuestionResult,
+  type SurveyResponseAnswerResult,
+  type SurveyResponseResult,
   type SurveyResults,
   type SurveySection,
   type SurveySummary,
@@ -313,6 +315,7 @@ export async function getSurveyResults(surveyId: string): Promise<SurveyResults>
     ...survey,
     responseCount: responses.length,
     lastSubmittedAt: responses[0]?.submitted_at ?? null,
+    responses: buildResponseResults(responses, answers, answerOptions),
     questionResults: buildQuestionResults(questions, responses, answers, answerOptions),
   };
 }
@@ -608,6 +611,40 @@ function buildQuestionResults(
       freeTextResults: buildFreeTextResults(questionAnswers, responseById),
     };
   });
+}
+
+function buildResponseResults(
+  responses: SurveyResponseRow[],
+  answers: AnswerRow[],
+  answerOptions: AnswerOptionRow[],
+): SurveyResponseResult[] {
+  const answersByResponse = groupBy(answers, (answer) => answer.response_id);
+  const answerOptionsByAnswer = groupBy(
+    answerOptions,
+    (answerOption) => answerOption.answer_id,
+  );
+
+  return responses.map((response) => ({
+    id: response.id,
+    submittedAt: response.submitted_at,
+    respondentName: response.respondent_name,
+    respondentEmail: response.respondent_email,
+    answers: (answersByResponse.get(response.id) ?? []).map((answer) =>
+      mapResponseAnswer(answer, answerOptionsByAnswer.get(answer.id) ?? []),
+    ),
+  }));
+}
+
+function mapResponseAnswer(
+  answer: AnswerRow,
+  answerOptions: AnswerOptionRow[],
+): SurveyResponseAnswerResult {
+  return {
+    questionId: answer.question_id,
+    freeText: answer.free_text,
+    likertValue: answer.likert_value,
+    optionIds: answerOptions.map((answerOption) => answerOption.option_id),
+  };
 }
 
 function buildChoiceResults(

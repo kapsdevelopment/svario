@@ -34,6 +34,8 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [ ] Dokumentere Supabase-region, DPA, underleverandører, kryptering i transitt og kryptering av lagrede data før produksjonssetting.
 - [ ] Avklare produksjonskrav for admin-auth: vurdere/aktivere MFA for adminer, e-postbekreftelse, secure password change og korrekte production redirect URLs. MFA skal ikke blokkere utviklingsløpet før produksjonssetting.
 - [ ] Velge bevisst passordpolicy for adminer. Ikke stramme inn bare for strenghets skyld; vurder reell sikkerhetsgevinst opp mot magic link, MFA ved produksjon, rate limits og session-kontroller.
+- [x] Lage passordbytte i profilskjermen for innloggede adminer.
+- [ ] Vurdere/implementere Supabase Passkeys (beta) etter at Dashboard-konfig, RP ID/origins og fallback-flyt er avklart.
 - [ ] Lage RLS-/tilgangstester for eier, ikke-eier og anonym bruker på identitet, skjema, spørsmål, svar og resultater.
 - [ ] Kjøre Supabase advisors/security checks før produksjonssetting og følge opp funn.
 - [ ] Lage slette-/eksport-/retention-plan for persondata og anonyme besvarelser.
@@ -86,9 +88,9 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 
 ## 8. Eksport
 
-- [ ] Lage CSV-eksport av resultater.
+- [x] Lage CSV-eksport av resultater.
 - [ ] Lage enkel PDF-rapport.
-- [ ] Sikre at anonym eksport ikke inneholder identifiserende respondentfelt.
+- [x] Sikre at anonym eksport ikke inneholder identifiserende respondentfelt.
 - [ ] Teste eksport med norske tegn.
 
 ## 9. Deploy og drift

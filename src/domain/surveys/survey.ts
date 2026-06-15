@@ -133,6 +133,21 @@ export type SurveyFreeTextResult = {
   text: string;
 };
 
+export type SurveyResponseAnswerResult = {
+  questionId: string;
+  freeText: string | null;
+  likertValue: number | null;
+  optionIds: string[];
+};
+
+export type SurveyResponseResult = {
+  id: string;
+  submittedAt: string;
+  respondentName: string | null;
+  respondentEmail: string | null;
+  answers: SurveyResponseAnswerResult[];
+};
+
 export type SurveyQuestionResult = {
   question: SurveyQuestion;
   answeredCount: number;
@@ -147,6 +162,7 @@ export type SurveyResults = SurveySummary & {
   sections: SurveySection[];
   responseCount: number;
   lastSubmittedAt: string | null;
+  responses: SurveyResponseResult[];
   questionResults: SurveyQuestionResult[];
 };
 

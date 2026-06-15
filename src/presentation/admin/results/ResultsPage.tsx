@@ -11,6 +11,10 @@ import {
 } from 'recharts';
 
 import { routes } from '../../../app/routes';
+import {
+  buildSurveyResultsCsv,
+  createSurveyResultsCsvFileName,
+} from '../../../application/surveys/exportSurveyResultsCsv';
 import { useSurveyResults } from '../../../application/surveys/useSurveyResults';
 import type {
   SurveyChoiceResult,
@@ -18,6 +22,7 @@ import type {
   SurveyQuestionResult,
   SurveyResults,
 } from '../../../domain/surveys/survey';
+import { downloadTextFile } from '../../../infrastructure/files/downloadTextFile';
 import { Panel } from '../../shared/components/Panel';
 
 export function ResultsPage() {
@@ -64,6 +69,14 @@ export function ResultsPage() {
 }
 
 function ResultsContent({ results }: { results: SurveyResults }) {
+  function handleDownloadCsv() {
+    downloadTextFile({
+      content: buildSurveyResultsCsv(results),
+      fileName: createSurveyResultsCsvFileName(results),
+      mimeType: 'text/csv',
+    });
+  }
+
   return (
     <>
       <div className="metric-grid">
@@ -95,11 +108,20 @@ function ResultsContent({ results }: { results: SurveyResults }) {
 
       <Panel
         title="Eksport"
-        subtitle="CSV og PDF kommer i neste eksport-slice"
+        subtitle={
+          results.responseCount === 0
+            ? 'CSV blir tilgjengelig når skjemaet har svar'
+            : 'Last ned rådata med én rad per besvarelse'
+        }
         action={
-          <button className="button button--secondary" type="button" disabled>
+          <button
+            className="button button--secondary"
+            type="button"
+            disabled={results.responseCount === 0}
+            onClick={handleDownloadCsv}
+          >
             <Download size={18} aria-hidden="true" />
-            Last ned
+            Last ned CSV
           </button>
         }
       />

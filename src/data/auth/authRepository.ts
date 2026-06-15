@@ -92,6 +92,15 @@ export async function signOut() {
   }
 }
 
+export async function updatePassword(password: string) {
+  const client = requireAuthClient();
+  const { error } = await client.auth.updateUser({ password });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function bootstrapDomainAccount(user: User): Promise<DomainAccount> {
   const client = requireAuthClient();
   const { data: accountId, error: ensureError } = await client.rpc(
