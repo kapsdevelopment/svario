@@ -84,7 +84,8 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 
 - [x] Lage resultatside for innlogget admin.
 - [x] Vise totaler, svarvolum og status.
-- [x] Vise flervalg som stolpe- og/eller kakediagram.
+- [x] Vise flervalg som stolpediagram.
+- [ ] Legge til kakediagram som visualiseringsvalg for flervalg og eventuelt skala.
 - [x] Vise skalafordeling og snitt.
 - [x] Vise fritekstsvar i liste.
 - [x] Lage enkel wordcloud for fritekstsvar.
@@ -115,12 +116,47 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [ ] Teste respondentflyt manuelt på mobil web.
 - [x] Teste web build før deploy.
 
+## 11. Design, interaksjon og presentasjon
+
+### Designsystem og visuell polish
+
+- [ ] Revidere bruk av bakgrunnsbilder og bestemme hvilke bilder som skal brukes hvor: plateau i app-skall, landscape i dashboard, pine i login/personvern, fjord i landing/respondent/feilside og coastal i sikkerhetsside.
+- [ ] Gjøre Svario-brandfeltet i sidebaren til en tydelig lenke/knapp som tar brukeren til hovedsiden.
+- [ ] Standardisere admin-kontroller for knapper, lenker, menyer, skjemaelementer, fokus, hover og disabled states.
+- [ ] Avklare hvilke popup-/menykomponenter som kan være native, og hvilke som bør byttes til egne designede komponenter.
+- [ ] Finpusse eller erstatte `datetime-local` med en roligere dato-/tidsvelger som passer Svario-designet bedre.
+
+### Visualiseringer
+
+- [ ] Legge til valg for flerfargede stolper i stolpediagrammer, med en dempet nordisk palett.
+- [ ] Legge til kakediagram som alternativ visning for relevante resultater.
+- [ ] Vurdere per-spørsmål valg av foretrukket visualisering: stolpe, kake, ordsky, liste eller skalaoppsummering.
+- [ ] Sikre at visuelle valg også kan brukes konsistent i PDF-rapport.
+
+### Presentasjonsmodus
+
+- [ ] Lage presentasjonsmodus for resultater der admin kan bla gjennom ett spørsmål av gangen.
+- [ ] Vise ordsky for fritekstspørsmål i presentasjonsmodus, uten rå tekstsvar.
+- [ ] Vise valgt diagramtype for flervalg/skala i presentasjonsmodus.
+- [ ] Støtte tastatur-/klikk-navigasjon, stor visning og rolig møte-/workshop-layout.
+- [ ] Vurdere eksport fra presentasjonsmodus til PDF eller bildefiler senere.
+
+### Flere spørsmålstyper og maler
+
+- [ ] Legge til Net Promoter Score (NPS) som egen spørsmålstype eller hurtigvalg basert på 0-10 skala.
+- [ ] Vurdere CSAT/tilfredshet og CES/innsats-score som forhåndsoppsett.
+- [ ] Vurdere ja/nei-spørsmål som hurtigvalg for flervalg.
+- [ ] Vurdere matrise-/gridspørsmål for flere likert-påstander i samme blokk.
+- [ ] Vurdere rangering/prioritering som spørsmålstype.
+- [ ] Vurdere numerisk svar, dato-svar og e-post/telefon-felt dersom skjemaene trenger mer strukturert innsamling.
+- [ ] Lage skjema-/spørsmålsmaler for vanlige bruksområder: medarbeiderpuls, kursfeedback, kundeundersøkelse og workshop-retrospektiv.
+
 ## Ikke i MVP
 
 - [ ] Team/organisasjoner.
 - [ ] Respondent-login.
 - [ ] Invitasjonskoder.
 - [ ] Avansert branding/white-label: skjule eller tilpasse "Powered by Svario", egne domener per kunde og flere brand-profiler.
-- [ ] Live-modus under møter/foredrag.
+- [ ] Live-modus med sanntidsoppdatering under møter/foredrag.
 - [ ] Autosave av delvise besvarelser.
 - [ ] Offentlige resultater for respondenter.
