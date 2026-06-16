@@ -1,8 +1,16 @@
-import { ArrowLeft, Download, FileText, MessageSquareText } from 'lucide-react';
+import { useState } from 'react';
+import {
+  ArrowLeft,
+  Download,
+  FileText,
+  MessageSquareText,
+  Palette,
+} from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Bar,
   BarChart,
+  Cell,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -162,28 +170,54 @@ function QuestionResultCard({
   responseCount: number;
   result: SurveyQuestionResult;
 }) {
+  const [colorMode, setColorMode] = useState<ResultColorMode>('muted');
+  const isColorful = colorMode === 'colorful';
+  const hasVisualization = result.answeredCount > 0;
+
   return (
     <Panel
       title={result.question.prompt}
       subtitle={`${questionTypeLabel[result.question.type]} · ${result.answeredCount}/${responseCount} besvart`}
+      action={
+        hasVisualization ? (
+          <button
+            aria-pressed={isColorful}
+            className={`visual-style-toggle ${
+              isColorful ? 'visual-style-toggle--colorful' : ''
+            }`}
+            type="button"
+            onClick={() => setColorMode(isColorful ? 'muted' : 'colorful')}
+          >
+            <Palette size={16} aria-hidden="true" />
+            {isColorful ? 'Fargerik' : 'Dempet'}
+          </button>
+        ) : null
+      }
     >
       {result.question.description ? (
         <p className="result-question-description">{result.question.description}</p>
       ) : null}
 
       {result.question.type === 'multiple_choice' ? (
-        <ChoiceResultView results={result.choiceResults} />
+        <ChoiceResultView
+          colorMode={colorMode}
+          results={result.choiceResults}
+        />
       ) : null}
 
       {result.question.type === 'likert_scale' ? (
         <LikertResultView
           average={result.likertAverage}
+          colorMode={colorMode}
           results={result.likertResults}
         />
       ) : null}
 
       {result.question.type === 'free_text' ? (
-        <FreeTextResultView results={result.freeTextResults} />
+        <FreeTextResultView
+          colorMode={colorMode}
+          results={result.freeTextResults}
+        />
       ) : null}
 
       {result.skippedCount > 0 ? (
@@ -195,7 +229,13 @@ function QuestionResultCard({
   );
 }
 
-function ChoiceResultView({ results }: { results: SurveyChoiceResult[] }) {
+function ChoiceResultView({
+  colorMode,
+  results,
+}: {
+  colorMode: ResultColorMode;
+  results: SurveyChoiceResult[];
+}) {
   if (results.length === 0) {
     return <div className="empty-state">Ingen alternativer er registrert.</div>;
   }
@@ -209,16 +249,24 @@ function ChoiceResultView({ results }: { results: SurveyChoiceResult[] }) {
             <XAxis dataKey="label" />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Bar dataKey="count" fill="#183a34" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+              {results.map((result, index) => (
+                <Cell
+                  fill={getChartColor(index, colorMode, '#183a34')}
+                  key={result.optionId}
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
       <ResultBarList
-        items={results.map((result) => ({
+        items={results.map((result, index) => ({
           id: result.optionId,
           label: result.label,
           count: result.count,
           percentage: result.percentage,
+          color: getChartColor(index, colorMode, '#183a34'),
         }))}
       />
     </div>
@@ -227,9 +275,11 @@ function ChoiceResultView({ results }: { results: SurveyChoiceResult[] }) {
 
 function LikertResultView({
   average,
+  colorMode,
   results,
 }: {
   average: number | null;
+  colorMode: ResultColorMode;
   results: SurveyLikertResult[];
 }) {
   return (
@@ -245,23 +295,37 @@ function LikertResultView({
             <XAxis dataKey="value" />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Bar dataKey="count" fill="#4f6c5d" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+              {results.map((result, index) => (
+                <Cell
+                  fill={getChartColor(index, colorMode, '#4f6c5d')}
+                  key={result.value}
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
       <ResultBarList
-        items={results.map((result) => ({
+        items={results.map((result, index) => ({
           id: String(result.value),
           label: String(result.value),
           count: result.count,
           percentage: result.percentage,
+          color: getChartColor(index, colorMode, '#4f6c5d'),
         }))}
       />
     </div>
   );
 }
 
-function FreeTextResultView({ results }: { results: SurveyQuestionResult['freeTextResults'] }) {
+function FreeTextResultView({
+  colorMode,
+  results,
+}: {
+  colorMode: ResultColorMode;
+  results: SurveyQuestionResult['freeTextResults'];
+}) {
   if (results.length === 0) {
     return (
       <div className="empty-state">
@@ -275,7 +339,9 @@ function FreeTextResultView({ results }: { results: SurveyQuestionResult['freeTe
 
   return (
     <>
-      {wordCloud.length > 0 ? <WordCloud items={wordCloud} /> : null}
+      {wordCloud.length > 0 ? (
+        <WordCloud colorMode={colorMode} items={wordCloud} />
+      ) : null}
 
       <div className="free-text-results">
         {results.map((result) => (
@@ -292,7 +358,13 @@ function FreeTextResultView({ results }: { results: SurveyQuestionResult['freeTe
   );
 }
 
-function WordCloud({ items }: { items: FreeTextWordCloudItem[] }) {
+function WordCloud({
+  colorMode,
+  items,
+}: {
+  colorMode: ResultColorMode;
+  items: FreeTextWordCloudItem[];
+}) {
   const placedItems = buildWordCloudLayout(items);
 
   return (
@@ -308,19 +380,28 @@ function WordCloud({ items }: { items: FreeTextWordCloudItem[] }) {
           role="img"
           viewBox={`0 0 ${wordCloudWidth} ${wordCloudHeight}`}
         >
-          {placedItems.map((item) => (
-            <text
-              className={`word-cloud__word word-cloud__word--tone-${item.tone}`}
-              dominantBaseline="middle"
-              key={item.word}
-              style={{ fontSize: `${item.fontSize}px` }}
-              textAnchor="middle"
-              transform={`translate(${item.x} ${item.y}) rotate(${item.rotation})`}
-            >
-              <title>{`${item.word}: ${formatWordCount(item.count)}`}</title>
-              {item.word}
-            </text>
-          ))}
+          {placedItems.map((item, index) => {
+            const wordStyle = {
+              fontSize: `${item.fontSize}px`,
+              ...(colorMode === 'colorful'
+                ? { color: getWordCloudColor(index, item) }
+                : {}),
+            };
+
+            return (
+              <text
+                className={`word-cloud__word word-cloud__word--tone-${item.tone}`}
+                dominantBaseline="middle"
+                key={item.word}
+                style={wordStyle}
+                textAnchor="middle"
+                transform={`translate(${item.x} ${item.y}) rotate(${item.rotation})`}
+              >
+                <title>{`${item.word}: ${formatWordCount(item.count)}`}</title>
+                {item.word}
+              </text>
+            );
+          })}
         </svg>
       </div>
     </div>
@@ -492,6 +573,7 @@ function ResultBarList({
   items,
 }: {
   items: Array<{
+    color: string;
     id: string;
     label: string;
     count: number;
@@ -509,12 +591,48 @@ function ResultBarList({
             </span>
           </div>
           <div className="result-bar-track" aria-hidden="true">
-            <span style={{ width: `${item.percentage}%` }} />
+            <span
+              style={{
+                background: item.color,
+                width: `${item.percentage}%`,
+              }}
+            />
           </div>
         </div>
       ))}
     </div>
   );
+}
+
+type ResultColorMode = 'muted' | 'colorful';
+
+const colorfulChartPalette = [
+  '#2f6f73',
+  '#b86b3b',
+  '#6f6ca8',
+  '#c2933a',
+  '#8a536b',
+  '#4d7f54',
+  '#c35f4b',
+  '#4d7fa0',
+];
+
+function getChartColor(
+  index: number,
+  colorMode: ResultColorMode,
+  mutedColor: string,
+) {
+  if (colorMode === 'muted') {
+    return mutedColor;
+  }
+
+  return colorfulChartPalette[index % colorfulChartPalette.length];
+}
+
+function getWordCloudColor(index: number, item: FreeTextWordCloudItem) {
+  return colorfulChartPalette[
+    (hashWord(item.word) + item.tone + index) % colorfulChartPalette.length
+  ];
 }
 
 const questionTypeLabel = {

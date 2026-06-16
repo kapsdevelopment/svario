@@ -7,7 +7,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
@@ -48,13 +48,13 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
+        <Link className="brand" to={routes.home} aria-label="Gå til forsiden">
           <div className="brand__mark">S</div>
           <div>
             <strong>Svario</strong>
             <span>Spørsmål og innsikt</span>
           </div>
-        </div>
+        </Link>
 
         <nav className="sidebar__nav" aria-label="Hovedmeny">
           {navItems.map((item) => {

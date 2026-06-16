@@ -87,6 +87,17 @@ h2 {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin: -6px;
+  border-radius: 10px;
+  padding: 6px;
+  transition:
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.brand:hover {
+  background: #f4f1ea;
+  transform: translateY(-1px);
 }
 
 .brand__mark {
@@ -359,6 +370,28 @@ textarea {
   background: #fff;
   color: #17201d;
   padding: 11px 12px;
+}
+
+input[type="datetime-local"] {
+  min-height: 46px;
+  background:
+    linear-gradient(180deg, #fffdf8, #f8f4ec);
+  color: #33443e;
+  color-scheme: light;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  border-radius: 8px;
+  background-color: #dce7df;
+  cursor: pointer;
+  opacity: 0.82;
+  padding: 5px;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 input[type="checkbox"] {
@@ -965,6 +998,35 @@ select {
 .result-question-description {
   color: #596962;
   margin-bottom: 16px;
+}
+
+.visual-style-toggle {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d9d3c7;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #4f6c5d;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 8px 12px;
+}
+
+.visual-style-toggle:hover {
+  border-color: #b9c8bd;
+  background: #eef4f1;
+  color: #183a34;
+}
+
+.visual-style-toggle--colorful {
+  border-color: rgba(184, 107, 59, 0.36);
+  background:
+    linear-gradient(90deg, rgba(47, 111, 115, 0.12), rgba(194, 147, 58, 0.14)),
+    #fffdf8;
+  color: #7a4e3b;
 }
 
 .result-layout {
