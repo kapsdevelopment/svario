@@ -173,8 +173,10 @@ h2 {
 
 .page {
   display: grid;
-  gap: 22px;
-  padding: 32px;
+  width: min(100%, 1180px);
+  gap: 28px;
+  margin: 0 auto;
+  padding: 38px 44px;
 }
 
 .page-header {
@@ -197,6 +199,10 @@ h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+.metric-grid .panel {
+  padding: 18px;
 }
 
 .dashboard-hero {
@@ -240,15 +246,14 @@ h2 {
 
 .stack {
   display: grid;
-  gap: 12px;
+  gap: 28px;
 }
 
 .panel {
   border: 1px solid #d9d3c7;
   border-radius: 8px;
-  background: rgba(255, 253, 248, 0.94);
+  background: #fffdf8;
   box-shadow: 0 16px 38px rgba(30, 43, 37, 0.07);
-  backdrop-filter: blur(8px);
   padding: 20px;
 }
 
@@ -1784,7 +1789,13 @@ select {
   }
 
   .page {
+    width: auto;
+    gap: 22px;
     padding: 22px;
+  }
+
+  .stack {
+    gap: 22px;
   }
 
   .page-header {

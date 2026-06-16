@@ -13,7 +13,7 @@ export function DashboardPage() {
   const draftSurveys = surveys.filter((survey) => survey.status === 'draft');
 
   return (
-    <div className="page page--dashboard">
+    <div className="page">
       <header className="page-header">
         <div>
           <p className="eyebrow">Oversikt</p>
