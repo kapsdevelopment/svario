@@ -579,6 +579,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_account_data_for_auth_user: {
+        Args: { p_auth_user_id: string }
+        Returns: string | null
+      }
+      delete_survey: {
+        Args: { p_survey_id: string }
+        Returns: undefined
+      }
       ensure_account_initialized_v2: { Args: never; Returns: string }
       ensure_domain_account: { Args: never; Returns: string }
       ensure_user: { Args: never; Returns: string }

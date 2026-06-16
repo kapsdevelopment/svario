@@ -101,6 +101,19 @@ export async function updatePassword(password: string) {
   }
 }
 
+export async function deleteCurrentAccount() {
+  const client = requireAuthClient();
+  const { error } = await client.functions.invoke('delete-account', {
+    method: 'POST',
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  await client.auth.signOut({ scope: 'local' });
+}
+
 export async function bootstrapDomainAccount(user: User): Promise<DomainAccount> {
   const client = requireAuthClient();
   const { data: accountId, error: ensureError } = await client.rpc(

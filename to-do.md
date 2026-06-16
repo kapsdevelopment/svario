@@ -31,7 +31,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage første offentlige sikkerhetsside for Svario.
 - [x] Lage første offentlig landingsside og koble sikkerhetssiden inn som underside.
 - [x] Lage offentlig personvern-/databrukside for Svario sitt datalofte.
-- [ ] Lage en lett `SECURITY.md`/trust-center-plan som forklarer sikkerhetsmodell, datalagring, RLS, tilgangsstyring, backup, logging, hendelseshåndtering og kundens/personvernansvarliges ansvar.
+- [x] Lage en lett `SECURITY.md`/trust-center-plan som forklarer sikkerhetsmodell, datalagring, RLS, tilgangsstyring, backup, logging, hendelseshåndtering og kundens/personvernansvarliges ansvar.
 - [ ] Dokumentere Supabase-region, DPA, underleverandører, kryptering i transitt og kryptering av lagrede data før produksjonssetting.
 - [ ] Avklare produksjonskrav for admin-auth: vurdere/aktivere MFA for adminer, e-postbekreftelse, secure password change og korrekte production redirect URLs. MFA skal ikke blokkere utviklingsløpet før produksjonssetting.
 - [ ] Velge bevisst passordpolicy for adminer. Ikke stramme inn bare for strenghets skyld; vurder reell sikkerhetsgevinst opp mot magic link, MFA ved produksjon, rate limits og session-kontroller.
@@ -40,6 +40,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [ ] Lage RLS-/tilgangstester for eier, ikke-eier og anonym bruker på identitet, skjema, spørsmål, svar og resultater.
 - [ ] Kjøre Supabase advisors/security checks før produksjonssetting og følge opp funn.
 - [ ] Lage slette-/eksport-/retention-plan for persondata og anonyme besvarelser.
+- [x] Lage "slett min konto" i profilskjermen, inkludert alle spørreskjemaer, svar/resultater og profildata, med ekstra bekreftelsesdialog.
 - [ ] Lage enkel incident response-rutine for mistanke om datalekkasjer, feilsendt tilgang eller eksponerte nøkler.
 
 ## 4. Web app-skall
@@ -65,6 +66,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Støtte valgfri tidsavgrensning.
 - [x] Lage publiseringsflyt og delbar lenke.
 - [ ] Støtte enkel branding per konto eller skjema: logo, primærfarge, aksentfarge og respondenttema som kan matche kundens profil.
+- [x] Slette enkeltstående spørreundersøkelser med tydelig bekreftelsesdialog og trygg sletting av tilhørende svar/resultater.
 - [x] Låse strukturfelter etter publisering med innsendte svar.
 
 ## 6. Respondentflyt
@@ -93,7 +95,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage CSV-eksport av resultater.
 - [x] Lage enkel PDF-rapport.
 - [x] Sikre at anonym eksport ikke inneholder identifiserende respondentfelt.
-- [ ] Teste eksport med norske tegn.
+- [x] Teste eksport med norske tegn.
 
 ## 9. Deploy og drift
 
@@ -101,7 +103,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Konfigurere Vite base path for repo-hosting.
 - [x] Bruke hash-ruting for stabile offentlige lenker.
 - [x] Legge Supabase URL og publishable/anon key inn som GitHub repository variables/secrets.
-- [ ] Justere GitHub Pages/Vite-build for custom domain `svario.no` når DNS er verifisert.
+- [x] Justere GitHub Pages/Vite-build for custom domain `svario.no` når DNS er verifisert.
 - [x] Dokumentere lokal kjøring og deploy i README.
 
 ## 10. Testing og kvalitet

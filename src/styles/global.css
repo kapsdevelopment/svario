@@ -317,9 +317,19 @@ h2 {
   color: #183a34;
 }
 
+.button--danger {
+  border-color: #9d3d2f;
+  background: #9d3d2f;
+  color: #fff;
+}
+
 .icon-button {
   width: 40px;
   color: #183a34;
+}
+
+.icon-button--danger {
+  color: #9d3d2f;
 }
 
 .form-stack {
@@ -511,6 +521,16 @@ select {
   overflow-wrap: anywhere;
   margin: 0;
   color: #17201d;
+}
+
+.danger-zone {
+  display: grid;
+  gap: 16px;
+}
+
+.danger-zone p {
+  max-width: 68ch;
+  color: #596962;
 }
 
 .status-row {

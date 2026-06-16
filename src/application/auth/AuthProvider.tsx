@@ -12,6 +12,7 @@ import {
 
 import {
   bootstrapDomainAccount,
+  deleteCurrentAccount as deleteCurrentAccountRequest,
   getCurrentSession,
   hasAuthClient,
   signInWithMagicLink as signInWithMagicLinkRequest,
@@ -45,6 +46,7 @@ type AuthContextValue = AuthState & {
   ) => Promise<void>;
   signInWithMagicLink: (email: string, redirectTo: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
+  deleteCurrentAccount: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -184,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUpWithPassword: signUpWithPasswordRequest,
       signInWithMagicLink: signInWithMagicLinkRequest,
       updatePassword: updatePasswordRequest,
+      deleteCurrentAccount: deleteCurrentAccountRequest,
       signOut: signOutRequest,
     }),
     [state],

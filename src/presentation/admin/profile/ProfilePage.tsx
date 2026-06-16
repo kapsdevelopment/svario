@@ -1,6 +1,8 @@
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Trash2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
 import { Panel } from '../../shared/components/Panel';
 
@@ -8,11 +10,16 @@ const minimumPasswordLength = 6;
 
 export function ProfilePage() {
   const auth = useAuth();
+  const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(
+    null,
+  );
 
   async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,9 +44,33 @@ export function ProfilePage() {
       setConfirmPassword('');
       setPasswordMessage('Passordet er oppdatert.');
     } catch (error) {
-      setPasswordError(getErrorMessage(error));
+      setPasswordError(getErrorMessage(error, 'Kunne ikke oppdatere passordet.'));
     } finally {
       setIsUpdatingPassword(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteAccountError(null);
+
+    const confirmation = window.prompt(
+      'Dette sletter kontoen din, alle spørreundersøkelser, svar og resultater permanent. Skriv SLETT for å bekrefte.',
+    );
+
+    if (confirmation !== 'SLETT') {
+      setDeleteAccountError('Sletting ble avbrutt.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      await auth.deleteCurrentAccount();
+      navigate(routes.home, { replace: true });
+    } catch (error) {
+      setDeleteAccountError(getErrorMessage(error, 'Kunne ikke slette kontoen.'));
+    } finally {
+      setIsDeletingAccount(false);
     }
   }
 
@@ -113,14 +144,38 @@ export function ProfilePage() {
           <p className="form-alert form-alert--error">{passwordError}</p>
         ) : null}
       </Panel>
+
+      <Panel title="Slett konto" subtitle="Permanent sletting">
+        <div className="danger-zone">
+          <p>
+            Sletter kontoen din, alle spørreundersøkelser, innsendte svar og
+            resultater. Dette kan ikke angres.
+          </p>
+          <div className="form-actions">
+            <button
+              className="button button--danger"
+              disabled={isDeletingAccount}
+              type="button"
+              onClick={handleDeleteAccount}
+            >
+              <Trash2 size={18} aria-hidden="true" />
+              {isDeletingAccount ? 'Sletter...' : 'Slett min konto'}
+            </button>
+          </div>
+        </div>
+
+        {deleteAccountError ? (
+          <p className="form-alert form-alert--error">{deleteAccountError}</p>
+        ) : null}
+      </Panel>
     </div>
   );
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) {
     return error.message;
   }
 
-  return 'Kunne ikke oppdatere passordet.';
+  return fallback;
 }

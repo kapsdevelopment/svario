@@ -362,6 +362,17 @@ export async function deleteSurveySection(sectionId: string): Promise<void> {
   }
 }
 
+export async function deleteSurvey(surveyId: string): Promise<void> {
+  const client = requireSurveyClient();
+  const { error } = await client.rpc('delete_survey', {
+    p_survey_id: surveyId,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function addSurveyQuestion(
   input: AddSurveyQuestionInput,
 ): Promise<SurveyQuestion> {

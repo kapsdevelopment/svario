@@ -1,13 +1,31 @@
-import { BarChart3, Pencil, Plus } from 'lucide-react';
+import { BarChart3, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { useDeleteSurvey } from '../../../application/surveys/useDeleteSurvey';
 import { useSurveyList } from '../../../application/surveys/useSurveyList';
 import type { SurveySummary } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
 export function SurveyListPage() {
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
+  const deleteSurvey = useDeleteSurvey();
+
+  async function handleDeleteSurvey(survey: SurveySummary) {
+    const shouldDelete = window.confirm(
+      `Slette spørreundersøkelsen "${survey.title}"? Dette sletter også alle svar og resultater permanent.`,
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      await deleteSurvey.mutateAsync(survey.id);
+    } catch {
+      return;
+    }
+  }
 
   return (
     <div className="page">
@@ -29,6 +47,12 @@ export function SurveyListPage() {
       {isError ? (
         <div className="form-alert form-alert--error" role="alert">
           {getErrorMessage(error)}
+        </div>
+      ) : null}
+
+      {deleteSurvey.isError ? (
+        <div className="form-alert form-alert--error" role="alert">
+          {getErrorMessage(deleteSurvey.error)}
         </div>
       ) : null}
 
@@ -68,6 +92,15 @@ export function SurveyListPage() {
                   >
                     <BarChart3 size={20} aria-hidden="true" />
                   </Link>
+                  <button
+                    className="icon-button icon-button--danger"
+                    type="button"
+                    disabled={deleteSurvey.isPending}
+                    aria-label={`Slett ${survey.title}`}
+                    onClick={() => handleDeleteSurvey(survey)}
+                  >
+                    <Trash2 size={18} aria-hidden="true" />
+                  </button>
                 </div>
               }
             >
