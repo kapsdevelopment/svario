@@ -461,6 +461,12 @@ select {
   color: #7b3418;
 }
 
+.form-alert--info {
+  border-color: #b7c7c1;
+  background: #eef4f1;
+  color: #183a34;
+}
+
 .auth-support-links {
   border-top: 1px solid #e6e0d6;
   margin-top: 18px;

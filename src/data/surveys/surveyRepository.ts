@@ -177,6 +177,7 @@ export async function getSurveyEditor(surveyId: string): Promise<SurveyEditor> {
 
   const questionIds = (questions ?? []).map((question) => question.id);
   const options = await listQuestionOptions(questionIds);
+  const responseCount = await countSurveyResponses(surveyId);
 
   return {
     ...mapSurveySummary(survey),
@@ -184,6 +185,7 @@ export async function getSurveyEditor(surveyId: string): Promise<SurveyEditor> {
     questions: (questions ?? []).map((question) =>
       mapQuestion(question, options.get(question.id) ?? []),
     ),
+    responseCount,
   };
 }
 
@@ -524,6 +526,20 @@ async function listQuestionOptions(
   }
 
   return optionsByQuestion;
+}
+
+async function countSurveyResponses(surveyId: string) {
+  const client = requireSurveyClient();
+  const { count, error } = await client
+    .from('survey_responses')
+    .select('id', { count: 'exact', head: true })
+    .eq('survey_id', surveyId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
 }
 
 async function listSurveyResponses(surveyId: string): Promise<SurveyResponseRow[]> {

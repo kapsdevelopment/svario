@@ -118,6 +118,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const publishedAt = publishSurvey.data?.publishedAt ?? survey.publishedAt;
   const isDraft = currentStatus === 'draft';
   const isPublished = currentStatus === 'published';
+  const structureLockMessage = getStructureLockMessage(
+    currentStatus,
+    survey.responseCount,
+  );
+  const canEditStructure = structureLockMessage === null;
   const canPublish = isDraft && survey.questions.length > 0;
   const shareUrl = useMemo(() => createShareUrl(survey.slug), [survey.slug]);
   const selectedSectionId = survey.sections.some((section) => section.id === sectionId)
@@ -143,9 +148,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     event.preventDefault();
     setSectionValidationError(null);
 
-    if (!isDraft) {
+    if (!canEditStructure) {
       setSectionValidationError(
-        'Publiserte og lukkede skjemaer kan ikke endres her.',
+        structureLockMessage ?? 'Skjemastrukturen kan ikke endres her.',
       );
       return;
     }
@@ -186,9 +191,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     event.preventDefault();
     setQuestionValidationError(null);
 
-    if (!isDraft) {
+    if (!canEditStructure) {
       setQuestionValidationError(
-        'Publiserte og lukkede skjemaer kan ikke endres her.',
+        structureLockMessage ?? 'Skjemastrukturen kan ikke endres her.',
       );
       return;
     }
@@ -320,7 +325,12 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     <>
       <div className="metric-grid">
         <Panel title="Status" subtitle={statusLabel[currentStatus]} />
-        <Panel title="Besvarelser" subtitle={responseModeLabel[survey.responseMode]} />
+        <Panel
+          title="Besvarelser"
+          subtitle={`${survey.responseCount} innsendt · ${
+            responseModeLabel[survey.responseMode]
+          }`}
+        />
         <Panel title="Spørsmål" subtitle={`${survey.questions.length} totalt`} />
       </div>
 
@@ -334,6 +344,12 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         </div>
       </Panel>
 
+      {structureLockMessage ? (
+        <div className="form-alert form-alert--info" role="status">
+          {structureLockMessage}
+        </div>
+      ) : null}
+
       <Panel
         title="Publisering"
         subtitle={
@@ -346,8 +362,8 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
           <div className="publish-block__intro">
             <p>
               {isPublished
-                ? 'Skjemaet kan nå åpnes av respondenter med lenken.'
-                : 'Utkast er kun synlig i admin. Publisering låser denne første versjonen for respondenter.'}
+                ? getPublishedIntroText(survey.responseCount)
+                : 'Utkast er kun synlig i admin. Publisering gjør respondentlenken aktiv, og strukturen låses automatisk når første svar kommer inn.'}
             </p>
             {publishedAt ? (
               <span>Publisert {formatDateTime(publishedAt)}</span>
@@ -431,7 +447,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               <input
                 type="text"
                 value={sectionTitle}
-                disabled={!isDraft || addSection.isPending}
+                disabled={!canEditStructure || addSection.isPending}
                 placeholder="Om arbeidsmiljøet"
                 onChange={(event) => setSectionTitle(event.target.value)}
               />
@@ -441,7 +457,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               <input
                 type="text"
                 value={sectionDescription}
-                disabled={!isDraft || addSection.isPending}
+                disabled={!canEditStructure || addSection.isPending}
                 placeholder="Kort intro til denne delen"
                 onChange={(event) => setSectionDescription(event.target.value)}
               />
@@ -466,7 +482,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             <button
               className="button button--secondary"
               type="submit"
-              disabled={!isDraft || addSection.isPending}
+              disabled={!canEditStructure || addSection.isPending}
             >
               <Layers2 size={18} aria-hidden="true" />
               {addSection.isPending ? 'Legger til...' : 'Legg til seksjon'}
@@ -485,7 +501,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 <button
                   className="icon-button"
                   type="button"
-                  disabled={!isDraft || deleteSection.isPending}
+                  disabled={!canEditStructure || deleteSection.isPending}
                   aria-label={`Slett seksjonen ${
                     section.title ?? 'uten tittel'
                   }`}
@@ -512,7 +528,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               Spørsmålstype
               <select
                 value={type}
-                disabled={!isDraft || addQuestion.isPending}
+                disabled={!canEditStructure || addQuestion.isPending}
                 onChange={(event) => setType(event.target.value as QuestionType)}
               >
                 <option value="multiple_choice">Flervalg</option>
@@ -525,7 +541,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 Seksjon
                 <select
                   value={selectedSectionId ?? 'none'}
-                  disabled={!isDraft || addQuestion.isPending}
+                  disabled={!canEditStructure || addQuestion.isPending}
                   onChange={(event) =>
                     setSectionId(
                       event.target.value === 'none' ? null : event.target.value,
@@ -546,7 +562,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               <input
                 type="text"
                 value={prompt}
-                disabled={!isDraft || addQuestion.isPending}
+                disabled={!canEditStructure || addQuestion.isPending}
                 placeholder="Hva bør vi prioritere neste kvartal?"
                 onChange={(event) => setPrompt(event.target.value)}
               />
@@ -557,7 +573,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             <textarea
               rows={3}
               value={description}
-              disabled={!isDraft || addQuestion.isPending}
+              disabled={!canEditStructure || addQuestion.isPending}
               placeholder="Valgfri kontekst til respondenten"
               onChange={(event) => setDescription(event.target.value)}
             />
@@ -568,7 +584,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               <textarea
                 rows={4}
                 value={optionText}
-                disabled={!isDraft || addQuestion.isPending}
+                disabled={!canEditStructure || addQuestion.isPending}
                 onChange={(event) => setOptionText(event.target.value)}
               />
             </label>
@@ -583,7 +599,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                       ? getScalePresetValue(selectedScalePreset)
                       : 'custom'
                   }
-                  disabled={!isDraft || addQuestion.isPending}
+                  disabled={!canEditStructure || addQuestion.isPending}
                   onChange={(event) => handleScalePresetChange(event.target.value)}
                 >
                   {scalePresets.map((preset) => (
@@ -601,7 +617,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                   min={questionScaleLimits.min}
                   max={questionScaleLimits.max}
                   value={scaleMin}
-                  disabled={!isDraft || addQuestion.isPending}
+                  disabled={!canEditStructure || addQuestion.isPending}
                   onChange={(event) =>
                     setScaleMin(parseScaleInput(event.target.value, scaleMin))
                   }
@@ -614,7 +630,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                   min={questionScaleLimits.min}
                   max={questionScaleLimits.max}
                   value={scaleMax}
-                  disabled={!isDraft || addQuestion.isPending}
+                  disabled={!canEditStructure || addQuestion.isPending}
                   onChange={(event) =>
                     setScaleMax(parseScaleInput(event.target.value, scaleMax))
                   }
@@ -627,7 +643,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               <input
                 type="checkbox"
                 checked={isRequired}
-                disabled={!isDraft || addQuestion.isPending}
+                disabled={!canEditStructure || addQuestion.isPending}
                 onChange={(event) => setIsRequired(event.target.checked)}
               />
               Påkrevd
@@ -637,7 +653,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 <input
                   type="checkbox"
                   checked={allowMultiple}
-                  disabled={!isDraft || addQuestion.isPending}
+                  disabled={!canEditStructure || addQuestion.isPending}
                   onChange={(event) => setAllowMultiple(event.target.checked)}
                 />
                 Flere valg
@@ -663,7 +679,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             <button
               className="button button--primary"
               type="submit"
-              disabled={!isDraft || addQuestion.isPending}
+              disabled={!canEditStructure || addQuestion.isPending}
             >
               <Plus size={18} aria-hidden="true" />
               {addQuestion.isPending ? 'Legger til...' : 'Legg til spørsmål'}
@@ -691,7 +707,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 <QuestionCard
                   key={question.id}
                   question={question}
-                  disabled={!isDraft || deleteQuestion.isPending}
+                  disabled={!canEditStructure || deleteQuestion.isPending}
                   onDelete={handleDelete}
                 />
               ))}
@@ -827,6 +843,29 @@ function formatQuestionScale(question: SurveyQuestion) {
   const scaleMin = question.scaleMin ?? questionScaleDefaults.min;
   const scaleMax = question.scaleMax ?? questionScaleDefaults.max;
   return `Skala ${scaleMin}-${scaleMax}`;
+}
+
+function getStructureLockMessage(
+  status: SurveySummary['status'],
+  responseCount: number,
+) {
+  if (responseCount > 0) {
+    return `Skjemastrukturen er låst fordi ${responseCount} svar er sendt inn. Opprett et nytt skjema eller en ny versjon hvis spørsmål, seksjoner eller alternativer skal endres.`;
+  }
+
+  if (status === 'closed') {
+    return 'Lukkede skjemaer kan ikke endres her.';
+  }
+
+  return null;
+}
+
+function getPublishedIntroText(responseCount: number) {
+  if (responseCount === 0) {
+    return 'Skjemaet kan nå åpnes av respondenter med lenken. Du kan fortsatt justere struktur frem til første svar kommer inn.';
+  }
+
+  return 'Skjemaet kan åpnes av respondenter med lenken. Strukturen er låst for å bevare historiske svar.';
 }
 
 const statusLabel = {

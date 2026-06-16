@@ -71,6 +71,7 @@ export type SurveyQuestion = {
 export type SurveyEditor = SurveySummary & {
   sections: SurveySection[];
   questions: SurveyQuestion[];
+  responseCount: number;
 };
 
 export type PublishedSurvey = Omit<SurveySummary, 'createdAt' | 'updatedAt'> & {

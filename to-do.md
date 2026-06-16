@@ -64,7 +64,8 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Støtte anonymisert eller identifisert besvarelse per skjema.
 - [x] Støtte valgfri tidsavgrensning.
 - [x] Lage publiseringsflyt og delbar lenke.
-- [ ] Låse strukturfelter etter publisering med innsendte svar.
+- [ ] Støtte enkel branding per konto eller skjema: logo, primærfarge, aksentfarge og respondenttema som kan matche kundens profil.
+- [x] Låse strukturfelter etter publisering med innsendte svar.
 
 ## 6. Respondentflyt
 
@@ -117,6 +118,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [ ] Team/organisasjoner.
 - [ ] Respondent-login.
 - [ ] Invitasjonskoder.
+- [ ] Avansert branding/white-label: skjule eller tilpasse "Powered by Svario", egne domener per kunde og flere brand-profiler.
 - [ ] Live-modus under møter/foredrag.
 - [ ] Autosave av delvise besvarelser.
 - [ ] Offentlige resultater for respondenter.
