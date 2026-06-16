@@ -1,82 +1,77 @@
-import { lazy, Suspense, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { createHashRouter } from 'react-router-dom';
 
 import { AppShell } from '../presentation/shared/layout/AppShell';
+import { lazyRoute } from './lazyRoute';
 import { RequireAuth } from './RequireAuth';
+import { RouteErrorPage } from './RouteErrorPage';
 import { routes } from './routes';
 
-const DashboardPage = lazy(() =>
-  import('../presentation/admin/dashboard/DashboardPage').then((module) => ({
-    default: module.DashboardPage,
-  })),
+const DashboardPage = lazyRoute(
+  () => import('../presentation/admin/dashboard/DashboardPage'),
+  'DashboardPage',
 );
-const LoginPage = lazy(() =>
-  import('../presentation/admin/auth/LoginPage').then((module) => ({
-    default: module.LoginPage,
-  })),
+const LoginPage = lazyRoute(
+  () => import('../presentation/admin/auth/LoginPage'),
+  'LoginPage',
 );
-const LandingPage = lazy(() =>
-  import('../presentation/public/landing/LandingPage').then((module) => ({
-    default: module.LandingPage,
-  })),
+const LandingPage = lazyRoute(
+  () => import('../presentation/public/landing/LandingPage'),
+  'LandingPage',
 );
-const PrivacyPage = lazy(() =>
-  import('../presentation/public/privacy/PrivacyPage').then((module) => ({
-    default: module.PrivacyPage,
-  })),
+const PrivacyPage = lazyRoute(
+  () => import('../presentation/public/privacy/PrivacyPage'),
+  'PrivacyPage',
 );
-const ProfilePage = lazy(() =>
-  import('../presentation/admin/profile/ProfilePage').then((module) => ({
-    default: module.ProfilePage,
-  })),
+const ProfilePage = lazyRoute(
+  () => import('../presentation/admin/profile/ProfilePage'),
+  'ProfilePage',
 );
-const ResultsPage = lazy(() =>
-  import('../presentation/admin/results/ResultsPage').then((module) => ({
-    default: module.ResultsPage,
-  })),
+const ResultsPage = lazyRoute(
+  () => import('../presentation/admin/results/ResultsPage'),
+  'ResultsPage',
 );
-const SurveyCreatePage = lazy(() =>
-  import('../presentation/admin/surveys/SurveyCreatePage').then((module) => ({
-    default: module.SurveyCreatePage,
-  })),
+const SurveyCreatePage = lazyRoute(
+  () => import('../presentation/admin/surveys/SurveyCreatePage'),
+  'SurveyCreatePage',
 );
-const SurveyEditorPage = lazy(() =>
-  import('../presentation/admin/surveys/SurveyEditorPage').then((module) => ({
-    default: module.SurveyEditorPage,
-  })),
+const SurveyEditorPage = lazyRoute(
+  () => import('../presentation/admin/surveys/SurveyEditorPage'),
+  'SurveyEditorPage',
 );
-const SurveyListPage = lazy(() =>
-  import('../presentation/admin/surveys/SurveyListPage').then((module) => ({
-    default: module.SurveyListPage,
-  })),
+const SurveyListPage = lazyRoute(
+  () => import('../presentation/admin/surveys/SurveyListPage'),
+  'SurveyListPage',
 );
-const RespondentPage = lazy(() =>
-  import('../presentation/public/respondent/RespondentPage').then((module) => ({
-    default: module.RespondentPage,
-  })),
+const RespondentPage = lazyRoute(
+  () => import('../presentation/public/respondent/RespondentPage'),
+  'RespondentPage',
 );
-const SecurityPage = lazy(() =>
-  import('../presentation/public/security/SecurityPage').then((module) => ({
-    default: module.SecurityPage,
-  })),
+const SecurityPage = lazyRoute(
+  () => import('../presentation/public/security/SecurityPage'),
+  'SecurityPage',
 );
 
 export const router = createHashRouter([
   {
     path: '/',
     element: page(<LandingPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     path: routes.login,
     element: page(<LoginPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     path: routes.privacy,
     element: page(<PrivacyPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     path: routes.security,
     element: page(<SecurityPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     element: (
@@ -84,6 +79,7 @@ export const router = createHashRouter([
         <AppShell />
       </RequireAuth>
     ),
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: routes.dashboard,
@@ -114,6 +110,7 @@ export const router = createHashRouter([
   {
     path: '/s/:slug',
     element: page(<RespondentPage />),
+    errorElement: <RouteErrorPage />,
   },
 ]);
 
