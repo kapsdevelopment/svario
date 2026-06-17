@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   BarChart3,
   ChartPie,
+  ChevronLeft,
+  ChevronRight,
   Download,
   FileText,
   MessageSquareText,
   Palette,
+  Play,
+  X,
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -90,6 +94,10 @@ export function ResultsPage() {
 }
 
 function ResultsContent({ results }: { results: SurveyResults }) {
+  const [isPresenting, setIsPresenting] = useState(false);
+  const canUseResults =
+    results.responseCount > 0 && results.questionResults.length > 0;
+
   function handleDownloadCsv() {
     downloadTextFile({
       content: buildSurveyResultsCsv(results),
@@ -110,6 +118,13 @@ function ResultsContent({ results }: { results: SurveyResults }) {
 
   return (
     <>
+      {isPresenting ? (
+        <ResultsPresentationMode
+          results={results}
+          onClose={() => setIsPresenting(false)}
+        />
+      ) : null}
+
       <div className="metric-grid">
         <Panel title="Svar" subtitle={`${results.responseCount} totalt`} />
         <Panel title="Spørsmål" subtitle={`${results.questionResults.length} totalt`} />
@@ -139,18 +154,27 @@ function ResultsContent({ results }: { results: SurveyResults }) {
       </div>
 
       <Panel
-        title="Eksport"
+        title="Bruk resultatene"
         subtitle={
-          results.responseCount === 0
-            ? 'Eksport blir tilgjengelig når skjemaet har svar'
-            : 'Last ned rådata eller en enkel rapport'
+          canUseResults
+            ? 'Presenter resultatene eller last ned rådata og rapport'
+            : 'Presentasjon og eksport blir tilgjengelig når skjemaet har svar'
         }
         action={
           <div className="inline-actions">
             <button
+              className="button button--primary"
+              type="button"
+              disabled={!canUseResults}
+              onClick={() => setIsPresenting(true)}
+            >
+              <Play size={18} aria-hidden="true" />
+              Presenter
+            </button>
+            <button
               className="button button--secondary"
               type="button"
-              disabled={results.responseCount === 0}
+              disabled={!canUseResults}
               onClick={handleDownloadCsv}
             >
               <Download size={18} aria-hidden="true" />
@@ -159,7 +183,7 @@ function ResultsContent({ results }: { results: SurveyResults }) {
             <button
               className="button button--secondary"
               type="button"
-              disabled={results.responseCount === 0}
+              disabled={!canUseResults}
               onClick={handleDownloadPdf}
             >
               <FileText size={18} aria-hidden="true" />
@@ -170,6 +194,235 @@ function ResultsContent({ results }: { results: SurveyResults }) {
       />
     </>
   );
+}
+
+function ResultsPresentationMode({
+  onClose,
+  results,
+}: {
+  onClose: () => void;
+  results: SurveyResults;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const slideCount = results.questionResults.length;
+  const currentResult = results.questionResults[currentIndex];
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < slideCount - 1;
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+        event.preventDefault();
+        setCurrentIndex((index) => Math.min(slideCount - 1, index + 1));
+        return;
+      }
+
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+        event.preventDefault();
+        setCurrentIndex((index) => Math.max(0, index - 1));
+        return;
+      }
+
+      if (event.key === 'Home') {
+        event.preventDefault();
+        setCurrentIndex(0);
+        return;
+      }
+
+      if (event.key === 'End') {
+        event.preventDefault();
+        setCurrentIndex(slideCount - 1);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, slideCount]);
+
+  if (!currentResult) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-label={`Presentasjonsmodus for ${results.title}`}
+      aria-modal="true"
+      className="presentation-mode"
+      role="dialog"
+    >
+      <div className="presentation-mode__topbar">
+        <div>
+          <span>Svario presentasjon</span>
+          <strong>{results.title}</strong>
+        </div>
+        <button
+          className="presentation-mode__close"
+          type="button"
+          aria-label="Lukk presentasjonsmodus"
+          onClick={onClose}
+        >
+          <X size={20} aria-hidden="true" />
+        </button>
+      </div>
+
+      <PresentationSlide
+        index={currentIndex}
+        responseCount={results.responseCount}
+        result={currentResult}
+        slideCount={slideCount}
+      />
+
+      <div className="presentation-mode__footer">
+        <button
+          className="button button--secondary"
+          type="button"
+          disabled={!hasPrevious}
+          onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
+        >
+          <ChevronLeft size={18} aria-hidden="true" />
+          Forrige
+        </button>
+        <div className="presentation-mode__steps" aria-label="Spørsmål">
+          {results.questionResults.map((result, index) => (
+            <button
+              aria-current={index === currentIndex ? 'step' : undefined}
+              aria-label={`Gå til spørsmål ${index + 1}: ${result.question.prompt}`}
+              key={result.question.id}
+              type="button"
+              onClick={() => setCurrentIndex(index)}
+            />
+          ))}
+        </div>
+        <button
+          className="button button--primary"
+          type="button"
+          disabled={!hasNext}
+          onClick={() =>
+            setCurrentIndex((index) => Math.min(slideCount - 1, index + 1))
+          }
+        >
+          Neste
+          <ChevronRight size={18} aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PresentationSlide({
+  index,
+  responseCount,
+  result,
+  slideCount,
+}: {
+  index: number;
+  responseCount: number;
+  result: SurveyQuestionResult;
+  slideCount: number;
+}) {
+  return (
+    <main className="presentation-slide">
+      <div className="presentation-slide__header">
+        <div>
+          <p className="eyebrow">
+            Spørsmål {index + 1} av {slideCount}
+          </p>
+          <h2>{result.question.prompt}</h2>
+          <p>
+            {getQuestionResultTypeLabel(result.question)} · {result.answeredCount}/
+            {responseCount} besvart
+          </p>
+        </div>
+        {result.skippedCount > 0 ? (
+          <span>{result.skippedCount} uten svar</span>
+        ) : null}
+      </div>
+
+      {result.question.description ? (
+        <p className="presentation-slide__description">
+          {result.question.description}
+        </p>
+      ) : null}
+
+      <div className="presentation-slide__visual">
+        <PresentationQuestionVisual result={result} />
+      </div>
+    </main>
+  );
+}
+
+function PresentationQuestionVisual({
+  result,
+}: {
+  result: SurveyQuestionResult;
+}) {
+  const colorMode = result.question.visualizationColorMode;
+  const chartType = getInitialChartType(result.question.visualizationType);
+
+  if (result.question.type === 'multiple_choice') {
+    return (
+      <ChoiceResultView
+        chartType={chartType}
+        colorMode={colorMode}
+        results={result.choiceResults}
+      />
+    );
+  }
+
+  if (result.question.type === 'likert_scale') {
+    return (
+      <LikertResultView
+        average={result.likertAverage}
+        chartType={chartType}
+        colorMode={colorMode}
+        scaleVariant={result.question.scaleVariant}
+        results={result.likertResults}
+      />
+    );
+  }
+
+  return (
+    <FreeTextPresentationView
+      colorMode={colorMode}
+      results={result.freeTextResults}
+    />
+  );
+}
+
+function FreeTextPresentationView({
+  colorMode,
+  results,
+}: {
+  colorMode: ResultColorMode;
+  results: SurveyQuestionResult['freeTextResults'];
+}) {
+  const wordCloud = buildFreeTextWordCloud(results);
+
+  if (wordCloud.length === 0) {
+    return (
+      <div className="empty-state">
+        <MessageSquareText size={28} aria-hidden="true" />
+        <p>Ingen ordsky å vise ennå.</p>
+      </div>
+    );
+  }
+
+  return <WordCloud colorMode={colorMode} items={wordCloud} />;
 }
 
 function QuestionResultCard({
@@ -220,7 +473,7 @@ function QuestionResultCard({
   return (
     <Panel
       title={result.question.prompt}
-      subtitle={`${questionTypeLabel[result.question.type]} · ${result.answeredCount}/${responseCount} besvart`}
+      subtitle={`${getQuestionResultTypeLabel(result.question)} · ${result.answeredCount}/${responseCount} besvart`}
       action={
         hasVisualization ? (
           <div className="visual-controls">
@@ -279,6 +532,7 @@ function QuestionResultCard({
           average={result.likertAverage}
           chartType={chartType}
           colorMode={colorMode}
+          scaleVariant={result.question.scaleVariant}
           results={result.likertResults}
         />
       ) : null}
@@ -349,19 +603,27 @@ function LikertResultView({
   average,
   chartType,
   colorMode,
+  scaleVariant,
   results,
 }: {
   average: number | null;
   chartType: ResultChartType;
   colorMode: ResultColorMode;
+  scaleVariant: SurveyQuestionResult['question']['scaleVariant'];
   results: SurveyLikertResult[];
 }) {
   return (
     <div className="result-layout">
-      <div className="result-average">
-        <span>Gjennomsnitt</span>
-        <strong>{average === null ? 'Ingen' : average.toLocaleString('nb-NO')}</strong>
-      </div>
+      {scaleVariant === 'nps' ? (
+        <NpsResultSummary results={results} />
+      ) : (
+        <div className="result-average">
+          <span>Gjennomsnitt</span>
+          <strong>
+            {average === null ? 'Ingen' : average.toLocaleString('nb-NO')}
+          </strong>
+        </div>
+      )}
       {chartType === 'bar' ? (
         <BarResultChart
           ariaLabel="Skalafordeling"
@@ -394,6 +656,38 @@ function LikertResultView({
       />
     </div>
   );
+}
+
+function NpsResultSummary({ results }: { results: SurveyLikertResult[] }) {
+  const total = results.reduce((sum, result) => sum + result.count, 0);
+  const promoters = sumNpsGroup(results, (value) => value >= 9);
+  const passives = sumNpsGroup(results, (value) => value >= 7 && value <= 8);
+  const detractors = sumNpsGroup(results, (value) => value <= 6);
+  const score =
+    total === 0 ? null : Math.round(((promoters - detractors) / total) * 100);
+
+  return (
+    <div className="nps-summary">
+      <div>
+        <span>NPS</span>
+        <strong>{score === null ? 'Ingen' : score}</strong>
+      </div>
+      <div className="nps-summary__groups">
+        <span>{promoters} promotører</span>
+        <span>{passives} passive</span>
+        <span>{detractors} kritikere</span>
+      </div>
+    </div>
+  );
+}
+
+function sumNpsGroup(
+  results: SurveyLikertResult[],
+  predicate: (value: number) => boolean,
+) {
+  return results
+    .filter((result) => predicate(result.value))
+    .reduce((sum, result) => sum + result.count, 0);
 }
 
 function BarResultChart<TData extends { count: number }>({
@@ -809,6 +1103,22 @@ const questionTypeLabel = {
   free_text: 'Fritekst',
   likert_scale: 'Skala',
 } satisfies Record<SurveyQuestionResult['question']['type'], string>;
+
+function getQuestionResultTypeLabel(question: SurveyQuestionResult['question']) {
+  if (question.type !== 'likert_scale') {
+    return questionTypeLabel[question.type];
+  }
+
+  if (question.scaleVariant === 'stars') {
+    return 'Stjerner';
+  }
+
+  if (question.scaleVariant === 'nps') {
+    return 'NPS';
+  }
+
+  return questionTypeLabel.likert_scale;
+}
 
 function formatSurveyMeta(results: SurveyResults) {
   const responseMode =

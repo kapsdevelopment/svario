@@ -288,6 +288,7 @@ export type Database = {
           prompt: string
           scale_max: number | null
           scale_min: number | null
+          scale_variant: Database["public"]["Enums"]["question_scale_variant"] | null
           section_id: string | null
           sort_order: number
           survey_id: string
@@ -305,6 +306,7 @@ export type Database = {
           prompt: string
           scale_max?: number | null
           scale_min?: number | null
+          scale_variant?: Database["public"]["Enums"]["question_scale_variant"] | null
           section_id?: string | null
           sort_order?: number
           survey_id: string
@@ -322,6 +324,7 @@ export type Database = {
           prompt?: string
           scale_max?: number | null
           scale_min?: number | null
+          scale_variant?: Database["public"]["Enums"]["question_scale_variant"] | null
           section_id?: string | null
           sort_order?: number
           survey_id?: string
@@ -626,6 +629,7 @@ export type Database = {
         | "free_text"
         | "likert_1_5"
         | "likert_scale"
+      question_scale_variant: "buttons" | "stars" | "nps"
       question_visualization_color_mode: "muted" | "colorful"
       question_visualization_type: "bar" | "pie" | "word_cloud" | "list"
       survey_response_mode: "anonymous" | "identified"
@@ -767,6 +771,7 @@ export const Constants = {
         "likert_1_5",
         "likert_scale",
       ],
+      question_scale_variant: ["buttons", "stars", "nps"],
       question_visualization_color_mode: ["muted", "colorful"],
       question_visualization_type: ["bar", "pie", "word_cloud", "list"],
       survey_response_mode: ["anonymous", "identified"],

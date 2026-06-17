@@ -2,11 +2,13 @@ import {
   ArrowLeft,
   Copy,
   ExternalLink,
+  Gauge,
   Layers2,
   ListChecks,
   Plus,
   Send,
   SlidersHorizontal,
+  Star,
   Trash2,
   Type,
 } from 'lucide-react';
@@ -23,6 +25,7 @@ import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
 import {
   questionScaleDefaults,
   questionScaleLimits,
+  type QuestionScaleVariant,
   type QuestionType,
   type SurveyEditor,
   type SurveyQuestion,
@@ -38,9 +41,11 @@ const questionTypeLabels = {
 } satisfies Record<QuestionType, string>;
 
 const scalePresets = [
-  { label: 'Likert 1-5', min: 1, max: 5 },
-  { label: 'Likert 1-7', min: 1, max: 7 },
-  { label: 'Skala 1-4', min: 1, max: 4 },
+  { label: 'Likert 1-5', min: 1, max: 5, variant: 'buttons' },
+  { label: 'Likert 1-7', min: 1, max: 7, variant: 'buttons' },
+  { label: 'Skala 1-4', min: 1, max: 4, variant: 'buttons' },
+  { label: 'Stjerner 1-5', min: 1, max: 5, variant: 'stars' },
+  { label: 'Net Promoter Score 0-10', min: 0, max: 10, variant: 'nps' },
 ] as const;
 
 export function SurveyEditorPage() {
@@ -103,6 +108,8 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [optionText, setOptionText] = useState('Ja\nNei');
   const [scaleMin, setScaleMin] = useState<number>(questionScaleDefaults.min);
   const [scaleMax, setScaleMax] = useState<number>(questionScaleDefaults.max);
+  const [scaleVariant, setScaleVariant] =
+    useState<QuestionScaleVariant>('buttons');
   const [sectionValidationError, setSectionValidationError] = useState<
     string | null
   >(null);
@@ -139,9 +146,12 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const selectedScalePreset = useMemo(
     () =>
       scalePresets.find(
-        (preset) => preset.min === scaleMin && preset.max === scaleMax,
+        (preset) =>
+          preset.min === scaleMin &&
+          preset.max === scaleMax &&
+          preset.variant === scaleVariant,
       ),
-    [scaleMax, scaleMin],
+    [scaleMax, scaleMin, scaleVariant],
   );
 
   async function handleAddSection(event: FormEvent<HTMLFormElement>) {
@@ -175,6 +185,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   }
 
   function handleScalePresetChange(value: string) {
+    if (value === 'custom') {
+      setScaleVariant('buttons');
+      return;
+    }
+
     const preset = scalePresets.find(
       (currentPreset) => getScalePresetValue(currentPreset) === value,
     );
@@ -185,6 +200,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
     setScaleMin(preset.min);
     setScaleMax(preset.max);
+    setScaleVariant(preset.variant);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -230,6 +246,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         allowMultiple,
         scaleMin: type === 'likert_scale' ? scaleMin : null,
         scaleMax: type === 'likert_scale' ? scaleMax : null,
+        scaleVariant: type === 'likert_scale' ? scaleVariant : null,
         optionLabels,
       });
     } catch {
@@ -240,6 +257,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     setDescription('');
     setAllowMultiple(false);
     setOptionText('Ja\nNei');
+    setScaleMin(questionScaleDefaults.min);
+    setScaleMax(questionScaleDefaults.max);
+    setScaleVariant('buttons');
   }
 
   async function handlePublish() {
@@ -533,7 +553,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               >
                 <option value="multiple_choice">Flervalg</option>
                 <option value="free_text">Fritekst</option>
-                <option value="likert_scale">Skala</option>
+                <option value="likert_scale">Skala/rating</option>
               </select>
             </label>
             {survey.sections.length > 0 ? (
@@ -617,10 +637,15 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                   min={questionScaleLimits.min}
                   max={questionScaleLimits.max}
                   value={scaleMin}
-                  disabled={!canEditStructure || addQuestion.isPending}
-                  onChange={(event) =>
-                    setScaleMin(parseScaleInput(event.target.value, scaleMin))
+                  disabled={
+                    !canEditStructure ||
+                    addQuestion.isPending ||
+                    scaleVariant !== 'buttons'
                   }
+                  onChange={(event) => {
+                    setScaleVariant('buttons');
+                    setScaleMin(parseScaleInput(event.target.value, scaleMin));
+                  }}
                 />
               </label>
               <label>
@@ -630,10 +655,15 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                   min={questionScaleLimits.min}
                   max={questionScaleLimits.max}
                   value={scaleMax}
-                  disabled={!canEditStructure || addQuestion.isPending}
-                  onChange={(event) =>
-                    setScaleMax(parseScaleInput(event.target.value, scaleMax))
+                  disabled={
+                    !canEditStructure ||
+                    addQuestion.isPending ||
+                    scaleVariant !== 'buttons'
                   }
+                  onChange={(event) => {
+                    setScaleVariant('buttons');
+                    setScaleMax(parseScaleInput(event.target.value, scaleMax));
+                  }}
                 />
               </label>
             </div>
@@ -742,13 +772,7 @@ function QuestionCard({
   return (
     <article className="question-card">
       <div className="question-card__icon" aria-hidden="true">
-        {question.type === 'free_text' ? (
-          <Type size={20} />
-        ) : question.type === 'likert_scale' ? (
-          <SlidersHorizontal size={20} />
-        ) : (
-          <ListChecks size={20} />
-        )}
+        {getQuestionIcon(question)}
       </div>
       <div>
         <div className="question-card__header">
@@ -765,7 +789,7 @@ function QuestionCard({
         </div>
         {question.description ? <p>{question.description}</p> : null}
         <div className="status-row">
-          <span>{questionTypeLabels[question.type]}</span>
+          <span>{getQuestionTypeLabel(question)}</span>
           <span>{question.isRequired ? 'Påkrevd' : 'Valgfri'}</span>
           {question.type === 'likert_scale' ? (
             <span>{formatQuestionScale(question)}</span>
@@ -811,7 +835,7 @@ function groupQuestionsBySection(
 }
 
 function getScalePresetValue(preset: (typeof scalePresets)[number]) {
-  return `${preset.min}:${preset.max}`;
+  return `${preset.min}:${preset.max}:${preset.variant}`;
 }
 
 function parseScaleInput(value: string, fallback: number) {
@@ -842,7 +866,52 @@ function getScaleValidationError(scaleMin: number, scaleMax: number) {
 function formatQuestionScale(question: SurveyQuestion) {
   const scaleMin = question.scaleMin ?? questionScaleDefaults.min;
   const scaleMax = question.scaleMax ?? questionScaleDefaults.max;
+
+  if (question.scaleVariant === 'stars') {
+    return '1-5 stjerner';
+  }
+
+  if (question.scaleVariant === 'nps') {
+    return 'NPS 0-10';
+  }
+
   return `Skala ${scaleMin}-${scaleMax}`;
+}
+
+function getQuestionTypeLabel(question: SurveyQuestion) {
+  if (question.type !== 'likert_scale') {
+    return questionTypeLabels[question.type];
+  }
+
+  if (question.scaleVariant === 'stars') {
+    return 'Stjerner';
+  }
+
+  if (question.scaleVariant === 'nps') {
+    return 'NPS';
+  }
+
+  return questionTypeLabels.likert_scale;
+}
+
+function getQuestionIcon(question: SurveyQuestion) {
+  if (question.type === 'free_text') {
+    return <Type size={20} />;
+  }
+
+  if (question.type === 'likert_scale') {
+    if (question.scaleVariant === 'stars') {
+      return <Star size={20} />;
+    }
+
+    if (question.scaleVariant === 'nps') {
+      return <Gauge size={20} />;
+    }
+
+    return <SlidersHorizontal size={20} />;
+  }
+
+  return <ListChecks size={20} />;
 }
 
 function getStructureLockMessage(

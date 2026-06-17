@@ -327,7 +327,7 @@ class PdfReportWriter {
       lineHeight: 18,
     });
     this.addWrappedText(
-      `${questionTypeLabel[result.question.type]} - ${result.answeredCount}/${responseCount} besvart`,
+      `${getQuestionTypeLabel(result.question)} - ${result.answeredCount}/${responseCount} besvart`,
       {
         color: colors.muted,
         fontSize: 9,
@@ -350,7 +350,11 @@ class PdfReportWriter {
     }
 
     if (result.question.type === 'likert_scale') {
-      this.addLikertResults(result.likertResults, result.likertAverage);
+      this.addLikertResults(
+        result.likertResults,
+        result.likertAverage,
+        result.question.scaleVariant,
+      );
     }
 
     if (result.question.type === 'free_text') {
@@ -381,21 +385,17 @@ class PdfReportWriter {
   private addLikertResults(
     results: SurveyLikertResult[],
     average: number | null,
+    scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
   ) {
     const rows = this.getLikertRows(results);
 
-    this.addWrappedText(
-      `Gjennomsnitt: ${
-        average === null ? 'Ingen svar' : average.toLocaleString('nb-NO')
-      }`,
-      {
-        color: colors.pine,
-        fontSize: 10,
-        fontStyle: 'bold',
-        gapAfter: 8,
-        lineHeight: 14,
-      },
-    );
+    this.addWrappedText(formatLikertSummary(results, average, scaleVariant), {
+      color: colors.pine,
+      fontSize: 10,
+      fontStyle: 'bold',
+      gapAfter: 8,
+      lineHeight: 14,
+    });
     this.addTable(
       [
         { header: 'Verdi', width: this.contentWidth - 148 },
@@ -630,7 +630,7 @@ class PdfReportWriter {
         lineHeight: 18,
       }) +
       this.measureWrappedTextHeight(
-        `${questionTypeLabel[result.question.type]} - ${result.answeredCount}/${responseCount} besvart`,
+        `${getQuestionTypeLabel(result.question)} - ${result.answeredCount}/${responseCount} besvart`,
         {
           fontSize: 9,
           gapAfter: metaGapAfter,
@@ -656,6 +656,7 @@ class PdfReportWriter {
       return this.measureLikertResultsHeight(
         result.likertResults,
         result.likertAverage,
+        result.question.scaleVariant,
       );
     }
 
@@ -671,6 +672,7 @@ class PdfReportWriter {
       return this.measureLikertResultsStartHeight(
         result.likertResults,
         result.likertAverage,
+        result.question.scaleVariant,
       );
     }
 
@@ -714,9 +716,10 @@ class PdfReportWriter {
   private measureLikertResultsHeight(
     results: SurveyLikertResult[],
     average: number | null,
+    scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
   ) {
     return (
-      this.measureLikertAverageHeight(average) +
+      this.measureLikertSummaryHeight(results, average, scaleVariant) +
       this.measureTableHeight(
         [
           { header: 'Verdi', width: this.contentWidth - 148 },
@@ -731,9 +734,10 @@ class PdfReportWriter {
   private measureLikertResultsStartHeight(
     results: SurveyLikertResult[],
     average: number | null,
+    scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
   ) {
     return (
-      this.measureLikertAverageHeight(average) +
+      this.measureLikertSummaryHeight(results, average, scaleVariant) +
       this.measureTableStartHeight(
         [
           { header: 'Verdi', width: this.contentWidth - 148 },
@@ -745,11 +749,13 @@ class PdfReportWriter {
     );
   }
 
-  private measureLikertAverageHeight(average: number | null) {
+  private measureLikertSummaryHeight(
+    results: SurveyLikertResult[],
+    average: number | null,
+    scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
+  ) {
     return this.measureWrappedTextHeight(
-      `Gjennomsnitt: ${
-        average === null ? 'Ingen svar' : average.toLocaleString('nb-NO')
-      }`,
+      formatLikertSummary(results, average, scaleVariant),
       {
         fontSize: 10,
         fontStyle: 'bold',
@@ -1183,6 +1189,67 @@ const questionTypeLabel = {
   likert_scale: 'Skala',
   multiple_choice: 'Flervalg',
 } satisfies Record<SurveyQuestionResult['question']['type'], string>;
+
+function getQuestionTypeLabel(question: SurveyQuestionResult['question']) {
+  if (question.type !== 'likert_scale') {
+    return questionTypeLabel[question.type];
+  }
+
+  if (question.scaleVariant === 'stars') {
+    return 'Stjerner';
+  }
+
+  if (question.scaleVariant === 'nps') {
+    return 'NPS';
+  }
+
+  return questionTypeLabel.likert_scale;
+}
+
+function formatLikertSummary(
+  results: SurveyLikertResult[],
+  average: number | null,
+  scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
+) {
+  if (scaleVariant !== 'nps') {
+    return `Gjennomsnitt: ${
+      average === null ? 'Ingen svar' : average.toLocaleString('nb-NO')
+    }`;
+  }
+
+  const summary = calculateNpsSummary(results);
+
+  if (summary.score === null) {
+    return 'NPS: Ingen svar';
+  }
+
+  return `NPS: ${summary.score} (${summary.promoters} promotører, ${summary.passives} passive, ${summary.detractors} kritikere)`;
+}
+
+function calculateNpsSummary(results: SurveyLikertResult[]) {
+  const total = results.reduce((sum, result) => sum + result.count, 0);
+  const promoters = sumNpsGroup(results, (value) => value >= 9);
+  const passives = sumNpsGroup(results, (value) => value >= 7 && value <= 8);
+  const detractors = sumNpsGroup(results, (value) => value <= 6);
+  const score =
+    total === 0 ? null : Math.round(((promoters - detractors) / total) * 100);
+
+  return {
+    detractors,
+    passives,
+    promoters,
+    score,
+  };
+}
+
+function sumNpsGroup(
+  results: SurveyLikertResult[],
+  predicate: (value: number) => boolean,
+) {
+  return results
+    .filter((result) => predicate(result.value))
+    .reduce((sum, result) => sum + result.count, 0);
+}
 
 const statusLabel = {
   closed: 'Lukket',

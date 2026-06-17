@@ -61,6 +61,8 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage første redigeringsside for draft-skjema.
 - [x] Støtte seksjoner i skjema.
 - [x] Støtte spørsmålstypene flervalg, fritekst og konfigurerbar skala.
+- [x] Støtte 1-5 stjerner som rating-variant av skala.
+- [x] Støtte Net Promoter Score 0-10 som skala-variant.
 - [x] Støtte enkeltvalg og flervalg per flervalgsspørsmål.
 - [x] Støtte anonymisert eller identifisert besvarelse per skjema.
 - [x] Støtte valgfri tidsavgrensning.
@@ -87,6 +89,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Vise flervalg som stolpediagram.
 - [x] Legge til kakediagram som visualiseringsvalg for flervalg og skala.
 - [x] Vise skalafordeling og snitt.
+- [x] Vise NPS-score med promotører, passive og kritikere.
 - [x] Vise fritekstsvar i liste.
 - [x] Lage enkel wordcloud for fritekstsvar.
 - [x] Sørge for at resultater kun er synlige for skjemaeier.
@@ -97,6 +100,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage enkel PDF-rapport.
 - [x] Sikre at anonym eksport ikke inneholder identifiserende respondentfelt.
 - [x] Teste eksport med norske tegn.
+- [x] Merke stjerner/NPS i PDF-rapport og vise NPS-oppsummering.
 
 ## 9. Deploy og drift
 
@@ -135,9 +139,10 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 
 ### Presentasjonsmodus
 
-- [ ] Lage presentasjonsmodus for resultater der admin kan bla gjennom ett spørsmål av gangen.
-- [ ] Vise ordsky for fritekstspørsmål i presentasjonsmodus, uten rå tekstsvar.
-- [ ] Vise valgt diagramtype for flervalg/skala i presentasjonsmodus.
+- [x] Lage presentasjonsmodus for resultater der admin kan bla gjennom ett spørsmål av gangen.
+- [x] Vise ordsky for fritekstspørsmål i presentasjonsmodus, uten rå tekstsvar.
+- [x] Vise valgt diagramtype for flervalg/skala i presentasjonsmodus.
+- [x] Støtte tastaturnavigasjon med piltaster, Home/End og Escape.
 - [ ] Støtte tastatur-/klikk-navigasjon, stor visning og rolig møte-/workshop-layout.
 - [ ] Vurdere eksport fra presentasjonsmodus til PDF eller bildefiler senere.
 

@@ -4,6 +4,8 @@ export type SurveyResponseMode = 'anonymous' | 'identified';
 
 export type QuestionType = 'multiple_choice' | 'free_text' | 'likert_scale';
 
+export type QuestionScaleVariant = 'buttons' | 'stars' | 'nps';
+
 export type QuestionVisualizationType = 'bar' | 'pie' | 'word_cloud' | 'list';
 
 export type QuestionVisualizationColorMode = 'muted' | 'colorful';
@@ -68,6 +70,7 @@ export type SurveyQuestion = {
   allowMultiple: boolean;
   scaleMin: number | null;
   scaleMax: number | null;
+  scaleVariant: QuestionScaleVariant | null;
   sortOrder: number;
   visualizationType: QuestionVisualizationType;
   visualizationColorMode: QuestionVisualizationColorMode;
@@ -101,6 +104,7 @@ export type AddSurveyQuestionInput = {
   allowMultiple: boolean;
   scaleMin?: number | null;
   scaleMax?: number | null;
+  scaleVariant?: QuestionScaleVariant | null;
   optionLabels: string[];
 };
 

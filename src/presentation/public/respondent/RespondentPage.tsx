@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, ListChecks, Type } from 'lucide-react';
+import { CheckCircle2, Gauge, ListChecks, Star, Type } from 'lucide-react';
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 
 import { usePublishedSurvey } from '../../../application/surveys/usePublishedSurvey';
@@ -230,6 +230,75 @@ function RespondentQuestion({
 
   if (question.type === 'likert_scale') {
     const scaleValues = getQuestionScaleValues(question);
+
+    if (question.scaleVariant === 'stars') {
+      return (
+        <article className="respondent-question">
+          <QuestionHeader question={question} icon={<Star size={20} />} />
+          <fieldset className="star-rating">
+            <legend className="sr-only">{question.prompt}</legend>
+            <div className="star-rating__options">
+              {scaleValues.map((value) => (
+                <label
+                  className={
+                    answer.likertValue !== null && value <= answer.likertValue
+                      ? 'is-selected'
+                      : ''
+                  }
+                  key={value}
+                >
+                  <input
+                    type="radio"
+                    name={question.id}
+                    value={value}
+                    checked={answer.likertValue === value}
+                    disabled={disabled}
+                    required={question.isRequired}
+                    onChange={() => onChange({ ...answer, likertValue: value })}
+                  />
+                  <span aria-hidden="true">★</span>
+                  <span className="sr-only">{value} av 5 stjerner</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </article>
+      );
+    }
+
+    if (question.scaleVariant === 'nps') {
+      return (
+        <article className="respondent-question">
+          <QuestionHeader question={question} icon={<Gauge size={20} />} />
+          <fieldset className="nps-scale">
+            <legend className="sr-only">{question.prompt}</legend>
+            <div className="nps-scale__options">
+              {scaleValues.map((value) => (
+                <label
+                  className={answer.likertValue === value ? 'is-selected' : ''}
+                  key={value}
+                >
+                  <input
+                    type="radio"
+                    name={question.id}
+                    value={value}
+                    checked={answer.likertValue === value}
+                    disabled={disabled}
+                    required={question.isRequired}
+                    onChange={() => onChange({ ...answer, likertValue: value })}
+                  />
+                  <span>{value}</span>
+                </label>
+              ))}
+            </div>
+            <div className="nps-scale__legend" aria-hidden="true">
+              <span>Lite sannsynlig</span>
+              <span>Svært sannsynlig</span>
+            </div>
+          </fieldset>
+        </article>
+      );
+    }
 
     return (
       <article className="respondent-question">

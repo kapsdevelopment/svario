@@ -6,6 +6,7 @@ import {
   type AddSurveyQuestionInput,
   type CreateSurveyDraftInput,
   type PublishedSurvey,
+  type QuestionScaleVariant,
   type QuestionVisualizationType,
   type QuestionType,
   type SubmitSurveyResponseInput,
@@ -52,6 +53,7 @@ type QuestionRow = Pick<
   | 'allow_multiple'
   | 'scale_min'
   | 'scale_max'
+  | 'scale_variant'
   | 'sort_order'
   | 'visualization_type'
   | 'visualization_color_mode'
@@ -91,7 +93,7 @@ const surveySummarySelect =
   'id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
 const sectionSelect = 'id, survey_id, title, description, sort_order';
 const questionSelect =
-  'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, scale_min, scale_max, sort_order, visualization_type, visualization_color_mode';
+  'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, scale_min, scale_max, scale_variant, sort_order, visualization_type, visualization_color_mode';
 const questionOptionSelect = 'id, question_id, label, value, sort_order';
 const surveyResponseSelect =
   'id, survey_id, response_mode, respondent_name, respondent_email, submitted_at';
@@ -394,9 +396,17 @@ export async function addSurveyQuestion(
     throw new Error('Flervalgsspørsmål må ha minst to alternativer.');
   }
 
+  const scaleVariant =
+    input.type === 'likert_scale'
+      ? normalizeQuestionScaleVariant(input.scaleVariant)
+      : null;
   const scale =
     input.type === 'likert_scale'
-      ? normalizeQuestionScale(input.scaleMin, input.scaleMax)
+      ? normalizeQuestionScale(
+          input.scaleMin,
+          input.scaleMax,
+          scaleVariant ?? 'buttons',
+        )
       : { scaleMin: null, scaleMax: null };
 
   const sortOrder = await getNextQuestionSortOrder(input.surveyId);
@@ -410,6 +420,7 @@ export async function addSurveyQuestion(
     allow_multiple: input.type === 'multiple_choice' ? input.allowMultiple : false,
     scale_min: scale.scaleMin,
     scale_max: scale.scaleMax,
+    scale_variant: scaleVariant,
     sort_order: sortOrder,
     visualization_type: getDefaultQuestionVisualizationType(input.type),
     visualization_color_mode: 'muted',
@@ -513,6 +524,10 @@ function mapQuestion(
       type === 'likert_scale'
         ? row.scale_max ?? questionScaleDefaults.max
         : null,
+    scaleVariant:
+      type === 'likert_scale'
+        ? mapQuestionScaleVariant(row.scale_variant)
+        : null,
     sortOrder: row.sort_order,
     visualizationType: mapQuestionVisualizationType(
       row.visualization_type,
@@ -540,6 +555,12 @@ function mapQuestionVisualizationType(
   }
 
   return getDefaultQuestionVisualizationType(questionType);
+}
+
+function mapQuestionScaleVariant(
+  scaleVariant: QuestionRow['scale_variant'] | null,
+): QuestionScaleVariant {
+  return scaleVariant ?? 'buttons';
 }
 
 function getDefaultQuestionVisualizationType(
@@ -912,7 +933,22 @@ function normalizeOptionalText(value: string | null) {
 function normalizeQuestionScale(
   scaleMin: number | null | undefined,
   scaleMax: number | null | undefined,
+  scaleVariant: QuestionScaleVariant,
 ) {
+  if (scaleVariant === 'stars') {
+    return {
+      scaleMin: 1,
+      scaleMax: 5,
+    };
+  }
+
+  if (scaleVariant === 'nps') {
+    return {
+      scaleMin: 0,
+      scaleMax: 10,
+    };
+  }
+
   const normalizedMin = scaleMin ?? questionScaleDefaults.min;
   const normalizedMax = scaleMax ?? questionScaleDefaults.max;
 
@@ -937,6 +973,12 @@ function normalizeQuestionScale(
     scaleMin: normalizedMin,
     scaleMax: normalizedMax,
   };
+}
+
+function normalizeQuestionScaleVariant(
+  scaleVariant: QuestionScaleVariant | null | undefined,
+): QuestionScaleVariant {
+  return scaleVariant ?? 'buttons';
 }
 
 function normalizeOptionLabels(values: string[]) {
