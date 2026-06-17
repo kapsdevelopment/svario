@@ -85,7 +85,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage resultatside for innlogget admin.
 - [x] Vise totaler, svarvolum og status.
 - [x] Vise flervalg som stolpediagram.
-- [ ] Legge til kakediagram som visualiseringsvalg for flervalg og eventuelt skala.
+- [x] Legge til kakediagram som visualiseringsvalg for flervalg og skala.
 - [x] Vise skalafordeling og snitt.
 - [x] Vise fritekstsvar i liste.
 - [x] Lage enkel wordcloud for fritekstsvar.
@@ -121,16 +121,16 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 ### Designsystem og visuell polish
 
 - [ ] Revidere bruk av bakgrunnsbilder og bestemme hvilke bilder som skal brukes hvor: plateau i app-skall, landscape i dashboard, pine i login/personvern, fjord i landing/respondent/feilside og coastal i sikkerhetsside.
-- [ ] Gjøre Svario-brandfeltet i sidebaren til en tydelig lenke/knapp som tar brukeren til hovedsiden.
+- [x] Gjøre Svario-brandfeltet i sidebaren til en tydelig lenke/knapp som tar brukeren til hovedsiden.
 - [ ] Standardisere admin-kontroller for knapper, lenker, menyer, skjemaelementer, fokus, hover og disabled states.
 - [ ] Avklare hvilke popup-/menykomponenter som kan være native, og hvilke som bør byttes til egne designede komponenter.
-- [ ] Finpusse eller erstatte `datetime-local` med en roligere dato-/tidsvelger som passer Svario-designet bedre.
+- [x] Finpusse `datetime-local` med en roligere feltstil som passer Svario-designet bedre.
 
 ### Visualiseringer
 
-- [ ] Legge til valg for flerfargede stolper i stolpediagrammer, med en dempet nordisk palett.
-- [ ] Legge til kakediagram som alternativ visning for relevante resultater.
-- [ ] Vurdere per-spørsmål valg av foretrukket visualisering: stolpe, kake, ordsky, liste eller skalaoppsummering.
+- [x] Legge til valg for flerfargede stolper i stolpediagrammer, med en dempet nordisk palett.
+- [x] Legge til kakediagram som alternativ visning for relevante resultater.
+- [x] Lagre per-spørsmål valg av foretrukket visualisering og fargemodus på `survey_questions`.
 - [ ] Sikre at visuelle valg også kan brukes konsistent i PDF-rapport.
 
 ### Presentasjonsmodus

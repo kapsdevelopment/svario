@@ -1000,6 +1000,50 @@ select {
   margin-bottom: 16px;
 }
 
+.visual-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.visual-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d9d3c7;
+  border-radius: 999px;
+  background: #f8f4ec;
+  padding: 4px;
+}
+
+.visual-switch button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #607681;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 10px;
+}
+
+.visual-switch button[aria-pressed="true"] {
+  background: #183a34;
+  color: #fffdf8;
+  box-shadow: 0 8px 18px rgba(24, 58, 52, 0.14);
+}
+
+.visual-switch button:disabled,
+.visual-style-toggle:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .visual-style-toggle {
   display: inline-flex;
   min-height: 36px;
@@ -1194,6 +1238,10 @@ select {
 .chart-frame {
   width: 100%;
   height: 280px;
+}
+
+.chart-frame--pie {
+  height: 330px;
 }
 
 .bottom-nav {

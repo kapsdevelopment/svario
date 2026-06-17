@@ -293,6 +293,8 @@ export type Database = {
           survey_id: string
           type: Database["public"]["Enums"]["question_type"]
           updated_at: string
+          visualization_color_mode: Database["public"]["Enums"]["question_visualization_color_mode"]
+          visualization_type: Database["public"]["Enums"]["question_visualization_type"]
         }
         Insert: {
           allow_multiple?: boolean
@@ -308,6 +310,8 @@ export type Database = {
           survey_id: string
           type: Database["public"]["Enums"]["question_type"]
           updated_at?: string
+          visualization_color_mode?: Database["public"]["Enums"]["question_visualization_color_mode"]
+          visualization_type?: Database["public"]["Enums"]["question_visualization_type"]
         }
         Update: {
           allow_multiple?: boolean
@@ -323,6 +327,8 @@ export type Database = {
           survey_id?: string
           type?: Database["public"]["Enums"]["question_type"]
           updated_at?: string
+          visualization_color_mode?: Database["public"]["Enums"]["question_visualization_color_mode"]
+          visualization_type?: Database["public"]["Enums"]["question_visualization_type"]
         }
         Relationships: [
           {
@@ -620,6 +626,8 @@ export type Database = {
         | "free_text"
         | "likert_1_5"
         | "likert_scale"
+      question_visualization_color_mode: "muted" | "colorful"
+      question_visualization_type: "bar" | "pie" | "word_cloud" | "list"
       survey_response_mode: "anonymous" | "identified"
       survey_status: "draft" | "published" | "closed"
     }
@@ -759,6 +767,8 @@ export const Constants = {
         "likert_1_5",
         "likert_scale",
       ],
+      question_visualization_color_mode: ["muted", "colorful"],
+      question_visualization_type: ["bar", "pie", "word_cloud", "list"],
       survey_response_mode: ["anonymous", "identified"],
       survey_status: ["draft", "published", "closed"],
     },

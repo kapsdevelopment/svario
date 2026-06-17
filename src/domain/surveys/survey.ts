@@ -4,6 +4,10 @@ export type SurveyResponseMode = 'anonymous' | 'identified';
 
 export type QuestionType = 'multiple_choice' | 'free_text' | 'likert_scale';
 
+export type QuestionVisualizationType = 'bar' | 'pie' | 'word_cloud' | 'list';
+
+export type QuestionVisualizationColorMode = 'muted' | 'colorful';
+
 export const questionScaleDefaults = {
   min: 1,
   max: 5,
@@ -65,6 +69,8 @@ export type SurveyQuestion = {
   scaleMin: number | null;
   scaleMax: number | null;
   sortOrder: number;
+  visualizationType: QuestionVisualizationType;
+  visualizationColorMode: QuestionVisualizationColorMode;
   options: SurveyQuestionOption[];
 };
 
@@ -96,6 +102,12 @@ export type AddSurveyQuestionInput = {
   scaleMin?: number | null;
   scaleMax?: number | null;
   optionLabels: string[];
+};
+
+export type UpdateQuestionVisualizationInput = {
+  questionId: string;
+  visualizationType: QuestionVisualizationType;
+  visualizationColorMode: QuestionVisualizationColorMode;
 };
 
 export type SubmitSurveyAnswerInput = {

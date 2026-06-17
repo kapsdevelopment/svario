@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import {
   ArrowLeft,
+  BarChart3,
+  ChartPie,
   Download,
   FileText,
   MessageSquareText,
@@ -12,6 +14,9 @@ import {
   BarChart,
   Cell,
   CartesianGrid,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -28,7 +33,10 @@ import {
   createSurveyResultsCsvFileName,
 } from '../../../application/surveys/exportSurveyResultsCsv';
 import { useSurveyResults } from '../../../application/surveys/useSurveyResults';
+import { useUpdateQuestionVisualization } from '../../../application/surveys/useUpdateQuestionVisualization';
 import type {
+  QuestionVisualizationColorMode,
+  QuestionVisualizationType,
   SurveyChoiceResult,
   SurveyLikertResult,
   SurveyQuestionResult,
@@ -125,6 +133,7 @@ function ResultsContent({ results }: { results: SurveyResults }) {
             key={questionResult.question.id}
             result={questionResult}
             responseCount={results.responseCount}
+            surveyId={results.id}
           />
         ))}
       </div>
@@ -166,13 +175,47 @@ function ResultsContent({ results }: { results: SurveyResults }) {
 function QuestionResultCard({
   responseCount,
   result,
+  surveyId,
 }: {
   responseCount: number;
   result: SurveyQuestionResult;
+  surveyId: string;
 }) {
-  const [colorMode, setColorMode] = useState<ResultColorMode>('muted');
+  const updateVisualization = useUpdateQuestionVisualization(surveyId);
+  const [colorMode, setColorMode] = useState<ResultColorMode>(
+    result.question.visualizationColorMode,
+  );
+  const [chartType, setChartType] = useState<ResultChartType>(
+    getInitialChartType(result.question.visualizationType),
+  );
   const isColorful = colorMode === 'colorful';
   const hasVisualization = result.answeredCount > 0;
+  const supportsChartType = result.question.type !== 'free_text';
+  const currentVisualizationType = supportsChartType
+    ? chartType
+    : result.question.visualizationType;
+
+  function saveVisualizationPreference(
+    visualizationType: QuestionVisualizationType,
+    visualizationColorMode: ResultColorMode,
+  ) {
+    updateVisualization.mutate({
+      questionId: result.question.id,
+      visualizationType,
+      visualizationColorMode,
+    });
+  }
+
+  function handleChartTypeChange(nextChartType: ResultChartType) {
+    setChartType(nextChartType);
+    saveVisualizationPreference(nextChartType, colorMode);
+  }
+
+  function handleColorModeToggle() {
+    const nextColorMode = isColorful ? 'muted' : 'colorful';
+    setColorMode(nextColorMode);
+    saveVisualizationPreference(currentVisualizationType, nextColorMode);
+  }
 
   return (
     <Panel
@@ -180,17 +223,42 @@ function QuestionResultCard({
       subtitle={`${questionTypeLabel[result.question.type]} · ${result.answeredCount}/${responseCount} besvart`}
       action={
         hasVisualization ? (
-          <button
-            aria-pressed={isColorful}
-            className={`visual-style-toggle ${
-              isColorful ? 'visual-style-toggle--colorful' : ''
-            }`}
-            type="button"
-            onClick={() => setColorMode(isColorful ? 'muted' : 'colorful')}
-          >
-            <Palette size={16} aria-hidden="true" />
-            {isColorful ? 'Fargerik' : 'Dempet'}
-          </button>
+          <div className="visual-controls">
+            {supportsChartType ? (
+              <div className="visual-switch" aria-label="Diagramtype">
+                <button
+                  aria-pressed={chartType === 'bar'}
+                  disabled={updateVisualization.isPending}
+                  type="button"
+                  onClick={() => handleChartTypeChange('bar')}
+                >
+                  <BarChart3 size={16} aria-hidden="true" />
+                  Stolpe
+                </button>
+                <button
+                  aria-pressed={chartType === 'pie'}
+                  disabled={updateVisualization.isPending}
+                  type="button"
+                  onClick={() => handleChartTypeChange('pie')}
+                >
+                  <ChartPie size={16} aria-hidden="true" />
+                  Kake
+                </button>
+              </div>
+            ) : null}
+            <button
+              aria-pressed={isColorful}
+              className={`visual-style-toggle ${
+                isColorful ? 'visual-style-toggle--colorful' : ''
+              }`}
+              disabled={updateVisualization.isPending}
+              type="button"
+              onClick={handleColorModeToggle}
+            >
+              <Palette size={16} aria-hidden="true" />
+              {isColorful ? 'Fargerik' : 'Dempet'}
+            </button>
+          </div>
         ) : null
       }
     >
@@ -200,6 +268,7 @@ function QuestionResultCard({
 
       {result.question.type === 'multiple_choice' ? (
         <ChoiceResultView
+          chartType={chartType}
           colorMode={colorMode}
           results={result.choiceResults}
         />
@@ -208,6 +277,7 @@ function QuestionResultCard({
       {result.question.type === 'likert_scale' ? (
         <LikertResultView
           average={result.likertAverage}
+          chartType={chartType}
           colorMode={colorMode}
           results={result.likertResults}
         />
@@ -230,9 +300,11 @@ function QuestionResultCard({
 }
 
 function ChoiceResultView({
+  chartType,
   colorMode,
   results,
 }: {
+  chartType: ResultChartType;
   colorMode: ResultColorMode;
   results: SurveyChoiceResult[];
 }) {
@@ -242,24 +314,24 @@ function ChoiceResultView({
 
   return (
     <div className="result-layout">
-      <div className="chart-frame" aria-label="Svarfordeling">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={results}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-              {results.map((result, index) => (
-                <Cell
-                  fill={getChartColor(index, colorMode, '#183a34')}
-                  key={result.optionId}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {chartType === 'bar' ? (
+        <BarResultChart
+          ariaLabel="Svarfordeling"
+          data={results}
+          getId={(result) => result.optionId}
+          mutedColor="#183a34"
+          xDataKey="label"
+          colorMode={colorMode}
+        />
+      ) : (
+        <PieResultChart
+          ariaLabel="Svarfordeling"
+          data={results}
+          getId={(result) => result.optionId}
+          mutedColor="#183a34"
+          colorMode={colorMode}
+        />
+      )}
       <ResultBarList
         items={results.map((result, index) => ({
           id: result.optionId,
@@ -275,10 +347,12 @@ function ChoiceResultView({
 
 function LikertResultView({
   average,
+  chartType,
   colorMode,
   results,
 }: {
   average: number | null;
+  chartType: ResultChartType;
   colorMode: ResultColorMode;
   results: SurveyLikertResult[];
 }) {
@@ -288,24 +362,27 @@ function LikertResultView({
         <span>Gjennomsnitt</span>
         <strong>{average === null ? 'Ingen' : average.toLocaleString('nb-NO')}</strong>
       </div>
-      <div className="chart-frame" aria-label="Skalafordeling">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={results}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="value" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-              {results.map((result, index) => (
-                <Cell
-                  fill={getChartColor(index, colorMode, '#4f6c5d')}
-                  key={result.value}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {chartType === 'bar' ? (
+        <BarResultChart
+          ariaLabel="Skalafordeling"
+          data={results}
+          getId={(result) => String(result.value)}
+          mutedColor="#4f6c5d"
+          xDataKey="value"
+          colorMode={colorMode}
+        />
+      ) : (
+        <PieResultChart
+          ariaLabel="Skalafordeling"
+          data={results.map((result) => ({
+            ...result,
+            label: String(result.value),
+          }))}
+          getId={(result) => String(result.value)}
+          mutedColor="#4f6c5d"
+          colorMode={colorMode}
+        />
+      )}
       <ResultBarList
         items={results.map((result, index) => ({
           id: String(result.value),
@@ -315,6 +392,91 @@ function LikertResultView({
           color: getChartColor(index, colorMode, '#4f6c5d'),
         }))}
       />
+    </div>
+  );
+}
+
+function BarResultChart<TData extends { count: number }>({
+  ariaLabel,
+  colorMode,
+  data,
+  getId,
+  mutedColor,
+  xDataKey,
+}: {
+  ariaLabel: string;
+  colorMode: ResultColorMode;
+  data: TData[];
+  getId: (item: TData) => string;
+  mutedColor: string;
+  xDataKey: string;
+}) {
+  return (
+    <div className="chart-frame" aria-label={ariaLabel}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey={xDataKey} />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+            {data.map((result, index) => (
+              <Cell
+                fill={getChartColor(index, colorMode, mutedColor)}
+                key={getId(result)}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function PieResultChart<TData extends { count: number; label: string }>({
+  ariaLabel,
+  colorMode,
+  data,
+  getId,
+  mutedColor,
+}: {
+  ariaLabel: string;
+  colorMode: ResultColorMode;
+  data: TData[];
+  getId: (item: TData) => string;
+  mutedColor: string;
+}) {
+  const visibleData = data.filter((result) => result.count > 0);
+
+  if (visibleData.length === 0) {
+    return <div className="empty-state">Ingen svar å vise i kakediagrammet.</div>;
+  }
+
+  return (
+    <div className="chart-frame chart-frame--pie" aria-label={ariaLabel}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Tooltip />
+          <Legend iconType="circle" />
+          <Pie
+            cx="50%"
+            cy="48%"
+            data={visibleData}
+            dataKey="count"
+            innerRadius={58}
+            nameKey="label"
+            outerRadius={106}
+            paddingAngle={2}
+          >
+            {visibleData.map((result, index) => (
+              <Cell
+                fill={getChartColor(index, colorMode, mutedColor)}
+                key={getId(result)}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -604,7 +766,8 @@ function ResultBarList({
   );
 }
 
-type ResultColorMode = 'muted' | 'colorful';
+type ResultChartType = Extract<QuestionVisualizationType, 'bar' | 'pie'>;
+type ResultColorMode = QuestionVisualizationColorMode;
 
 const colorfulChartPalette = [
   '#2f6f73',
@@ -633,6 +796,12 @@ function getWordCloudColor(index: number, item: FreeTextWordCloudItem) {
   return colorfulChartPalette[
     (hashWord(item.word) + item.tone + index) % colorfulChartPalette.length
   ];
+}
+
+function getInitialChartType(
+  visualizationType: QuestionVisualizationType,
+): ResultChartType {
+  return visualizationType === 'pie' ? 'pie' : 'bar';
 }
 
 const questionTypeLabel = {

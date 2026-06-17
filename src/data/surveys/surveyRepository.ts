@@ -6,6 +6,7 @@ import {
   type AddSurveyQuestionInput,
   type CreateSurveyDraftInput,
   type PublishedSurvey,
+  type QuestionVisualizationType,
   type QuestionType,
   type SubmitSurveyResponseInput,
   type SurveyEditor,
@@ -19,9 +20,10 @@ import {
   type SurveyResults,
   type SurveySection,
   type SurveySummary,
+  type UpdateQuestionVisualizationInput,
 } from '../../domain/surveys/survey';
 import { publicSupabase, supabase } from '../supabase/client';
-import type { Json, Tables, TablesInsert } from '../supabase/database.types';
+import type { Json, Tables, TablesInsert, TablesUpdate } from '../supabase/database.types';
 
 type SurveyRow = Pick<
   Tables<'surveys'>,
@@ -51,6 +53,8 @@ type QuestionRow = Pick<
   | 'scale_min'
   | 'scale_max'
   | 'sort_order'
+  | 'visualization_type'
+  | 'visualization_color_mode'
 >;
 
 type SectionRow = Pick<
@@ -87,7 +91,7 @@ const surveySummarySelect =
   'id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
 const sectionSelect = 'id, survey_id, title, description, sort_order';
 const questionSelect =
-  'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, scale_min, scale_max, sort_order';
+  'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, scale_min, scale_max, sort_order, visualization_type, visualization_color_mode';
 const questionOptionSelect = 'id, question_id, label, value, sort_order';
 const surveyResponseSelect =
   'id, survey_id, response_mode, respondent_name, respondent_email, submitted_at';
@@ -407,6 +411,8 @@ export async function addSurveyQuestion(
     scale_min: scale.scaleMin,
     scale_max: scale.scaleMax,
     sort_order: sortOrder,
+    visualization_type: getDefaultQuestionVisualizationType(input.type),
+    visualization_color_mode: 'muted',
   };
 
   const { data: question, error: questionError } = await client
@@ -431,6 +437,27 @@ export async function addSurveyQuestion(
 export async function deleteSurveyQuestion(questionId: string): Promise<void> {
   const client = requireSurveyClient();
   const { error } = await client.from('questions').delete().eq('id', questionId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateQuestionVisualization(
+  input: UpdateQuestionVisualizationInput,
+): Promise<void> {
+  const client = requireSurveyClient();
+  const payload: TablesUpdate<'questions'> = {
+    visualization_type: input.visualizationType,
+    visualization_color_mode: input.visualizationColorMode,
+  };
+
+  const { error } = await client
+    .from('questions')
+    .update(payload)
+    .eq('id', input.questionId)
+    .select('id')
+    .single();
 
   if (error) {
     throw error;
@@ -487,6 +514,11 @@ function mapQuestion(
         ? row.scale_max ?? questionScaleDefaults.max
         : null,
     sortOrder: row.sort_order,
+    visualizationType: mapQuestionVisualizationType(
+      row.visualization_type,
+      type,
+    ),
+    visualizationColorMode: row.visualization_color_mode ?? 'muted',
     options,
   };
 }
@@ -497,6 +529,23 @@ function mapQuestionType(type: QuestionRow['type']): QuestionType {
   }
 
   return type;
+}
+
+function mapQuestionVisualizationType(
+  visualizationType: QuestionRow['visualization_type'] | null,
+  questionType: QuestionType,
+): QuestionVisualizationType {
+  if (visualizationType) {
+    return visualizationType;
+  }
+
+  return getDefaultQuestionVisualizationType(questionType);
+}
+
+function getDefaultQuestionVisualizationType(
+  questionType: QuestionType,
+): QuestionVisualizationType {
+  return questionType === 'free_text' ? 'word_cloud' : 'bar';
 }
 
 function mapQuestionOption(row: QuestionOptionRow): SurveyQuestionOption {
