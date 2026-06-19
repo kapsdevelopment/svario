@@ -1496,14 +1496,17 @@ select {
 .presentation-mode {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100vh;
+  height: 100svh;
   min-height: 100vh;
-  gap: 18px;
+  min-height: 100svh;
+  gap: clamp(10px, 1.5vh, 18px);
   overflow: hidden;
   background:
     linear-gradient(135deg, rgba(23, 32, 29, 0.88), rgba(58, 75, 66, 0.78)),
     url("../assets/images/svario-landscape-background.png") center / cover no-repeat;
   color: #fffdf8;
-  padding: 22px;
+  padding: clamp(14px, 2vh, 22px);
 }
 
 .presentation-mode--status {
@@ -1564,20 +1567,25 @@ select {
 }
 
 .presentation-slide {
-  align-self: center;
+  align-self: stretch;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: min(100%, 1280px);
-  max-height: calc(100vh - 180px);
-  min-height: 620px;
-  overflow: auto;
-  gap: 22px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  gap: clamp(12px, 1.8vh, 22px);
   border: 1px solid rgba(255, 253, 248, 0.56);
   border-radius: 8px;
   background: rgba(255, 253, 248, 0.94);
   box-shadow: 0 28px 90px rgba(13, 21, 18, 0.34);
   color: #17201d;
   margin: 0 auto;
-  padding: 36px;
+  padding: clamp(22px, 3vh, 36px);
+}
+
+.presentation-slide--with-description {
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .presentation-slide__header {
@@ -1590,7 +1598,7 @@ select {
 .presentation-slide__header h2 {
   max-width: 980px;
   color: #17201d;
-  font-size: 2.2rem;
+  font-size: clamp(1.7rem, 2.25vw, 2.2rem);
   line-height: 1.08;
 }
 
@@ -1618,34 +1626,70 @@ select {
 }
 
 .presentation-slide__visual {
+  display: grid;
+  grid-row: 2;
   min-height: 0;
+  overflow: hidden;
+}
+
+.presentation-slide--with-description .presentation-slide__visual {
+  grid-row: 3;
 }
 
 .presentation-slide__visual .result-layout {
-  gap: 22px;
+  height: 100%;
+  min-height: 0;
+  gap: clamp(10px, 1.6vh, 22px);
+}
+
+.presentation-slide__visual .result-layout--chart {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.presentation-slide__visual .result-layout--summary-chart {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.presentation-slide__visual .result-bar-list {
+  display: none;
 }
 
 .presentation-slide__visual .chart-frame {
-  height: 420px;
+  height: 100%;
+  min-height: 0;
 }
 
 .presentation-slide__visual .chart-frame--pie {
-  height: 450px;
+  height: 100%;
+  min-height: 0;
 }
 
 .presentation-slide__visual .word-cloud-block {
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
   border-bottom: 0;
   margin-bottom: 0;
   padding: 0;
 }
 
+.presentation-slide__visual .word-cloud {
+  height: 100%;
+  min-height: 0;
+}
+
 .presentation-slide__visual .word-cloud__canvas {
-  height: 430px;
+  height: 100%;
+  min-height: 0;
 }
 
 .presentation-slide__visual .result-average,
 .presentation-slide__visual .nps-summary {
   background: #fff;
+}
+
+.presentation-slide__visual .free-text-results {
+  display: none;
 }
 
 .presentation-mode__footer {
@@ -2412,8 +2456,8 @@ select {
   }
 
   .presentation-slide {
-    max-height: calc(100vh - 160px);
-    min-height: auto;
+    height: 100%;
+    min-height: 0;
     gap: 18px;
     padding: 20px;
   }
@@ -2425,12 +2469,6 @@ select {
   .presentation-slide__header h2 {
     font-size: 1.55rem;
     line-height: 1.14;
-  }
-
-  .presentation-slide__visual .chart-frame,
-  .presentation-slide__visual .chart-frame--pie,
-  .presentation-slide__visual .word-cloud__canvas {
-    height: 320px;
   }
 
   .presentation-mode__footer {

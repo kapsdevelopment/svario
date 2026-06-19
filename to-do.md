@@ -25,7 +25,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Aktivere RLS på alle app-tabeller.
 - [x] Lage policies for innlogget admin/eier.
 - [x] Lage trygg offentlig lesing/innsending via RPC eller tilsvarende kontrollert API.
-- [x] Modellere arbeidsflater for personlig bruk, teams og organisasjoner.
+- [x] Modellere arbeidsflater for individuell bruk, teams og organisasjoner.
 - [x] Knytte skjemaer til valgfri arbeidsflate med `private` eller `workspace` synlighet.
 
 ## 3. Sikkerhet, personvern og tillit
@@ -170,11 +170,11 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] La inviterte brukere bli medlem av samme workspace via lenke.
 - [x] La owner/admin fjerne medlemmer fra workspace.
 - [x] La owner slette hele workspace med ekstra bekreftelse.
-- [x] La nye skjemaer opprettes enten personlig eller i en workspace.
+- [x] La nye skjemaer opprettes enten individuelt eller i en workspace.
 - [x] Dele workspace-skjemaer med aktive medlemmer i samme workspace.
 - [x] Lage BRREG-oppslag for business-organisasjoner basert på organisasjonsnummer.
 - [ ] Lage server-side BRREG-verifisering før business-workspaces kan brukes som faktureringsgrunnlag.
-- [ ] Lage tydelig faktureringsmodell for business-workspaces, mens personlig bruk og teams kan forbli gratis.
+- [ ] Lage tydelig faktureringsmodell for business-workspaces, mens individuell bruk og teams kan forbli gratis.
 - [ ] Lage mer fullverdig medlemsadministrasjon med navn/e-post i stedet for tekniske konto-id-er.
 - [ ] Lage revisjons-/hendelseslogg for kritiske workspace-handlinger.
 - [ ] Vurdere overgang fra invitasjonslenke til e-postinvitasjoner når e-postoppsett er klart.

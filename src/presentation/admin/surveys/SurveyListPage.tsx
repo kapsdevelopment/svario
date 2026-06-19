@@ -197,7 +197,7 @@ function formatSurveyWorkspace(
   workspaceNameById: Map<string, string>,
 ) {
   if (!survey.workspaceId) {
-    return 'Personlig';
+    return 'Individuell';
   }
 
   return workspaceNameById.get(survey.workspaceId) ?? 'Arbeidsflate';

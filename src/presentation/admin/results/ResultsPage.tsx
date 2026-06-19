@@ -482,8 +482,14 @@ function PresentationSlide({
   result: SurveyQuestionResult;
   slideCount: number;
 }) {
+  const hasDescription = Boolean(result.question.description);
+
   return (
-    <main className="presentation-slide">
+    <main
+      className={`presentation-slide${
+        hasDescription ? ' presentation-slide--with-description' : ''
+      }`}
+    >
       <div className="presentation-slide__header">
         <div>
           <p className="eyebrow">
@@ -500,7 +506,7 @@ function PresentationSlide({
         ) : null}
       </div>
 
-      {result.question.description ? (
+      {hasDescription ? (
         <p className="presentation-slide__description">
           {result.question.description}
         </p>
@@ -714,7 +720,7 @@ function ChoiceResultView({
   }
 
   return (
-    <div className="result-layout">
+    <div className="result-layout result-layout--chart">
       {chartType === 'bar' ? (
         <BarResultChart
           ariaLabel="Svarfordeling"
@@ -760,7 +766,7 @@ function LikertResultView({
   results: SurveyLikertResult[];
 }) {
   return (
-    <div className="result-layout">
+    <div className="result-layout result-layout--summary-chart">
       {scaleVariant === 'nps' ? (
         <NpsResultSummary results={results} />
       ) : (

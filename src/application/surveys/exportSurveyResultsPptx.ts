@@ -34,6 +34,14 @@ type DistributionItem = {
   percentage: number;
 };
 
+type WordCloudLayoutItem = FreeTextWordCloudItem & {
+  fontSize: number;
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+};
+
 const pptxMimeType =
   'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
@@ -220,6 +228,8 @@ class PptxReportWriter {
   private addQuestionSlide(result: SurveyQuestionResult, index: number) {
     const currentSlide = this.createSlide();
     const slideNumber = index + 2;
+    const hasDescription = Boolean(result.question.description);
+    const contentStartY = hasDescription ? 2.28 : 1.95;
 
     this.addSlideTitle(
       currentSlide,
@@ -235,11 +245,11 @@ class PptxReportWriter {
         color: exportColors.muted,
         fit: 'shrink',
         fontSize: 11,
-        h: 0.45,
+        h: 0.38,
         margin: 0,
-        w: 10.4,
+        w: 9.7,
         x: 0.78,
-        y: 1.38,
+        y: 1.76,
       });
     }
 
@@ -251,15 +261,16 @@ class PptxReportWriter {
           result.question.visualizationColorMode,
           exportColors.pine,
         ),
+        hasDescription ? 2.45 : 2.05,
       );
     }
 
     if (result.question.type === 'likert_scale') {
-      this.addLikertVisual(currentSlide, result);
+      this.addLikertVisual(currentSlide, result, contentStartY);
     }
 
     if (result.question.type === 'free_text') {
-      this.addFreeTextVisual(currentSlide, result.freeTextResults);
+      this.addFreeTextVisual(currentSlide, result.freeTextResults, contentStartY);
     }
 
     if (result.skippedCount > 0) {
@@ -279,7 +290,11 @@ class PptxReportWriter {
     this.addFooter(currentSlide, String(slideNumber));
   }
 
-  private addLikertVisual(currentSlide: Slide, result: SurveyQuestionResult) {
+  private addLikertVisual(
+    currentSlide: Slide,
+    result: SurveyQuestionResult,
+    startY: number,
+  ) {
     currentSlide.addText(
       formatLikertSummary(
         result.likertResults,
@@ -294,7 +309,7 @@ class PptxReportWriter {
         margin: 0,
         w: 7.8,
         x: 0.85,
-        y: 1.95,
+        y: startY,
       },
     );
     this.addDistributionVisual(
@@ -303,7 +318,7 @@ class PptxReportWriter {
         result.likertResults,
         result.question.visualizationColorMode,
       ),
-      2.45,
+      startY + 0.5,
     );
   }
 
@@ -424,13 +439,17 @@ class PptxReportWriter {
     });
   }
 
-  private addFreeTextVisual(currentSlide: Slide, results: SurveyFreeTextResult[]) {
+  private addFreeTextVisual(
+    currentSlide: Slide,
+    results: SurveyFreeTextResult[],
+    startY = 1.95,
+  ) {
     if (results.length === 0) {
       this.addEmptyState(currentSlide, 'Ingen fritekstsvar ennå.');
       return;
     }
 
-    const wordCloud = buildFreeTextWordCloud(results).slice(0, 18);
+    const wordCloud = buildFreeTextWordCloud(results).slice(0, 16);
     currentSlide.addText('Toppord', {
       bold: true,
       color: exportColors.pine,
@@ -439,13 +458,17 @@ class PptxReportWriter {
       margin: 0,
       w: 4,
       x: 0.85,
-      y: 1.95,
+      y: startY,
     });
-    this.addWordCloud(currentSlide, wordCloud);
-    this.addQuoteList(currentSlide, results);
+    this.addWordCloud(currentSlide, wordCloud, startY + 0.55);
+    this.addQuoteList(currentSlide, results, startY);
   }
 
-  private addWordCloud(currentSlide: Slide, items: FreeTextWordCloudItem[]) {
+  private addWordCloud(
+    currentSlide: Slide,
+    items: FreeTextWordCloudItem[],
+    startY: number,
+  ) {
     if (items.length === 0) {
       currentSlide.addText('For få ord til å lage toppord.', {
         color: exportColors.muted,
@@ -454,50 +477,45 @@ class PptxReportWriter {
         margin: 0,
         w: 5.8,
         x: 0.85,
-        y: 2.45,
+        y: startY,
       });
       return;
     }
 
-    const positions = [
-      [0.95, 2.45, 2.6, 0.5],
-      [3.25, 2.55, 2.15, 0.42],
-      [1.75, 3.15, 2.3, 0.45],
-      [4.45, 3.15, 2.1, 0.42],
-      [0.95, 3.78, 2, 0.38],
-      [3.05, 3.82, 2.05, 0.38],
-      [5.18, 3.78, 1.55, 0.36],
-      [1.18, 4.42, 1.85, 0.36],
-      [3.48, 4.48, 1.8, 0.34],
-      [5.42, 4.43, 1.3, 0.34],
-      [0.98, 5.05, 1.6, 0.32],
-      [2.72, 5.08, 1.55, 0.32],
-      [4.55, 5.05, 1.62, 0.32],
-      [6.15, 5.1, 1.05, 0.3],
-      [1.25, 5.65, 1.35, 0.3],
-      [2.95, 5.66, 1.3, 0.3],
-      [4.55, 5.62, 1.25, 0.3],
-      [6.0, 5.66, 1.15, 0.3],
-    ] as const;
-
-    items.forEach((item, index) => {
-      const [x, y, w, h] = positions[index] ?? positions[positions.length - 1];
+    buildWordCloudLayout(items, {
+      height: 3.85,
+      width: 6.75,
+      x: 0.78,
+      y: startY,
+    }).forEach((item, index) => {
       currentSlide.addText(item.word, {
         bold: true,
         color: getWordColor(item, index),
         fit: 'shrink',
-        fontSize: getWordFontSize(item),
-        h,
+        breakLine: false,
+        fontSize: item.fontSize,
+        h: item.height,
         margin: 0,
-        w,
-        x,
-        y,
+        w: item.width,
+        x: item.x,
+        y: item.y,
         align: 'center',
+        valign: 'middle',
       });
     });
   }
 
-  private addQuoteList(currentSlide: Slide, results: SurveyFreeTextResult[]) {
+  private addQuoteList(
+    currentSlide: Slide,
+    results: SurveyFreeTextResult[],
+    startY: number,
+  ) {
+    const columnX = 7.82;
+    const columnW = 4.85;
+    const cardH = 1.03;
+    const cardGap = 0.22;
+    const cardY = startY + 0.55;
+
     currentSlide.addText('Utvalgte svar', {
       bold: true,
       color: exportColors.pine,
@@ -505,30 +523,32 @@ class PptxReportWriter {
       h: 0.35,
       margin: 0,
       w: 4,
-      x: 8.1,
-      y: 1.95,
+      x: columnX,
+      y: startY,
     });
 
-    results.slice(0, 4).forEach((result, index) => {
-      const y = 2.45 + index * 0.92;
+    results.slice(0, 3).forEach((result, index) => {
+      const y = cardY + index * (cardH + cardGap);
       currentSlide.addShape(this.pptx.ShapeType.roundRect, {
         fill: { color: exportColors.white },
-        h: 0.72,
+        h: cardH,
         line: { color: exportColors.line, width: 0.8 },
         rectRadius: 0.06,
-        w: 4.25,
-        x: 8.1,
+        w: columnW,
+        x: columnX,
         y,
       });
-      currentSlide.addText(truncateText(result.text, 92), {
+      currentSlide.addText(truncateText(result.text, 150), {
         color: exportColors.ink,
         fit: 'shrink',
-        fontSize: 10,
-        h: 0.34,
+        fontSize: 11.2,
+        h: 0.55,
+        breakLine: false,
+        lineSpacingMultiple: 0.86,
         margin: 0,
-        w: 3.9,
-        x: 8.28,
-        y: y + 0.12,
+        w: columnW - 0.48,
+        x: columnX + 0.24,
+        y: y + 0.14,
       });
       currentSlide.addText(
         `${result.respondentLabel ?? 'Anonymt svar'} - ${formatDateTime(
@@ -537,12 +557,12 @@ class PptxReportWriter {
         {
           color: exportColors.muted,
           fit: 'shrink',
-          fontSize: 8.5,
-          h: 0.18,
+          fontSize: 8.8,
+          h: 0.2,
           margin: 0,
-          w: 3.9,
-          x: 8.28,
-          y: y + 0.5,
+          w: columnW - 0.48,
+          x: columnX + 0.24,
+          y: y + cardH - 0.28,
         },
       );
     });
@@ -847,14 +867,103 @@ function getWordColor(item: FreeTextWordCloudItem, index: number) {
 
 function getWordFontSize(item: FreeTextWordCloudItem) {
   const sizeByWeight = {
-    1: 14,
-    2: 17,
-    3: 21,
-    4: 26,
-    5: 32,
+    1: 13,
+    2: 16,
+    3: 19,
+    4: 23,
+    5: 27,
   } satisfies Record<FreeTextWordCloudItem['weight'], number>;
 
-  return Math.max(11, sizeByWeight[item.weight] - Math.max(0, item.word.length - 14));
+  return Math.max(10.5, sizeByWeight[item.weight] - Math.max(0, item.word.length - 12));
+}
+
+function buildWordCloudLayout(
+  items: FreeTextWordCloudItem[],
+  bounds: { height: number; width: number; x: number; y: number },
+) {
+  const rowGap = 0.14;
+  const wordGap = 0.22;
+  const rows: Array<{
+    height: number;
+    items: WordCloudLayoutItem[];
+    width: number;
+  }> = [];
+
+  for (const item of items) {
+    const metrics = getWordLayoutMetrics(item.word, getWordFontSize(item), bounds.width);
+    const fontSize = metrics.fontSize;
+    const width = metrics.width;
+    const height = Math.max(0.28, fontSize / 72 + 0.13);
+    const layoutItem = {
+      ...item,
+      fontSize,
+      height,
+      width,
+      x: 0,
+      y: 0,
+    };
+    const currentRow = rows.at(-1);
+    const nextWidth = currentRow
+      ? currentRow.width + wordGap + width
+      : width;
+
+    if (currentRow && nextWidth <= bounds.width) {
+      currentRow.items.push(layoutItem);
+      currentRow.width = nextWidth;
+      currentRow.height = Math.max(currentRow.height, height);
+    } else if (
+      getRowsHeight([...rows, { height, items: [layoutItem], width }], rowGap) <=
+      bounds.height
+    ) {
+      rows.push({ height, items: [layoutItem], width });
+    }
+  }
+
+  let y = bounds.y + 0.12;
+
+  return rows.flatMap((row) => {
+    let x = bounds.x + Math.max(0, (bounds.width - row.width) / 2);
+    const placedItems = row.items.map((item) => {
+      const placedItem = {
+        ...item,
+        x,
+        y: y + Math.max(0, (row.height - item.height) / 2),
+      };
+      x += item.width + wordGap;
+      return placedItem;
+    });
+    y += row.height + rowGap;
+    return placedItems;
+  });
+}
+
+function getRowsHeight(
+  rows: Array<{ height: number }>,
+  rowGap: number,
+) {
+  return rows.reduce(
+    (height, row, index) => height + row.height + (index === 0 ? 0 : rowGap),
+    0,
+  );
+}
+
+function getWordLayoutMetrics(word: string, fontSize: number, maxWidth: number) {
+  let adjustedFontSize = fontSize;
+  let width = getEstimatedTextWidth(word, adjustedFontSize);
+
+  while (width > maxWidth && adjustedFontSize > 10.5) {
+    adjustedFontSize -= 0.5;
+    width = getEstimatedTextWidth(word, adjustedFontSize);
+  }
+
+  return {
+    fontSize: adjustedFontSize,
+    width: Math.min(maxWidth, width),
+  };
+}
+
+function getEstimatedTextWidth(word: string, fontSize: number) {
+  return Math.max(0.72, word.length * fontSize * 0.0084 + 0.22);
 }
 
 function getTitleFontSize(title: string) {
@@ -871,11 +980,15 @@ function getTitleFontSize(title: string) {
 
 function getSlideTitleFontSize(title: string) {
   if (title.length > 98) {
-    return 21;
+    return 20;
   }
 
-  if (title.length > 64) {
-    return 25;
+  if (title.length > 70) {
+    return 23;
+  }
+
+  if (title.length > 42) {
+    return 27;
   }
 
   return 31;

@@ -9,6 +9,8 @@ import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import type { SurveyResponseMode } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
+const individualWorkspaceValue = 'individual';
+
 export function SurveyCreatePage() {
   const { account } = useAuth();
   const createSurveyDraft = useCreateSurveyDraft();
@@ -19,7 +21,7 @@ export function SurveyCreatePage() {
   const [description, setDescription] = useState('');
   const [responseMode, setResponseMode] =
     useState<SurveyResponseMode>('anonymous');
-  const [workspaceId, setWorkspaceId] = useState('personal');
+  const [workspaceId, setWorkspaceId] = useState(individualWorkspaceValue);
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -58,8 +60,10 @@ export function SurveyCreatePage() {
     try {
       const createdSurvey = await createSurveyDraft.mutateAsync({
         ownerAccountId: account.id,
-        workspaceId: workspaceId === 'personal' ? null : workspaceId,
-        visibility: workspaceId === 'personal' ? 'private' : 'workspace',
+        workspaceId:
+          workspaceId === individualWorkspaceValue ? null : workspaceId,
+        visibility:
+          workspaceId === individualWorkspaceValue ? 'private' : 'workspace',
         title: normalizedTitle,
         description,
         responseMode,
@@ -111,7 +115,7 @@ export function SurveyCreatePage() {
                 disabled={workspaces.isLoading}
                 onChange={(event) => setWorkspaceId(event.target.value)}
               >
-                <option value="personal">Personlig</option>
+                <option value={individualWorkspaceValue}>Individuell</option>
                 {workspaces.data?.map((workspace) => (
                   <option key={workspace.id} value={workspace.id}>
                     {workspace.name}
