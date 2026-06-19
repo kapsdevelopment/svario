@@ -2,6 +2,8 @@ export type SurveyStatus = 'draft' | 'published' | 'closed';
 
 export type SurveyResponseMode = 'anonymous' | 'identified';
 
+export type SurveyVisibility = 'private' | 'workspace';
+
 export type QuestionType = 'multiple_choice' | 'free_text' | 'likert_scale';
 
 export type QuestionScaleVariant = 'buttons' | 'stars' | 'nps';
@@ -22,6 +24,10 @@ export const questionScaleLimits = {
 
 export type SurveySummary = {
   id: string;
+  ownerAccountId: string | null;
+  workspaceId: string | null;
+  visibility: SurveyVisibility;
+  repeatedFromSurveyId: string | null;
   title: string;
   description: string | null;
   slug: string;
@@ -36,6 +42,8 @@ export type SurveySummary = {
 
 export type CreateSurveyDraftInput = {
   ownerAccountId: string;
+  workspaceId: string | null;
+  visibility: SurveyVisibility;
   title: string;
   description: string | null;
   responseMode: SurveyResponseMode;

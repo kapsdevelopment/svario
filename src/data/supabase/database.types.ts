@@ -446,14 +446,17 @@ export type Database = {
           description: string | null
           ends_at: string | null
           id: string
-          owner_account_id: string
+          owner_account_id: string | null
           published_at: string | null
+          repeated_from_survey_id: string | null
           response_mode: Database["public"]["Enums"]["survey_response_mode"]
           slug: string
           starts_at: string | null
           status: Database["public"]["Enums"]["survey_status"]
           title: string
           updated_at: string
+          visibility: Database["public"]["Enums"]["survey_visibility"]
+          workspace_id: string | null
         }
         Insert: {
           closed_at?: string | null
@@ -461,14 +464,17 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           id?: string
-          owner_account_id: string
+          owner_account_id?: string | null
           published_at?: string | null
+          repeated_from_survey_id?: string | null
           response_mode?: Database["public"]["Enums"]["survey_response_mode"]
           slug: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["survey_status"]
           title: string
           updated_at?: string
+          visibility?: Database["public"]["Enums"]["survey_visibility"]
+          workspace_id?: string | null
         }
         Update: {
           closed_at?: string | null
@@ -478,17 +484,190 @@ export type Database = {
           id?: string
           owner_account_id?: string
           published_at?: string | null
+          repeated_from_survey_id?: string | null
           response_mode?: Database["public"]["Enums"]["survey_response_mode"]
           slug?: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["survey_status"]
           title?: string
           updated_at?: string
+          visibility?: Database["public"]["Enums"]["survey_visibility"]
+          workspace_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "surveys_owner_account_id_fkey"
             columns: ["owner_account_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "surveys_repeated_from_survey_id_fkey"
+            columns: ["repeated_from_survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surveys_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_account_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by_account_id: string | null
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["workspace_member_role"]
+          token_hash: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_account_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by_account_id?: string | null
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["workspace_member_role"]
+          token_hash: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_account_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by_account_id?: string | null
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["workspace_member_role"]
+          token_hash?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_invitations_accepted_by_account_id_fkey"
+            columns: ["accepted_by_account_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_invited_by_account_id_fkey"
+            columns: ["invited_by_account_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_members: {
+        Row: {
+          account_id: string
+          created_at: string
+          joined_at: string
+          removed_at: string | null
+          role: Database["public"]["Enums"]["workspace_member_role"]
+          status: Database["public"]["Enums"]["workspace_member_status"]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          joined_at?: string
+          removed_at?: string | null
+          role?: Database["public"]["Enums"]["workspace_member_role"]
+          status?: Database["public"]["Enums"]["workspace_member_status"]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          joined_at?: string
+          removed_at?: string | null
+          role?: Database["public"]["Enums"]["workspace_member_role"]
+          status?: Database["public"]["Enums"]["workspace_member_status"]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          created_by_account_id: string | null
+          id: string
+          name: string
+          organization_number: string | null
+          slug: string
+          status: Database["public"]["Enums"]["workspace_status"]
+          type: Database["public"]["Enums"]["workspace_type"]
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_account_id?: string | null
+          id?: string
+          name: string
+          organization_number?: string | null
+          slug: string
+          status?: Database["public"]["Enums"]["workspace_status"]
+          type: Database["public"]["Enums"]["workspace_type"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_account_id?: string | null
+          id?: string
+          name?: string
+          organization_number?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["workspace_status"]
+          type?: Database["public"]["Enums"]["workspace_type"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_created_by_account_id_fkey"
+            columns: ["created_by_account_id"]
             isOneToOne: false
             referencedRelation: "app_users"
             referencedColumns: ["user_id"]
@@ -588,6 +767,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_workspace_invitation: {
+        Args: { p_token: string }
+        Returns: string
+      }
+      create_workspace: {
+        Args: {
+          p_name: string
+          p_organization_number?: string | null
+          p_type: Database["public"]["Enums"]["workspace_type"]
+        }
+        Returns: string
+      }
+      create_workspace_invitation: {
+        Args: {
+          p_expires_in_days?: number
+          p_role?: Database["public"]["Enums"]["workspace_member_role"]
+          p_workspace_id: string
+        }
+        Returns: string
+      }
       delete_account_data_for_auth_user: {
         Args: { p_auth_user_id: string }
         Returns: string | null
@@ -596,9 +795,21 @@ export type Database = {
         Args: { p_survey_id: string }
         Returns: undefined
       }
+      delete_workspace: {
+        Args: { p_workspace_id: string }
+        Returns: undefined
+      }
       ensure_account_initialized_v2: { Args: never; Returns: string }
       ensure_domain_account: { Args: never; Returns: string }
       ensure_user: { Args: never; Returns: string }
+      remove_workspace_member: {
+        Args: { p_account_id: string; p_workspace_id: string }
+        Returns: undefined
+      }
+      repeat_survey_once: {
+        Args: { p_survey_id: string }
+        Returns: string
+      }
       sync_my_identity: {
         Args: {
           p_email?: string
@@ -634,6 +845,11 @@ export type Database = {
       question_visualization_type: "bar" | "pie" | "word_cloud" | "list"
       survey_response_mode: "anonymous" | "identified"
       survey_status: "draft" | "published" | "closed"
+      survey_visibility: "private" | "workspace"
+      workspace_member_role: "owner" | "admin" | "member"
+      workspace_member_status: "active" | "removed"
+      workspace_status: "active" | "deleted"
+      workspace_type: "business" | "team"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -776,6 +992,11 @@ export const Constants = {
       question_visualization_type: ["bar", "pie", "word_cloud", "list"],
       survey_response_mode: ["anonymous", "identified"],
       survey_status: ["draft", "published", "closed"],
+      survey_visibility: ["private", "workspace"],
+      workspace_member_role: ["owner", "admin", "member"],
+      workspace_member_status: ["active", "removed"],
+      workspace_status: ["active", "deleted"],
+      workspace_type: ["business", "team"],
     },
   },
 } as const

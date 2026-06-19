@@ -12,7 +12,7 @@ import {
   Play,
   X,
 } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Bar,
   BarChart,
@@ -93,8 +93,93 @@ export function ResultsPage() {
   );
 }
 
+export function ResultsPresentationPage() {
+  const { surveyId } = useParams();
+  const navigate = useNavigate();
+  const { data: results, error, isError, isLoading } = useSurveyResults(surveyId);
+
+  if (!surveyId) {
+    return (
+      <PresentationStatus
+        title="Mangler skjema-id"
+        subtitle="Presentasjonslenken er ikke komplett."
+      />
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <PresentationStatus
+        title="Laster presentasjon"
+        subtitle="Henter resultatene fra Supabase."
+      />
+    );
+  }
+
+  if (isError) {
+    return (
+      <PresentationStatus
+        title="Kunne ikke åpne presentasjonen"
+        subtitle={getErrorMessage(error)}
+      />
+    );
+  }
+
+  if (!results) {
+    return (
+      <PresentationStatus
+        title="Ingen presentasjon"
+        subtitle="Fant ikke resultater for dette skjemaet."
+      />
+    );
+  }
+
+  if (results.responseCount === 0 || results.questionResults.length === 0) {
+    return (
+      <PresentationStatus
+        title={results.title}
+        subtitle="Presentasjon blir tilgjengelig når skjemaet har svar."
+        backTo={routes.results(results.id)}
+      />
+    );
+  }
+
+  return (
+    <ResultsPresentationContent
+      results={results}
+      onClose={() => navigate(routes.results(results.id))}
+    />
+  );
+}
+
+function PresentationStatus({
+  backTo,
+  subtitle,
+  title,
+}: {
+  backTo?: string;
+  subtitle: string;
+  title: string;
+}) {
+  return (
+    <main className="presentation-mode presentation-mode--status">
+      <Panel
+        title={title}
+        subtitle={subtitle}
+        action={
+          backTo ? (
+            <Link className="button button--secondary" to={backTo}>
+              <ArrowLeft size={18} aria-hidden="true" />
+              Resultater
+            </Link>
+          ) : null
+        }
+      />
+    </main>
+  );
+}
+
 function ResultsContent({ results }: { results: SurveyResults }) {
-  const [isPresenting, setIsPresenting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportingFormat, setExportingFormat] = useState<
     'csv' | 'docx' | 'pdf' | 'pptx' | null
@@ -169,13 +254,6 @@ function ResultsContent({ results }: { results: SurveyResults }) {
 
   return (
     <>
-      {isPresenting ? (
-        <ResultsPresentationMode
-          results={results}
-          onClose={() => setIsPresenting(false)}
-        />
-      ) : null}
-
       <div className="metric-grid">
         <Panel title="Svar" subtitle={`${results.responseCount} totalt`} />
         <Panel title="Spørsmål" subtitle={`${results.questionResults.length} totalt`} />
@@ -213,15 +291,20 @@ function ResultsContent({ results }: { results: SurveyResults }) {
         }
         action={
           <div className="inline-actions">
-            <button
-              className="button button--primary"
-              type="button"
-              disabled={!canUseResults}
-              onClick={() => setIsPresenting(true)}
-            >
-              <Play size={18} aria-hidden="true" />
-              Presenter
-            </button>
+            {canUseResults ? (
+              <Link
+                className="button button--primary"
+                to={routes.resultsPresentation(results.id)}
+              >
+                <Play size={18} aria-hidden="true" />
+                Presenter
+              </Link>
+            ) : (
+              <button className="button button--primary" type="button" disabled>
+                <Play size={18} aria-hidden="true" />
+                Presenter
+              </button>
+            )}
             <button
               className="button button--secondary"
               type="button"
@@ -271,7 +354,7 @@ function ResultsContent({ results }: { results: SurveyResults }) {
   );
 }
 
-function ResultsPresentationMode({
+function ResultsPresentationContent({
   onClose,
   results,
 }: {
@@ -283,15 +366,6 @@ function ResultsPresentationMode({
   const currentResult = results.questionResults[currentIndex];
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex < slideCount - 1;
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -334,11 +408,9 @@ function ResultsPresentationMode({
   }
 
   return (
-    <div
+    <main
       aria-label={`Presentasjonsmodus for ${results.title}`}
-      aria-modal="true"
       className="presentation-mode"
-      role="dialog"
     >
       <div className="presentation-mode__topbar">
         <div>
@@ -395,7 +467,7 @@ function ResultsPresentationMode({
           <ChevronRight size={18} aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </main>
   );
 }
 

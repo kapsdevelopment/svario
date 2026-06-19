@@ -29,6 +29,10 @@ import type { Json, Tables, TablesInsert, TablesUpdate } from '../supabase/datab
 type SurveyRow = Pick<
   Tables<'surveys'>,
   | 'id'
+  | 'owner_account_id'
+  | 'workspace_id'
+  | 'visibility'
+  | 'repeated_from_survey_id'
   | 'title'
   | 'description'
   | 'slug'
@@ -90,7 +94,7 @@ type AnswerOptionRow = Pick<
 >;
 
 const surveySummarySelect =
-  'id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
+  'id, owner_account_id, workspace_id, visibility, repeated_from_survey_id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
 const sectionSelect = 'id, survey_id, title, description, sort_order';
 const questionSelect =
   'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, scale_min, scale_max, scale_variant, sort_order, visualization_type, visualization_color_mode';
@@ -126,6 +130,8 @@ export async function createSurveyDraft(
 
   const payload: TablesInsert<'surveys'> = {
     owner_account_id: input.ownerAccountId,
+    workspace_id: input.workspaceId,
+    visibility: input.visibility,
     title,
     description: normalizeOptionalText(input.description),
     slug: createSurveySlug(title),
@@ -271,6 +277,10 @@ export async function getPublishedSurveyBySlug(
 
   return {
     id: survey.id,
+    ownerAccountId: null,
+    workspaceId: null,
+    visibility: 'private',
+    repeatedFromSurveyId: null,
     title: survey.title,
     description: survey.description,
     slug: survey.slug,
@@ -379,6 +389,19 @@ export async function deleteSurvey(surveyId: string): Promise<void> {
   }
 }
 
+export async function repeatSurveyOnce(surveyId: string): Promise<string> {
+  const client = requireSurveyClient();
+  const { data, error } = await client.rpc('repeat_survey_once', {
+    p_survey_id: surveyId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function addSurveyQuestion(
   input: AddSurveyQuestionInput,
 ): Promise<SurveyQuestion> {
@@ -478,6 +501,10 @@ export async function updateQuestionVisualization(
 function mapSurveySummary(row: SurveyRow): SurveySummary {
   return {
     id: row.id,
+    ownerAccountId: row.owner_account_id,
+    workspaceId: row.workspace_id,
+    visibility: row.visibility,
+    repeatedFromSurveyId: row.repeated_from_survey_id,
     title: row.title,
     description: row.description,
     slug: row.slug,

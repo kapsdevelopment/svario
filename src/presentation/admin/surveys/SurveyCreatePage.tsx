@@ -5,18 +5,21 @@ import { useNavigate } from 'react-router-dom';
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
 import { useCreateSurveyDraft } from '../../../application/surveys/useCreateSurveyDraft';
+import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import type { SurveyResponseMode } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
 export function SurveyCreatePage() {
   const { account } = useAuth();
   const createSurveyDraft = useCreateSurveyDraft();
+  const workspaces = useWorkspaces(account?.id);
   const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [responseMode, setResponseMode] =
     useState<SurveyResponseMode>('anonymous');
+  const [workspaceId, setWorkspaceId] = useState('personal');
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -55,6 +58,8 @@ export function SurveyCreatePage() {
     try {
       const createdSurvey = await createSurveyDraft.mutateAsync({
         ownerAccountId: account.id,
+        workspaceId: workspaceId === 'personal' ? null : workspaceId,
+        visibility: workspaceId === 'personal' ? 'private' : 'workspace',
         title: normalizedTitle,
         description,
         responseMode,
@@ -99,6 +104,21 @@ export function SurveyCreatePage() {
             />
           </label>
           <div className="form-grid">
+            <label>
+              Arbeidsflate
+              <select
+                value={workspaceId}
+                disabled={workspaces.isLoading}
+                onChange={(event) => setWorkspaceId(event.target.value)}
+              >
+                <option value="personal">Personlig</option>
+                {workspaces.data?.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label>
               Besvarelser
               <select

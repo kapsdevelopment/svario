@@ -27,9 +27,17 @@ const ProfilePage = lazyRoute(
   () => import('../presentation/admin/profile/ProfilePage'),
   'ProfilePage',
 );
+const JoinWorkspacePage = lazyRoute(
+  () => import('../presentation/admin/workspaces/JoinWorkspacePage'),
+  'JoinWorkspacePage',
+);
 const ResultsPage = lazyRoute(
   () => import('../presentation/admin/results/ResultsPage'),
   'ResultsPage',
+);
+const ResultsPresentationPage = lazyRoute(
+  () => import('../presentation/admin/results/ResultsPage'),
+  'ResultsPresentationPage',
 );
 const SurveyCreatePage = lazyRoute(
   () => import('../presentation/admin/surveys/SurveyCreatePage'),
@@ -74,6 +82,15 @@ export const router = createHashRouter([
     errorElement: <RouteErrorPage />,
   },
   {
+    path: '/surveys/:surveyId/results/present',
+    element: (
+      <RequireAuth>
+        {page(<ResultsPresentationPage />)}
+      </RequireAuth>
+    ),
+    errorElement: <RouteErrorPage />,
+  },
+  {
     element: (
       <RequireAuth>
         <AppShell />
@@ -104,6 +121,10 @@ export const router = createHashRouter([
       {
         path: routes.profile,
         element: page(<ProfilePage />),
+      },
+      {
+        path: '/join/:token',
+        element: page(<JoinWorkspacePage />),
       },
     ],
   },

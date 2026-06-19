@@ -1,15 +1,25 @@
-import { BarChart3, Pencil, Plus, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { BarChart3, CopyPlus, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { useAuth } from '../../../application/auth/AuthProvider';
 import { useDeleteSurvey } from '../../../application/surveys/useDeleteSurvey';
+import { useRepeatSurveyOnce } from '../../../application/surveys/useRepeatSurveyOnce';
 import { useSurveyList } from '../../../application/surveys/useSurveyList';
+import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import type { SurveySummary } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
 export function SurveyListPage() {
+  const { account } = useAuth();
+  const navigate = useNavigate();
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
+  const { data: workspaces = [] } = useWorkspaces(account?.id);
   const deleteSurvey = useDeleteSurvey();
+  const repeatSurveyOnce = useRepeatSurveyOnce();
+  const workspaceNameById = new Map(
+    workspaces.map((workspace) => [workspace.id, workspace.name]),
+  );
 
   async function handleDeleteSurvey(survey: SurveySummary) {
     const shouldDelete = window.confirm(
@@ -22,6 +32,23 @@ export function SurveyListPage() {
 
     try {
       await deleteSurvey.mutateAsync(survey.id);
+    } catch {
+      return;
+    }
+  }
+
+  async function handleRepeatSurvey(survey: SurveySummary) {
+    const shouldRepeat = window.confirm(
+      `Lage en ny runde av "${survey.title}"? Spørsmål, seksjoner og innstillinger kopieres, men svarene blir ikke med.`,
+    );
+
+    if (!shouldRepeat) {
+      return;
+    }
+
+    try {
+      const repeatedSurveyId = await repeatSurveyOnce.mutateAsync(survey.id);
+      navigate(routes.editSurvey(repeatedSurveyId));
     } catch {
       return;
     }
@@ -53,6 +80,12 @@ export function SurveyListPage() {
       {deleteSurvey.isError ? (
         <div className="form-alert form-alert--error" role="alert">
           {getErrorMessage(deleteSurvey.error)}
+        </div>
+      ) : null}
+
+      {repeatSurveyOnce.isError ? (
+        <div className="form-alert form-alert--error" role="alert">
+          {getErrorMessage(repeatSurveyOnce.error)}
         </div>
       ) : null}
 
@@ -93,9 +126,19 @@ export function SurveyListPage() {
                     <BarChart3 size={20} aria-hidden="true" />
                   </Link>
                   <button
+                    className="icon-button"
+                    type="button"
+                    disabled={repeatSurveyOnce.isPending || deleteSurvey.isPending}
+                    title={`Repeter ${survey.title}`}
+                    aria-label={`Repeter ${survey.title}`}
+                    onClick={() => handleRepeatSurvey(survey)}
+                  >
+                    <CopyPlus size={18} aria-hidden="true" />
+                  </button>
+                  <button
                     className="icon-button icon-button--danger"
                     type="button"
-                    disabled={deleteSurvey.isPending}
+                    disabled={deleteSurvey.isPending || repeatSurveyOnce.isPending}
                     aria-label={`Slett ${survey.title}`}
                     onClick={() => handleDeleteSurvey(survey)}
                   >
@@ -109,6 +152,7 @@ export function SurveyListPage() {
                   {statusLabel[survey.status]}
                 </span>
                 <span>{responseModeLabel[survey.responseMode]}</span>
+                <span>{formatSurveyWorkspace(survey, workspaceNameById)}</span>
                 <span>{formatUpdatedAt(survey.updatedAt)}</span>
               </div>
             </Panel>
@@ -146,6 +190,17 @@ function formatSurveyMeta(survey: SurveySummary) {
   }
 
   return `${statusLabel[survey.status]} · uten tidsavgrensning`;
+}
+
+function formatSurveyWorkspace(
+  survey: SurveySummary,
+  workspaceNameById: Map<string, string>,
+) {
+  if (!survey.workspaceId) {
+    return 'Personlig';
+  }
+
+  return workspaceNameById.get(survey.workspaceId) ?? 'Arbeidsflate';
 }
 
 function formatDate(value: string) {
