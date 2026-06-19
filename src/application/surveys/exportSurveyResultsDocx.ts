@@ -3,6 +3,7 @@ import {
   BorderStyle,
   Document,
   HeadingLevel,
+  ImageRun,
   Packer,
   Paragraph,
   ShadingType,
@@ -19,6 +20,7 @@ import {
   buildFreeTextWordCloud,
   type FreeTextWordCloudItem,
 } from './buildFreeTextWordCloud';
+import { createFreeTextWordCloudImage } from './createFreeTextWordCloudImage';
 import {
   createSurveyResultsExportFileName,
   exportColors,
@@ -58,6 +60,7 @@ export async function buildSurveyResultsDocx(
   generatedAt = new Date(),
 ) {
   const writer = new DocxReportWriter(results, generatedAt);
+  const children = await writer.build();
   const doc = new Document({
     creator: 'Svario',
     description: 'Resultatrapport fra Svario',
@@ -74,7 +77,7 @@ export async function buildSurveyResultsDocx(
             },
           },
         },
-        children: writer.build(),
+        children,
       },
     ],
     subject: 'Spørreskjemaresultater',
@@ -99,11 +102,11 @@ class DocxReportWriter {
     private readonly generatedAt: Date,
   ) {}
 
-  build() {
+  async build() {
     this.addIntro();
     this.addSummary();
     this.addMetadata();
-    this.addQuestionResults();
+    await this.addQuestionResults();
     return this.blocks;
   }
 
@@ -198,7 +201,7 @@ class DocxReportWriter {
     this.addGap(220);
   }
 
-  private addQuestionResults() {
+  private async addQuestionResults() {
     this.addHeading('Spørsmål og svar');
 
     if (this.results.questionResults.length === 0) {
@@ -213,7 +216,7 @@ class DocxReportWriter {
     );
     let currentSectionId: string | null = null;
 
-    this.results.questionResults.forEach((result, index) => {
+    for (const [index, result] of this.results.questionResults.entries()) {
       if (result.question.sectionId !== currentSectionId) {
         currentSectionId = result.question.sectionId;
         const sectionTitle = currentSectionId
@@ -225,11 +228,11 @@ class DocxReportWriter {
         }
       }
 
-      this.addQuestionResult(result, index + 1);
-    });
+      await this.addQuestionResult(result, index + 1);
+    }
   }
 
-  private addQuestionResult(result: SurveyQuestionResult, index: number) {
+  private async addQuestionResult(result: SurveyQuestionResult, index: number) {
     this.addText(`Spørsmål ${index}`, {
       bold: true,
       color: exportColors.muted,
@@ -268,7 +271,7 @@ class DocxReportWriter {
     }
 
     if (result.question.type === 'free_text') {
-      this.addFreeTextResults(result.freeTextResults);
+      await this.addFreeTextResults(result.freeTextResults);
     }
 
     if (result.skippedCount > 0) {
@@ -327,16 +330,16 @@ class DocxReportWriter {
     );
   }
 
-  private addFreeTextResults(results: SurveyFreeTextResult[]) {
+  private async addFreeTextResults(results: SurveyFreeTextResult[]) {
     if (results.length === 0) {
       this.addMutedText('Ingen fritekstsvar ennå.');
       return;
     }
 
-    const wordCloud = buildFreeTextWordCloud(results);
+    const wordCloud = buildFreeTextWordCloud(results).slice(0, 22);
 
     if (wordCloud.length > 0) {
-      this.addWordCloudSummary(wordCloud);
+      await this.addWordCloudSummary(wordCloud);
     }
 
     results.forEach((result, index) => {
@@ -359,23 +362,40 @@ class DocxReportWriter {
     });
   }
 
-  private addWordCloudSummary(items: FreeTextWordCloudItem[]) {
-    const topWords = items
-      .slice(0, 20)
-      .map((item) => `${item.word} (${item.count})`)
-      .join(', ');
-
+  private async addWordCloudSummary(items: FreeTextWordCloudItem[]) {
+    const wordCloudImage = await createFreeTextWordCloudImage(items);
     this.addText('Toppord', {
       bold: true,
       color: exportColors.pine,
+      keepNext: true,
       size: 20,
       spacingAfter: 60,
     });
-    this.addText(topWords, {
-      color: exportColors.ink,
-      size: 19,
-      spacingAfter: 150,
-    });
+    this.blocks.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new ImageRun({
+            altText: {
+              description: `Ordsky med ${items.length} toppord fra fritekstsvar`,
+              name: 'Toppord',
+              title: 'Toppord',
+            },
+            data: wordCloudImage.svgBytes,
+            fallback: {
+              data: wordCloudImage.pngFallbackBytes,
+              type: 'png',
+            },
+            transformation: {
+              height: 357,
+              width: 640,
+            },
+            type: 'svg',
+          }),
+        ],
+        spacing: { after: 150 },
+      }),
+    );
   }
 
   private addHeading(text: string) {
@@ -416,6 +436,7 @@ class DocxReportWriter {
     options: {
       bold?: boolean;
       color?: string;
+      keepNext?: boolean;
       size?: number;
       spacingAfter?: number;
     } = {},
@@ -430,6 +451,7 @@ class DocxReportWriter {
             text: text || ' ',
           }),
         ],
+        keepNext: options.keepNext,
         spacing: { after: options.spacingAfter ?? 90 },
       }),
     );
