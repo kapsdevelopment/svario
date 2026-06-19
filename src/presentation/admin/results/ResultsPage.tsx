@@ -95,26 +95,77 @@ export function ResultsPage() {
 
 function ResultsContent({ results }: { results: SurveyResults }) {
   const [isPresenting, setIsPresenting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportingFormat, setExportingFormat] = useState<
+    'csv' | 'docx' | 'pdf' | 'pptx' | null
+  >(null);
   const canUseResults =
     results.responseCount > 0 && results.questionResults.length > 0;
 
+  async function runExport(
+    format: NonNullable<typeof exportingFormat>,
+    task: () => Promise<void> | void,
+  ) {
+    setExportError(null);
+    setExportingFormat(format);
+
+    try {
+      await task();
+    } catch (error) {
+      console.error(error);
+      setExportError('Kunne ikke lage eksportfilen. Prøv igjen.');
+    } finally {
+      setExportingFormat(null);
+    }
+  }
+
   function handleDownloadCsv() {
-    downloadTextFile({
-      content: buildSurveyResultsCsv(results),
-      fileName: createSurveyResultsCsvFileName(results),
-      mimeType: 'text/csv',
+    void runExport('csv', () => {
+      downloadTextFile({
+        content: buildSurveyResultsCsv(results),
+        fileName: createSurveyResultsCsvFileName(results),
+        mimeType: 'text/csv',
+      });
     });
   }
 
   async function handleDownloadPdf() {
-    const { buildSurveyResultsPdf, createSurveyResultsPdfFileName } =
-      await import('../../../application/surveys/exportSurveyResultsPdf');
+    await runExport('pdf', async () => {
+      const { buildSurveyResultsPdf, createSurveyResultsPdfFileName } =
+        await import('../../../application/surveys/exportSurveyResultsPdf');
 
-    downloadBlobFile({
-      blob: buildSurveyResultsPdf(results),
-      fileName: createSurveyResultsPdfFileName(results),
+      downloadBlobFile({
+        blob: buildSurveyResultsPdf(results),
+        fileName: createSurveyResultsPdfFileName(results),
+      });
     });
   }
+
+  async function handleDownloadDocx() {
+    await runExport('docx', async () => {
+      const { buildSurveyResultsDocx, createSurveyResultsDocxFileName } =
+        await import('../../../application/surveys/exportSurveyResultsDocx');
+
+      downloadBlobFile({
+        blob: await buildSurveyResultsDocx(results),
+        fileName: createSurveyResultsDocxFileName(results),
+      });
+    });
+  }
+
+  async function handleDownloadPptx() {
+    await runExport('pptx', async () => {
+      const { buildSurveyResultsPptx, createSurveyResultsPptxFileName } =
+        await import('../../../application/surveys/exportSurveyResultsPptx');
+
+      downloadBlobFile({
+        blob: await buildSurveyResultsPptx(results),
+        fileName: createSurveyResultsPptxFileName(results),
+      });
+    });
+  }
+
+  const isExporting = exportingFormat !== null;
 
   return (
     <>
@@ -174,24 +225,48 @@ function ResultsContent({ results }: { results: SurveyResults }) {
             <button
               className="button button--secondary"
               type="button"
-              disabled={!canUseResults}
+              disabled={!canUseResults || isExporting}
               onClick={handleDownloadCsv}
             >
               <Download size={18} aria-hidden="true" />
-              CSV
+              {exportingFormat === 'csv' ? 'Lager CSV' : 'CSV'}
             </button>
             <button
               className="button button--secondary"
               type="button"
-              disabled={!canUseResults}
+              disabled={!canUseResults || isExporting}
+              onClick={handleDownloadDocx}
+            >
+              <FileText size={18} aria-hidden="true" />
+              {exportingFormat === 'docx' ? 'Lager DOCX' : 'DOCX'}
+            </button>
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={!canUseResults || isExporting}
               onClick={handleDownloadPdf}
             >
               <FileText size={18} aria-hidden="true" />
-              PDF
+              {exportingFormat === 'pdf' ? 'Lager PDF' : 'PDF'}
+            </button>
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={!canUseResults || isExporting}
+              onClick={handleDownloadPptx}
+            >
+              <Download size={18} aria-hidden="true" />
+              {exportingFormat === 'pptx' ? 'Lager PPTX' : 'PPTX'}
             </button>
           </div>
         }
-      />
+      >
+        {exportError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {exportError}
+          </div>
+        ) : null}
+      </Panel>
     </>
   );
 }
