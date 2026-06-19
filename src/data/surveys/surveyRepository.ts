@@ -12,6 +12,7 @@ import {
   type SubmitSurveyResponseInput,
   type SurveyEditor,
   type SurveyFreeTextResult,
+  type SurveyPrivacySettings,
   type SurveyLikertResult,
   type SurveyQuestion,
   type SurveyQuestionOption,
@@ -21,6 +22,7 @@ import {
   type SurveyResults,
   type SurveySection,
   type SurveySummary,
+  type UpsertSurveyPrivacySettingsInput,
   type UpdateQuestionVisualizationInput,
 } from '../../domain/surveys/survey';
 import { publicSupabase, supabase } from '../supabase/client';
@@ -68,6 +70,24 @@ type SectionRow = Pick<
   'id' | 'survey_id' | 'title' | 'description' | 'sort_order'
 >;
 
+type SurveyPrivacySettingsRow = Pick<
+  Tables<'survey_privacy_settings'>,
+  | 'survey_id'
+  | 'enabled'
+  | 'personal_data_expected'
+  | 'controller_name'
+  | 'controller_contact'
+  | 'purpose'
+  | 'legal_basis'
+  | 'legal_basis_note'
+  | 'consent_text'
+  | 'retention_days'
+  | 'retention_action'
+  | 'respondent_notice'
+  | 'created_at'
+  | 'updated_at'
+>;
+
 type QuestionOptionRow = Pick<
   Tables<'question_options'>,
   'id' | 'question_id' | 'label' | 'value' | 'sort_order'
@@ -95,6 +115,8 @@ type AnswerOptionRow = Pick<
 
 const surveySummarySelect =
   'id, owner_account_id, workspace_id, visibility, repeated_from_survey_id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
+const surveyPrivacySettingsSelect =
+  'survey_id, enabled, personal_data_expected, controller_name, controller_contact, purpose, legal_basis, legal_basis_note, consent_text, retention_days, retention_action, respondent_notice, created_at, updated_at';
 const sectionSelect = 'id, survey_id, title, description, sort_order';
 const questionSelect =
   'id, survey_id, section_id, type, prompt, description, is_required, allow_multiple, scale_min, scale_max, scale_variant, sort_order, visualization_type, visualization_color_mode';
@@ -190,6 +212,7 @@ export async function getSurveyEditor(surveyId: string): Promise<SurveyEditor> {
   const questionIds = (questions ?? []).map((question) => question.id);
   const options = await listQuestionOptions(questionIds);
   const responseCount = await countSurveyResponses(surveyId);
+  const privacySettings = await getSurveyPrivacySettings(surveyId);
 
   return {
     ...mapSurveySummary(survey),
@@ -197,41 +220,61 @@ export async function getSurveyEditor(surveyId: string): Promise<SurveyEditor> {
     questions: (questions ?? []).map((question) =>
       mapQuestion(question, options.get(question.id) ?? []),
     ),
+    privacySettings,
     responseCount,
   };
 }
 
 export async function publishSurvey(surveyId: string): Promise<SurveySummary> {
   const client = requireSurveyClient();
-  const { count, error: countError } = await client
-    .from('questions')
-    .select('id', { count: 'exact', head: true })
-    .eq('survey_id', surveyId);
+  const { data, error } = await client.rpc('publish_survey', {
+    p_survey_id: surveyId,
+  });
 
-  if (countError) {
-    throw countError;
+  if (error) {
+    throw error;
   }
 
-  if ((count ?? 0) === 0) {
-    throw new Error('Skjemaet må ha minst ett spørsmål før publisering.');
+  if (!data) {
+    throw new Error('Kunne ikke publisere skjemaet.');
   }
+
+  return mapSurveySummary(data);
+}
+
+export async function updateSurveyPrivacySettings(
+  input: UpsertSurveyPrivacySettingsInput,
+): Promise<SurveyPrivacySettings> {
+  const client = requireSurveyClient();
+  const payload: TablesInsert<'survey_privacy_settings'> = {
+    survey_id: input.surveyId,
+    enabled: input.enabled,
+    personal_data_expected: input.personalDataExpected,
+    controller_name: normalizeOptionalText(input.controllerName),
+    controller_contact: normalizeOptionalText(input.controllerContact),
+    purpose: normalizeOptionalText(input.purpose),
+    legal_basis: input.legalBasis,
+    legal_basis_note: normalizeOptionalText(input.legalBasisNote),
+    consent_text:
+      input.legalBasis === 'consent'
+        ? normalizeOptionalText(input.consentText)
+        : null,
+    retention_days: input.retentionDays,
+    retention_action: input.retentionAction,
+    respondent_notice: normalizeOptionalText(input.respondentNotice),
+  };
 
   const { data, error } = await client
-    .from('surveys')
-    .update({
-      status: 'published',
-      published_at: new Date().toISOString(),
-    })
-    .eq('id', surveyId)
-    .eq('status', 'draft')
-    .select(surveySummarySelect)
+    .from('survey_privacy_settings')
+    .upsert(payload, { onConflict: 'survey_id' })
+    .select(surveyPrivacySettingsSelect)
     .single();
 
   if (error) {
     throw error;
   }
 
-  return mapSurveySummary(data);
+  return mapSurveyPrivacySettings(data);
 }
 
 export async function getPublishedSurveyBySlug(
@@ -274,6 +317,7 @@ export async function getPublishedSurveyBySlug(
 
   const questionIds = (questions ?? []).map((question) => question.id);
   const options = await listQuestionOptions(questionIds, client);
+  const privacySettings = await getSurveyPrivacySettings(survey.id, client);
 
   return {
     id: survey.id,
@@ -293,6 +337,7 @@ export async function getPublishedSurveyBySlug(
     questions: (questions ?? []).map((question) =>
       mapQuestion(question, options.get(question.id) ?? []),
     ),
+    privacySettings,
   };
 }
 
@@ -311,6 +356,7 @@ export async function submitSurveyResponse(
     p_respondent_name: normalizeOptionalText(input.respondentName),
     p_respondent_email: normalizeOptionalText(input.respondentEmail),
     p_metadata: (input.metadata ?? {}) as Json,
+    p_privacy_consent_given: input.privacyConsentGiven ?? false,
   });
 
   if (error) {
@@ -498,6 +544,23 @@ export async function updateQuestionVisualization(
   }
 }
 
+async function getSurveyPrivacySettings(
+  surveyId: string,
+  client = requireSurveyClient(),
+): Promise<SurveyPrivacySettings | null> {
+  const { data, error } = await client
+    .from('survey_privacy_settings')
+    .select(surveyPrivacySettingsSelect)
+    .eq('survey_id', surveyId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? mapSurveyPrivacySettings(data) : null;
+}
+
 function mapSurveySummary(row: SurveyRow): SurveySummary {
   return {
     id: row.id,
@@ -513,6 +576,27 @@ function mapSurveySummary(row: SurveyRow): SurveySummary {
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     publishedAt: row.published_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapSurveyPrivacySettings(
+  row: SurveyPrivacySettingsRow,
+): SurveyPrivacySettings {
+  return {
+    surveyId: row.survey_id,
+    enabled: row.enabled,
+    personalDataExpected: row.personal_data_expected,
+    controllerName: row.controller_name,
+    controllerContact: row.controller_contact,
+    purpose: row.purpose,
+    legalBasis: row.legal_basis,
+    legalBasisNote: row.legal_basis_note,
+    consentText: row.consent_text,
+    retentionDays: row.retention_days,
+    retentionAction: row.retention_action,
+    respondentNotice: row.respondent_notice,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

@@ -6,7 +6,9 @@ import {
   Layers2,
   ListChecks,
   Plus,
+  Save,
   Send,
+  ShieldCheck,
   SlidersHorizontal,
   Star,
   Trash2,
@@ -22,9 +24,12 @@ import { useDeleteSurveyQuestion } from '../../../application/surveys/useDeleteS
 import { useDeleteSurveySection } from '../../../application/surveys/useDeleteSurveySection';
 import { usePublishSurvey } from '../../../application/surveys/usePublishSurvey';
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
+import { useUpdateSurveyPrivacySettings } from '../../../application/surveys/useUpdateSurveyPrivacySettings';
 import {
   questionScaleDefaults,
   questionScaleLimits,
+  type SurveyLegalBasis,
+  type SurveyPrivacySettings,
   type QuestionScaleVariant,
   type QuestionType,
   type SurveyEditor,
@@ -46,6 +51,23 @@ const scalePresets = [
   { label: 'Skala 1-4', min: 1, max: 4, variant: 'buttons' },
   { label: 'Stjerner 1-5', min: 1, max: 5, variant: 'stars' },
   { label: 'Net Promoter Score 0-10', min: 0, max: 10, variant: 'nps' },
+] as const;
+
+const legalBasisLabel = {
+  consent: 'Samtykke',
+  legitimate_interests: 'Berettiget interesse',
+  contract: 'Avtale',
+  legal_obligation: 'Rettslig plikt',
+  public_task: 'Allmenn interesse / offentlig myndighet',
+  other: 'Annet',
+} satisfies Record<SurveyLegalBasis, string>;
+
+const retentionPresetOptions = [
+  { label: '30 dager', value: 30 },
+  { label: '90 dager', value: 90 },
+  { label: '6 måneder', value: 180 },
+  { label: '12 måneder', value: 365 },
+  { label: '24 måneder', value: 730 },
 ] as const;
 
 export function SurveyEditorPage() {
@@ -130,7 +152,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     survey.responseCount,
   );
   const canEditStructure = structureLockMessage === null;
-  const canPublish = isDraft && survey.questions.length > 0;
+  const privacyIssues = getPrivacyCompletionIssues(survey);
+  const canPublish =
+    isDraft && survey.questions.length > 0 && privacyIssues.length === 0;
   const shareUrl = useMemo(() => createShareUrl(survey.slug), [survey.slug]);
   const selectedSectionId = survey.sections.some((section) => section.id === sectionId)
     ? sectionId
@@ -278,6 +302,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       return;
     }
 
+    if (privacyIssues.length > 0) {
+      setPublishValidationError(privacyIssues[0]);
+      return;
+    }
+
     const shouldPublish = window.confirm(
       'Publisere skjemaet nå? Respondentlenken blir aktiv med en gang.',
     );
@@ -370,6 +399,8 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         </div>
       ) : null}
 
+      <PrivacySettingsPanel survey={survey} />
+
       <Panel
         title="Publisering"
         subtitle={
@@ -433,6 +464,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         {isDraft && survey.questions.length === 0 ? (
           <div className="form-alert form-alert--error" role="alert">
             Legg til minst ett spørsmål før publisering.
+          </div>
+        ) : null}
+        {isDraft && survey.questions.length > 0 && privacyIssues.length > 0 ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {privacyIssues[0]}
           </div>
         ) : null}
         {publishValidationError ? (
@@ -760,6 +796,282 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   );
 }
 
+function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
+  const updatePrivacySettings = useUpdateSurveyPrivacySettings(survey.id);
+  const initialSettings = survey.privacySettings;
+  const isIdentified = survey.responseMode === 'identified';
+
+  const [enabled, setEnabled] = useState(
+    initialSettings?.enabled ?? isIdentified,
+  );
+  const [personalDataExpected, setPersonalDataExpected] = useState(
+    initialSettings?.personalDataExpected ?? isIdentified,
+  );
+  const [controllerName, setControllerName] = useState(
+    initialSettings?.controllerName ?? '',
+  );
+  const [controllerContact, setControllerContact] = useState(
+    initialSettings?.controllerContact ?? '',
+  );
+  const [purpose, setPurpose] = useState(initialSettings?.purpose ?? '');
+  const [legalBasis, setLegalBasis] = useState<SurveyLegalBasis | ''>(
+    initialSettings?.legalBasis ?? '',
+  );
+  const [legalBasisNote, setLegalBasisNote] = useState(
+    initialSettings?.legalBasisNote ?? '',
+  );
+  const [consentText, setConsentText] = useState(
+    initialSettings?.consentText ?? '',
+  );
+  const [retentionDays, setRetentionDays] = useState(
+    String(initialSettings?.retentionDays ?? 90),
+  );
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  const settingsEnabled = isIdentified || enabled;
+  const expectsPersonalData = isIdentified || personalDataExpected;
+  const isActive = settingsEnabled || expectsPersonalData;
+  const currentSettings = buildDraftPrivacySettings(
+    survey,
+    initialSettings,
+    settingsEnabled,
+    expectsPersonalData,
+    controllerName,
+    controllerContact,
+    purpose,
+    legalBasis || null,
+    legalBasisNote,
+    consentText,
+    parseRetentionDays(retentionDays),
+  );
+  const completionIssues = getPrivacyCompletionIssues({
+    ...survey,
+    privacySettings: currentSettings,
+  });
+
+  async function handleSavePrivacy(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setValidationError(null);
+    setSaveMessage(null);
+
+    const parsedRetentionDays = parseRetentionDays(retentionDays);
+
+    if (retentionDays.trim() && parsedRetentionDays === null) {
+      setValidationError('Lagringstid må være et helt antall dager.');
+      return;
+    }
+
+    try {
+      await updatePrivacySettings.mutateAsync({
+        surveyId: survey.id,
+        enabled: settingsEnabled,
+        personalDataExpected: expectsPersonalData,
+        controllerName,
+        controllerContact,
+        purpose,
+        legalBasis: legalBasis || null,
+        legalBasisNote,
+        consentText,
+        retentionDays: parsedRetentionDays,
+        retentionAction: 'delete_response',
+        respondentNotice: null,
+      });
+      setSaveMessage('Personverninnstillingene er lagret.');
+    } catch {
+      return;
+    }
+  }
+
+  return (
+    <Panel
+      title="Personvern"
+      subtitle={
+        completionIssues.length === 0
+          ? 'Klar for publisering'
+          : 'Mangler før publisering'
+      }
+    >
+      <form className="form-stack" onSubmit={handleSavePrivacy}>
+        <div className="form-alert form-alert--info" role="note">
+          Når du lager skjema og sender det ut, er du behandlingsansvarlig for
+          formål og lagringstid.
+        </div>
+
+        <div className="checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              checked={settingsEnabled}
+              disabled={isIdentified || updatePrivacySettings.isPending}
+              onChange={(event) => setEnabled(event.target.checked)}
+            />
+            Personverninnstillinger
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={expectsPersonalData}
+              disabled={isIdentified || updatePrivacySettings.isPending}
+              onChange={(event) =>
+                setPersonalDataExpected(event.target.checked)
+              }
+            />
+            Kan inneholde personopplysninger
+          </label>
+        </div>
+
+        {isIdentified ? (
+          <div className="form-alert form-alert--info" role="status">
+            Identifiserte skjemaer samler inn opplysninger som kan identifisere
+            respondenten. Derfor må personverninnstillingene fylles ut før
+            publisering.
+          </div>
+        ) : null}
+
+        {isActive ? (
+          <>
+            <div className="form-grid form-grid--two">
+              <label>
+                Behandlingsansvarlig
+                <input
+                  type="text"
+                  value={controllerName}
+                  disabled={updatePrivacySettings.isPending}
+                  placeholder="Virksomhet eller prosjekt"
+                  onChange={(event) => setControllerName(event.target.value)}
+                />
+              </label>
+              <label>
+                Kontakt
+                <input
+                  type="text"
+                  value={controllerContact}
+                  disabled={updatePrivacySettings.isPending}
+                  placeholder="personvern@example.no"
+                  onChange={(event) => setControllerContact(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <label>
+              Formål
+              <input
+                type="text"
+                value={purpose}
+                disabled={updatePrivacySettings.isPending}
+                placeholder="For eksempel evaluere arrangementet"
+                onChange={(event) => setPurpose(event.target.value)}
+              />
+            </label>
+
+            <div className="form-grid form-grid--two">
+              <label>
+                Rettslig grunnlag
+                <select
+                  value={legalBasis}
+                  disabled={updatePrivacySettings.isPending}
+                  onChange={(event) =>
+                    setLegalBasis(event.target.value as SurveyLegalBasis | '')
+                  }
+                >
+                  <option value="">Velg grunnlag</option>
+                  {Object.entries(legalBasisLabel).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Lagringstid
+                <select
+                  value={retentionDays}
+                  disabled={updatePrivacySettings.isPending}
+                  onChange={(event) => setRetentionDays(event.target.value)}
+                >
+                  {retentionPresetOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {needsLegalBasisNote(legalBasis) ? (
+              <label>
+                Notat om grunnlag
+                <input
+                  type="text"
+                  value={legalBasisNote}
+                  disabled={updatePrivacySettings.isPending}
+                  placeholder={getLegalBasisNotePlaceholder(legalBasis)}
+                  onChange={(event) => setLegalBasisNote(event.target.value)}
+                />
+              </label>
+            ) : null}
+
+            {legalBasis === 'consent' ? (
+              <label>
+                Samtykketekst
+                <textarea
+                  rows={3}
+                  value={consentText}
+                  disabled={updatePrivacySettings.isPending}
+                  placeholder="Jeg samtykker til at svaret mitt behandles for formålet beskrevet over."
+                  onChange={(event) => setConsentText(event.target.value)}
+                />
+              </label>
+            ) : null}
+
+            <div className="privacy-summary">
+              <ShieldCheck size={18} aria-hidden="true" />
+              <p>
+                Svario lagrer ikke IP-adresse på besvarelser. Svar slettes
+                automatisk etter valgt lagringstid når den daglige
+                retention-jobben kjører.
+              </p>
+            </div>
+          </>
+        ) : null}
+
+        {completionIssues.length > 0 ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {completionIssues[0]}
+          </div>
+        ) : null}
+        {validationError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {validationError}
+          </div>
+        ) : null}
+        {updatePrivacySettings.isError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {getErrorMessage(updatePrivacySettings.error)}
+          </div>
+        ) : null}
+        {saveMessage ? (
+          <div className="form-alert form-alert--success" role="status">
+            {saveMessage}
+          </div>
+        ) : null}
+
+        <div className="form-actions">
+          <button
+            className="button button--secondary"
+            type="submit"
+            disabled={updatePrivacySettings.isPending}
+          >
+            <Save size={18} aria-hidden="true" />
+            {updatePrivacySettings.isPending ? 'Lagrer...' : 'Lagre personvern'}
+          </button>
+        </div>
+      </form>
+    </Panel>
+  );
+}
+
 function QuestionCard({
   question,
   disabled,
@@ -927,6 +1239,112 @@ function getStructureLockMessage(
   }
 
   return null;
+}
+
+function buildDraftPrivacySettings(
+  survey: SurveyEditor,
+  currentSettings: SurveyPrivacySettings | null,
+  enabled: boolean,
+  personalDataExpected: boolean,
+  controllerName: string,
+  controllerContact: string,
+  purpose: string,
+  legalBasis: SurveyLegalBasis | null,
+  legalBasisNote: string,
+  consentText: string,
+  retentionDays: number | null,
+): SurveyPrivacySettings {
+  const now = new Date().toISOString();
+
+  return {
+    surveyId: survey.id,
+    enabled,
+    personalDataExpected,
+    controllerName: controllerName.trim() || null,
+    controllerContact: controllerContact.trim() || null,
+    purpose: purpose.trim() || null,
+    legalBasis,
+    legalBasisNote: legalBasisNote.trim() || null,
+    consentText: legalBasis === 'consent' ? consentText.trim() || null : null,
+    retentionDays,
+    retentionAction: currentSettings?.retentionAction ?? 'delete_response',
+    respondentNotice: currentSettings?.respondentNotice ?? null,
+    createdAt: currentSettings?.createdAt ?? now,
+    updatedAt: currentSettings?.updatedAt ?? now,
+  };
+}
+
+function getPrivacyCompletionIssues(
+  survey: Pick<SurveyEditor, 'privacySettings' | 'responseMode'>,
+) {
+  const settings = survey.privacySettings;
+  const privacyRequired =
+    survey.responseMode === 'identified' ||
+    Boolean(settings?.enabled) ||
+    Boolean(settings?.personalDataExpected);
+
+  if (!privacyRequired) {
+    return [];
+  }
+
+  if (!settings) {
+    return ['Fyll ut personverninnstillingene før publisering.'];
+  }
+
+  if (!settings.controllerName?.trim()) {
+    return ['Fyll ut behandlingsansvarlig før publisering.'];
+  }
+
+  if (!settings.controllerContact?.trim()) {
+    return ['Fyll ut kontakt for personvern før publisering.'];
+  }
+
+  if (!settings.purpose?.trim()) {
+    return ['Fyll ut formålet med innsamlingen før publisering.'];
+  }
+
+  if (!settings.legalBasis) {
+    return ['Velg rettslig grunnlag før publisering.'];
+  }
+
+  if (!settings.retentionDays) {
+    return ['Velg lagringstid før publisering.'];
+  }
+
+  if (settings.legalBasis === 'consent' && !settings.consentText?.trim()) {
+    return ['Fyll ut samtykketekst før publisering.'];
+  }
+
+  return [];
+}
+
+function parseRetentionDays(value: string) {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
+}
+
+function needsLegalBasisNote(legalBasis: SurveyLegalBasis | '') {
+  return (
+    legalBasis === 'legal_obligation' ||
+    legalBasis === 'legitimate_interests' ||
+    legalBasis === 'other'
+  );
+}
+
+function getLegalBasisNotePlaceholder(legalBasis: SurveyLegalBasis | '') {
+  if (legalBasis === 'legal_obligation') {
+    return 'Hvilken lov eller forskrift?';
+  }
+
+  if (legalBasis === 'legitimate_interests') {
+    return 'Kort om interesseavveiingen';
+  }
+
+  return 'Kort forklaring';
 }
 
 function getPublishedIntroText(responseCount: number) {

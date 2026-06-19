@@ -352,34 +352,46 @@ export type Database = {
       }
       survey_responses: {
         Row: {
+          anonymized_at: string | null
           created_at: string
           created_by_account_id: string | null
           id: string
           metadata: Json
+          privacy_consent_given_at: string | null
+          privacy_notice_snapshot: Json
           respondent_email: string | null
           respondent_name: string | null
+          retention_due_at: string | null
           response_mode: Database["public"]["Enums"]["survey_response_mode"]
           submitted_at: string
           survey_id: string
         }
         Insert: {
+          anonymized_at?: string | null
           created_at?: string
           created_by_account_id?: string | null
           id?: string
           metadata?: Json
+          privacy_consent_given_at?: string | null
+          privacy_notice_snapshot?: Json
           respondent_email?: string | null
           respondent_name?: string | null
+          retention_due_at?: string | null
           response_mode: Database["public"]["Enums"]["survey_response_mode"]
           submitted_at?: string
           survey_id: string
         }
         Update: {
+          anonymized_at?: string | null
           created_at?: string
           created_by_account_id?: string | null
           id?: string
           metadata?: Json
+          privacy_consent_given_at?: string | null
+          privacy_notice_snapshot?: Json
           respondent_email?: string | null
           respondent_name?: string | null
+          retention_due_at?: string | null
           response_mode?: Database["public"]["Enums"]["survey_response_mode"]
           submitted_at?: string
           survey_id?: string
@@ -394,6 +406,100 @@ export type Database = {
           },
           {
             foreignKeyName: "survey_responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_privacy_settings: {
+        Row: {
+          consent_text: string | null
+          controller_contact: string | null
+          controller_name: string | null
+          created_at: string
+          enabled: boolean
+          legal_basis: Database["public"]["Enums"]["survey_legal_basis"] | null
+          legal_basis_note: string | null
+          personal_data_expected: boolean
+          purpose: string | null
+          respondent_notice: string | null
+          retention_action: Database["public"]["Enums"]["survey_retention_action"]
+          retention_days: number | null
+          survey_id: string
+          updated_at: string
+        }
+        Insert: {
+          consent_text?: string | null
+          controller_contact?: string | null
+          controller_name?: string | null
+          created_at?: string
+          enabled?: boolean
+          legal_basis?: Database["public"]["Enums"]["survey_legal_basis"] | null
+          legal_basis_note?: string | null
+          personal_data_expected?: boolean
+          purpose?: string | null
+          respondent_notice?: string | null
+          retention_action?: Database["public"]["Enums"]["survey_retention_action"]
+          retention_days?: number | null
+          survey_id: string
+          updated_at?: string
+        }
+        Update: {
+          consent_text?: string | null
+          controller_contact?: string | null
+          controller_name?: string | null
+          created_at?: string
+          enabled?: boolean
+          legal_basis?: Database["public"]["Enums"]["survey_legal_basis"] | null
+          legal_basis_note?: string | null
+          personal_data_expected?: boolean
+          purpose?: string | null
+          respondent_notice?: string | null
+          retention_action?: Database["public"]["Enums"]["survey_retention_action"]
+          retention_days?: number | null
+          survey_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_privacy_settings_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: true
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_privacy_events: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["survey_privacy_event_type"]
+          id: string
+          response_id: string | null
+          survey_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["survey_privacy_event_type"]
+          id?: string
+          response_id?: string | null
+          survey_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["survey_privacy_event_type"]
+          id?: string
+          response_id?: string | null
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_privacy_events_survey_id_fkey"
             columns: ["survey_id"]
             isOneToOne: false
             referencedRelation: "surveys"
@@ -806,6 +912,10 @@ export type Database = {
         Args: { p_account_id: string; p_workspace_id: string }
         Returns: undefined
       }
+      publish_survey: {
+        Args: { p_survey_id: string }
+        Returns: Database["public"]["Tables"]["surveys"]["Row"]
+      }
       repeat_survey_once: {
         Args: { p_survey_id: string }
         Returns: string
@@ -826,6 +936,7 @@ export type Database = {
         Args: {
           p_answers: Json
           p_metadata?: Json
+          p_privacy_consent_given?: boolean
           p_respondent_email?: string | null
           p_respondent_name?: string | null
           p_survey_slug: string
@@ -843,6 +954,15 @@ export type Database = {
       question_scale_variant: "buttons" | "stars" | "nps"
       question_visualization_color_mode: "muted" | "colorful"
       question_visualization_type: "bar" | "pie" | "word_cloud" | "list"
+      survey_legal_basis:
+        | "consent"
+        | "legitimate_interests"
+        | "contract"
+        | "legal_obligation"
+        | "public_task"
+        | "other"
+      survey_privacy_event_type: "response_deleted" | "response_anonymized"
+      survey_retention_action: "delete_response" | "anonymize_response"
       survey_response_mode: "anonymous" | "identified"
       survey_status: "draft" | "published" | "closed"
       survey_visibility: "private" | "workspace"
@@ -990,6 +1110,16 @@ export const Constants = {
       question_scale_variant: ["buttons", "stars", "nps"],
       question_visualization_color_mode: ["muted", "colorful"],
       question_visualization_type: ["bar", "pie", "word_cloud", "list"],
+      survey_legal_basis: [
+        "consent",
+        "legitimate_interests",
+        "contract",
+        "legal_obligation",
+        "public_task",
+        "other",
+      ],
+      survey_privacy_event_type: ["response_deleted", "response_anonymized"],
+      survey_retention_action: ["delete_response", "anonymize_response"],
       survey_response_mode: ["anonymous", "identified"],
       survey_status: ["draft", "published", "closed"],
       survey_visibility: ["private", "workspace"],

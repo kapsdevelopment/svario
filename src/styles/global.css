@@ -516,6 +516,27 @@ select {
   color: #183a34;
 }
 
+.privacy-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #4b5f58;
+  padding: 12px;
+}
+
+.privacy-summary svg {
+  flex: 0 0 auto;
+  color: #315f54;
+  margin-top: 2px;
+}
+
+.privacy-summary p {
+  margin: 0;
+}
+
 .auth-support-links {
   border-top: 1px solid #e6e0d6;
   margin-top: 18px;
@@ -1086,6 +1107,44 @@ select {
   color: #33443e;
 }
 
+.respondent-privacy {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d7e1dc;
+  border-radius: 8px;
+  background: #f3f8f5;
+  color: #33443e;
+  padding: 14px;
+}
+
+.respondent-privacy p {
+  margin: 0;
+}
+
+.respondent-privacy summary {
+  color: #183a34;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.respondent-privacy dl {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.34fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  border-top: 1px solid #d7e1dc;
+  margin: 10px 0 0;
+  padding-top: 10px;
+}
+
+.respondent-privacy dt {
+  color: #607681;
+  font-weight: 800;
+}
+
+.respondent-privacy dd {
+  margin: 0;
+}
+
 .respondent-identity {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1149,6 +1208,23 @@ select {
   color: #607681;
   font-size: 0.86rem;
   font-weight: 800;
+}
+
+.respondent-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #33443e;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 12px;
+}
+
+.respondent-consent input {
+  margin-top: 3px;
 }
 
 .choice-list {
@@ -2443,6 +2519,10 @@ select {
   }
 
   .respondent-identity {
+    grid-template-columns: 1fr;
+  }
+
+  .respondent-privacy dl {
     grid-template-columns: 1fr;
   }
 

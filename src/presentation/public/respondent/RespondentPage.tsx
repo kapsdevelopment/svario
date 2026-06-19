@@ -7,6 +7,7 @@ import { useSubmitSurveyResponse } from '../../../application/surveys/useSubmitS
 import {
   getQuestionScaleValues,
   type PublishedSurvey,
+  type SurveyPrivacySettings,
   type SurveyQuestion,
   type SurveySection,
   type SubmitSurveyAnswerInput,
@@ -54,12 +55,16 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
   const [answers, setAnswers] = useState<Record<string, DraftAnswer>>({});
   const [respondentName, setRespondentName] = useState('');
   const [respondentEmail, setRespondentEmail] = useState('');
+  const [privacyConsentGiven, setPrivacyConsentGiven] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const questionGroups = groupQuestionsBySection(
     survey.sections,
     survey.questions,
   );
   const isIdentified = survey.responseMode === 'identified';
+  const privacySettings = survey.privacySettings;
+  const requiresConsent =
+    privacySettings?.enabled && privacySettings.legalBasis === 'consent';
   const isSubmitted = submitResponse.isSuccess;
   const canSubmit = survey.questions.length > 0 && !isSubmitted;
   const submittedLabel = useMemo(
@@ -76,6 +81,11 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
       return;
     }
 
+    if (requiresConsent && !privacyConsentGiven) {
+      setValidationError('Bekreft samtykke før du sender inn.');
+      return;
+    }
+
     const result = buildSubmitAnswers(survey.questions, answers);
 
     if (!result.ok) {
@@ -89,6 +99,7 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
         answers: result.answers,
         respondentName: isIdentified ? respondentName : null,
         respondentEmail: isIdentified ? respondentEmail : null,
+        privacyConsentGiven,
         metadata: { source: 'svario-web' },
       });
     } catch {
@@ -118,6 +129,13 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
       <form className="respondent-form" onSubmit={handleSubmit}>
         {survey.description ? (
           <p className="respondent-form__description">{survey.description}</p>
+        ) : null}
+
+        {privacySettings?.enabled ? (
+          <RespondentPrivacyNotice
+            isIdentified={isIdentified}
+            privacySettings={privacySettings}
+          />
         ) : null}
 
         {isIdentified ? (
@@ -184,6 +202,20 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
           </div>
         ) : null}
 
+        {requiresConsent ? (
+          <label className="respondent-consent">
+            <input
+              type="checkbox"
+              checked={privacyConsentGiven}
+              disabled={isSubmitted || submitResponse.isPending}
+              onChange={(event) =>
+                setPrivacyConsentGiven(event.target.checked)
+              }
+            />
+            <span>{privacySettings.consentText}</span>
+          </label>
+        ) : null}
+
         <div className="form-actions">
           <button
             className="button button--primary"
@@ -195,6 +227,60 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
         </div>
       </form>
     </Panel>
+  );
+}
+
+function RespondentPrivacyNotice({
+  isIdentified,
+  privacySettings,
+}: {
+  isIdentified: boolean;
+  privacySettings: SurveyPrivacySettings;
+}) {
+  return (
+    <section className="respondent-privacy" aria-label="Personvern">
+      {isIdentified ? (
+        <p>
+          Denne spørreundersøkelsen samler inn opplysninger som kan identifisere
+          deg, for eksempel navn, e-postadresse eller lignende.
+        </p>
+      ) : null}
+      <details>
+        <summary>Personvern</summary>
+        <dl>
+          {privacySettings.controllerName ? (
+            <>
+              <dt>Behandlingsansvarlig</dt>
+              <dd>{privacySettings.controllerName}</dd>
+            </>
+          ) : null}
+          {privacySettings.purpose ? (
+            <>
+              <dt>Formål</dt>
+              <dd>{privacySettings.purpose}</dd>
+            </>
+          ) : null}
+          {privacySettings.legalBasis ? (
+            <>
+              <dt>Rettslig grunnlag</dt>
+              <dd>{getPrivacyLegalBasisLabel(privacySettings.legalBasis)}</dd>
+            </>
+          ) : null}
+          {privacySettings.retentionDays ? (
+            <>
+              <dt>Lagringstid</dt>
+              <dd>{formatRetentionDays(privacySettings.retentionDays)}</dd>
+            </>
+          ) : null}
+          {privacySettings.controllerContact ? (
+            <>
+              <dt>Kontakt</dt>
+              <dd>{privacySettings.controllerContact}</dd>
+            </>
+          ) : null}
+        </dl>
+      </details>
+    </section>
   );
 }
 
@@ -502,6 +588,45 @@ function groupQuestionsBySection(
   }
 
   return groups.filter((group) => group.questions.length > 0);
+}
+
+function getPrivacyLegalBasisLabel(
+  legalBasis: NonNullable<SurveyPrivacySettings['legalBasis']>,
+) {
+  const labels = {
+    consent: 'Samtykke',
+    legitimate_interests: 'Berettiget interesse',
+    contract: 'Avtale',
+    legal_obligation: 'Rettslig plikt',
+    public_task: 'Allmenn interesse / offentlig myndighet',
+    other: 'Annet',
+  } satisfies Record<NonNullable<SurveyPrivacySettings['legalBasis']>, string>;
+
+  return labels[legalBasis];
+}
+
+function formatRetentionDays(days: number) {
+  if (days === 30) {
+    return '30 dager';
+  }
+
+  if (days === 90) {
+    return '90 dager';
+  }
+
+  if (days === 180) {
+    return '6 måneder';
+  }
+
+  if (days === 365) {
+    return '12 måneder';
+  }
+
+  if (days === 730) {
+    return '24 måneder';
+  }
+
+  return `${days} dager`;
 }
 
 function formatSurveyMeta(survey: PublishedSurvey) {

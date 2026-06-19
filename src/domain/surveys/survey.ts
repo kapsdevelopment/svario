@@ -4,6 +4,16 @@ export type SurveyResponseMode = 'anonymous' | 'identified';
 
 export type SurveyVisibility = 'private' | 'workspace';
 
+export type SurveyLegalBasis =
+  | 'consent'
+  | 'legitimate_interests'
+  | 'contract'
+  | 'legal_obligation'
+  | 'public_task'
+  | 'other';
+
+export type SurveyRetentionAction = 'delete_response' | 'anonymize_response';
+
 export type QuestionType = 'multiple_choice' | 'free_text' | 'likert_scale';
 
 export type QuestionScaleVariant = 'buttons' | 'stars' | 'nps';
@@ -51,6 +61,38 @@ export type CreateSurveyDraftInput = {
   endsAt: string | null;
 };
 
+export type SurveyPrivacySettings = {
+  surveyId: string;
+  enabled: boolean;
+  personalDataExpected: boolean;
+  controllerName: string | null;
+  controllerContact: string | null;
+  purpose: string | null;
+  legalBasis: SurveyLegalBasis | null;
+  legalBasisNote: string | null;
+  consentText: string | null;
+  retentionDays: number | null;
+  retentionAction: SurveyRetentionAction;
+  respondentNotice: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpsertSurveyPrivacySettingsInput = {
+  surveyId: string;
+  enabled: boolean;
+  personalDataExpected: boolean;
+  controllerName: string | null;
+  controllerContact: string | null;
+  purpose: string | null;
+  legalBasis: SurveyLegalBasis | null;
+  legalBasisNote: string | null;
+  consentText: string | null;
+  retentionDays: number | null;
+  retentionAction: SurveyRetentionAction;
+  respondentNotice: string | null;
+};
+
 export type SurveySection = {
   id: string;
   surveyId: string;
@@ -88,12 +130,14 @@ export type SurveyQuestion = {
 export type SurveyEditor = SurveySummary & {
   sections: SurveySection[];
   questions: SurveyQuestion[];
+  privacySettings: SurveyPrivacySettings | null;
   responseCount: number;
 };
 
 export type PublishedSurvey = Omit<SurveySummary, 'createdAt' | 'updatedAt'> & {
   sections: SurveySection[];
   questions: SurveyQuestion[];
+  privacySettings: SurveyPrivacySettings | null;
 };
 
 export type AddSurveySectionInput = {
@@ -134,6 +178,7 @@ export type SubmitSurveyResponseInput = {
   answers: SubmitSurveyAnswerInput[];
   respondentName: string | null;
   respondentEmail: string | null;
+  privacyConsentGiven?: boolean;
   metadata?: Record<string, string>;
 };
 
