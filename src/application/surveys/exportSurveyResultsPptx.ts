@@ -34,9 +34,10 @@ type DistributionItem = {
   percentage: number;
 };
 
-type WordCloudLayoutItem = FreeTextWordCloudItem & {
+type SvgWordCloudItem = FreeTextWordCloudItem & {
   fontSize: number;
   height: number;
+  rotation: number;
   width: number;
   x: number;
   y: number;
@@ -449,7 +450,7 @@ class PptxReportWriter {
       return;
     }
 
-    const wordCloud = buildFreeTextWordCloud(results).slice(0, 16);
+    const wordCloud = buildFreeTextWordCloud(results).slice(0, 22);
     currentSlide.addText('Toppord', {
       bold: true,
       color: exportColors.pine,
@@ -482,26 +483,13 @@ class PptxReportWriter {
       return;
     }
 
-    buildWordCloudLayout(items, {
-      height: 3.85,
-      width: 6.75,
-      x: 0.78,
-      y: startY,
-    }).forEach((item, index) => {
-      currentSlide.addText(item.word, {
-        bold: true,
-        color: getWordColor(item, index),
-        fit: 'shrink',
-        breakLine: false,
-        fontSize: item.fontSize,
-        h: item.height,
-        margin: 0,
-        w: item.width,
-        x: item.x,
-        y: item.y,
-        align: 'center',
-        valign: 'middle',
-      });
+    currentSlide.addImage({
+      altText: `Ordsky med ${items.length} ord fra fritekstsvar`,
+      data: createWordCloudSvgDataUri(items),
+      h: 3.95,
+      w: 6.95,
+      x: 0.68,
+      y: startY - 0.04,
     });
   }
 
@@ -865,105 +853,207 @@ function getWordColor(item: FreeTextWordCloudItem, index: number) {
   return colors[(item.tone + index) % colors.length];
 }
 
-function getWordFontSize(item: FreeTextWordCloudItem) {
+function getSvgWordFontSize(item: FreeTextWordCloudItem) {
   const sizeByWeight = {
-    1: 13,
-    2: 16,
-    3: 19,
-    4: 23,
-    5: 27,
+    1: 31,
+    2: 42,
+    3: 56,
+    4: 74,
+    5: 96,
   } satisfies Record<FreeTextWordCloudItem['weight'], number>;
 
-  return Math.max(10.5, sizeByWeight[item.weight] - Math.max(0, item.word.length - 12));
+  return Math.max(26, sizeByWeight[item.weight] - Math.max(0, item.word.length - 11) * 2.4);
 }
 
-function buildWordCloudLayout(
+function createWordCloudSvgDataUri(items: FreeTextWordCloudItem[]) {
+  const width = 1400;
+  const height = 780;
+  const placedItems = buildSvgWordCloudLayout(items, width, height);
+  const words = placedItems
+    .map(
+      (item, index) => `
+        <text
+          dominant-baseline="middle"
+          fill="#${getWordColor(item, index)}"
+          font-family="Aptos Display, Aptos, Arial, sans-serif"
+          font-size="${item.fontSize}"
+          font-weight="700"
+          text-anchor="middle"
+          transform="translate(${item.x} ${item.y}) rotate(${item.rotation})"
+        >
+          <title>${escapeXml(item.word)}: ${item.count}</title>${escapeXml(item.word)}
+        </text>`,
+    )
+    .join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <rect width="${width}" height="${height}" fill="none"/>
+    ${words}
+  </svg>`;
+
+  return `data:image/svg+xml;base64,${encodeBase64(svg)}`;
+}
+
+function buildSvgWordCloudLayout(
   items: FreeTextWordCloudItem[],
-  bounds: { height: number; width: number; x: number; y: number },
+  width: number,
+  height: number,
 ) {
-  const rowGap = 0.14;
-  const wordGap = 0.22;
-  const rows: Array<{
-    height: number;
-    items: WordCloudLayoutItem[];
-    width: number;
-  }> = [];
+  const placedItems: SvgWordCloudItem[] = [];
 
-  for (const item of items) {
-    const metrics = getWordLayoutMetrics(item.word, getWordFontSize(item), bounds.width);
-    const fontSize = metrics.fontSize;
-    const width = metrics.width;
-    const height = Math.max(0.28, fontSize / 72 + 0.13);
-    const layoutItem = {
-      ...item,
-      fontSize,
-      height,
+  items.forEach((item, index) => {
+    const fontSize = getSvgWordFontSize(item);
+    const rotation = getSvgWordRotation(item, index);
+    const bounds = estimateSvgWordBounds(item.word, fontSize, rotation);
+    const position = findSvgWordPosition(
+      bounds,
+      placedItems,
+      item.word,
+      index,
       width,
-      x: 0,
-      y: 0,
-    };
-    const currentRow = rows.at(-1);
-    const nextWidth = currentRow
-      ? currentRow.width + wordGap + width
-      : width;
+      height,
+    );
 
-    if (currentRow && nextWidth <= bounds.width) {
-      currentRow.items.push(layoutItem);
-      currentRow.width = nextWidth;
-      currentRow.height = Math.max(currentRow.height, height);
-    } else if (
-      getRowsHeight([...rows, { height, items: [layoutItem], width }], rowGap) <=
-      bounds.height
-    ) {
-      rows.push({ height, items: [layoutItem], width });
+    if (!position) {
+      return;
+    }
+
+    placedItems.push({
+      ...item,
+      ...bounds,
+      ...position,
+      fontSize,
+      rotation,
+    });
+  });
+
+  return placedItems;
+}
+
+function getSvgWordRotation(item: FreeTextWordCloudItem, index: number) {
+  if (index < 8 || item.word.length > 10) {
+    return 0;
+  }
+
+  const rotations = [0, 0, 0, -8, 8, -13, 13];
+  return rotations[(hashWord(item.word) + index) % rotations.length];
+}
+
+function estimateSvgWordBounds(
+  word: string,
+  fontSize: number,
+  rotation: number,
+) {
+  const textWidth = Math.max(fontSize * 1.8, word.length * fontSize * 0.58);
+  const textHeight = fontSize * 0.78;
+  const radians = (Math.abs(rotation) * Math.PI) / 180;
+  const width =
+    Math.cos(radians) * textWidth + Math.sin(radians) * textHeight + 22;
+  const height =
+    Math.sin(radians) * textWidth + Math.cos(radians) * textHeight + 18;
+
+  return { height, width };
+}
+
+function findSvgWordPosition(
+  bounds: Pick<SvgWordCloudItem, 'height' | 'width'>,
+  placedItems: SvgWordCloudItem[],
+  word: string,
+  index: number,
+  width: number,
+  height: number,
+) {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const startAngle = ((hashWord(word) % 360) * Math.PI) / 180;
+
+  if (index === 0) {
+    return { x: centerX, y: centerY - 20 };
+  }
+
+  for (let step = 0; step < 3400; step += 1) {
+    const angle = startAngle + step * 0.35;
+    const radius = step * 0.42;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius * 0.56;
+
+    if (canPlaceSvgWord(x, y, bounds, placedItems, width, height)) {
+      return { x: Math.round(x), y: Math.round(y) };
     }
   }
 
-  let y = bounds.y + 0.12;
+  return null;
+}
 
-  return rows.flatMap((row) => {
-    let x = bounds.x + Math.max(0, (bounds.width - row.width) / 2);
-    const placedItems = row.items.map((item) => {
-      const placedItem = {
-        ...item,
-        x,
-        y: y + Math.max(0, (row.height - item.height) / 2),
-      };
-      x += item.width + wordGap;
-      return placedItem;
-    });
-    y += row.height + rowGap;
-    return placedItems;
+function canPlaceSvgWord(
+  x: number,
+  y: number,
+  bounds: Pick<SvgWordCloudItem, 'height' | 'width'>,
+  placedItems: SvgWordCloudItem[],
+  width: number,
+  height: number,
+) {
+  const padding = 34;
+  const candidate = {
+    bottom: y + bounds.height / 2,
+    left: x - bounds.width / 2,
+    right: x + bounds.width / 2,
+    top: y - bounds.height / 2,
+  };
+
+  if (
+    candidate.left < padding ||
+    candidate.right > width - padding ||
+    candidate.top < padding ||
+    candidate.bottom > height - padding
+  ) {
+    return false;
+  }
+
+  return placedItems.every((item) => {
+    const gap = 7;
+    const existing = {
+      bottom: item.y + item.height / 2 + gap,
+      left: item.x - item.width / 2 - gap,
+      right: item.x + item.width / 2 + gap,
+      top: item.y - item.height / 2 - gap,
+    };
+
+    return (
+      candidate.right < existing.left ||
+      candidate.left > existing.right ||
+      candidate.bottom < existing.top ||
+      candidate.top > existing.bottom
+    );
   });
 }
 
-function getRowsHeight(
-  rows: Array<{ height: number }>,
-  rowGap: number,
-) {
-  return rows.reduce(
-    (height, row, index) => height + row.height + (index === 0 ? 0 : rowGap),
-    0,
-  );
+function escapeXml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
-function getWordLayoutMetrics(word: string, fontSize: number, maxWidth: number) {
-  let adjustedFontSize = fontSize;
-  let width = getEstimatedTextWidth(word, adjustedFontSize);
+function encodeBase64(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  const chunkSize = 0x8000;
 
-  while (width > maxWidth && adjustedFontSize > 10.5) {
-    adjustedFontSize -= 0.5;
-    width = getEstimatedTextWidth(word, adjustedFontSize);
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
   }
 
-  return {
-    fontSize: adjustedFontSize,
-    width: Math.min(maxWidth, width),
-  };
+  return btoa(binary);
 }
 
-function getEstimatedTextWidth(word: string, fontSize: number) {
-  return Math.max(0.72, word.length * fontSize * 0.0084 + 0.22);
+function hashWord(word: string) {
+  return [...word].reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    7,
+  );
 }
 
 function getTitleFontSize(title: string) {
