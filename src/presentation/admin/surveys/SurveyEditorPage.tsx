@@ -112,7 +112,7 @@ type PrivacySurveyKind =
   | 'event_registration'
   | 'other';
 
-type PersonalDataMode = 'none' | 'direct' | 'possible';
+type PersonalDataMode = 'none' | 'personal_data';
 
 const privacySurveyKindOptions = [
   {
@@ -159,16 +159,10 @@ const personalDataModeOptions = [
       'Bruk når du ikke ber om navn, e-post eller fritekst som kan identifisere noen.',
   },
   {
-    value: 'direct',
-    label: 'Ja, navn/e-post eller lignende',
+    value: 'personal_data',
+    label: 'Ja, navn/e-post/fritekst eller lignende',
     description:
-      'Bruk når svarene kobles til opplysninger som kan identifisere respondenten.',
-  },
-  {
-    value: 'possible',
-    label: 'Kanskje, fritekst kan inneholde det',
-    description:
-      'Bruk når svarene er anonyme, men respondentene kan skrive personopplysninger selv.',
+      'Bruk når svarene kan inneholde opplysninger som kan identifisere respondenten.',
   },
 ] as const satisfies ReadonlyArray<{
   value: PersonalDataMode;
@@ -1150,7 +1144,9 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
       ? 'Foreslått fra innlogget e-post. Kan endres for dette skjemaet.'
       : 'E-post eller kontaktpunkt for spørsmål om personvern.';
 
-  const effectivePersonalDataMode = isIdentified ? 'direct' : personalDataMode;
+  const effectivePersonalDataMode = isIdentified
+    ? 'personal_data'
+    : personalDataMode;
   const settingsEnabled =
     isIdentified || effectivePersonalDataMode !== 'none';
   const expectsPersonalData =
@@ -1238,7 +1234,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
     setRetentionDays(String(suggestion.retentionDays));
 
     if (!isIdentified && personalDataMode === 'none') {
-      setPersonalDataMode('possible');
+      setPersonalDataMode('personal_data');
     }
   }
 
@@ -1784,11 +1780,11 @@ function getInitialPersonalDataMode(
   settings: SurveyPrivacySettings | null,
 ): PersonalDataMode {
   if (survey.responseMode === 'identified') {
-    return 'direct';
+    return 'personal_data';
   }
 
   if (settings?.enabled && settings.personalDataExpected) {
-    return 'possible';
+    return 'personal_data';
   }
 
   return 'none';
