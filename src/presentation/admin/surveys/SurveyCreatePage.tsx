@@ -10,6 +10,13 @@ import type { SurveyResponseMode } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
 const individualWorkspaceValue = 'individual';
+const durationPresets = [
+  { label: '24 timer', days: 1 },
+  { label: '1 uke', days: 7 },
+  { label: '2 uker', days: 14 },
+  { label: '3 uker', days: 21 },
+  { label: '1 mnd', months: 1 },
+] as const;
 
 export function SurveyCreatePage() {
   const { account } = useAuth();
@@ -27,6 +34,16 @@ export function SurveyCreatePage() {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isSaving = createSurveyDraft.isPending;
+
+  function handleDurationPreset(preset: (typeof durationPresets)[number]) {
+    setValidationError(null);
+
+    const startDate = parseDateTimeInputValue(startsAt) ?? new Date();
+    const endDate = addDuration(startDate, preset);
+
+    setStartsAt(formatDateTimeInputValue(startDate));
+    setEndsAt(formatDateTimeInputValue(endDate));
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -151,6 +168,22 @@ export function SurveyCreatePage() {
               />
             </label>
           </div>
+          <div className="duration-presets" aria-label="Hurtigvalg for varighet">
+            <span>Varighet</span>
+            <div>
+              {durationPresets.map((preset) => (
+                <button
+                  className="duration-preset-button"
+                  type="button"
+                  disabled={isSaving}
+                  key={preset.label}
+                  onClick={() => handleDurationPreset(preset)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
           {validationError ? (
             <div className="form-alert form-alert--error" role="alert">
               {validationError}
@@ -183,6 +216,35 @@ function toIsoDateTime(value: string) {
   }
 
   return new Date(value).toISOString();
+}
+
+function parseDateTimeInputValue(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateTimeInputValue(date: Date) {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function addDuration(
+  startDate: Date,
+  preset: (typeof durationPresets)[number],
+) {
+  const endDate = new Date(startDate);
+
+  if ('months' in preset) {
+    endDate.setMonth(endDate.getMonth() + preset.months);
+    return endDate;
+  }
+
+  endDate.setDate(endDate.getDate() + preset.days);
+  return endDate;
 }
 
 function getErrorMessage(error: unknown) {

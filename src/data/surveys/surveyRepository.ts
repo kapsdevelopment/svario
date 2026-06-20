@@ -13,6 +13,7 @@ import {
   type SurveyEditor,
   type SurveyFreeTextResult,
   type SurveyPrivacySettings,
+  type SurveyRetentionWarning,
   type SurveyLikertResult,
   type SurveyQuestion,
   type SurveyQuestionOption,
@@ -104,6 +105,11 @@ type SurveyResponseRow = Pick<
   | 'submitted_at'
 >;
 
+type SurveyResponseRetentionRow = Pick<
+  Tables<'survey_responses'>,
+  'survey_id' | 'retention_due_at'
+>;
+
 type AnswerRow = Pick<
   Tables<'answers'>,
   'id' | 'response_id' | 'question_id' | 'free_text' | 'likert_value'
@@ -139,6 +145,33 @@ export async function listMySurveys(): Promise<SurveySummary[]> {
   }
 
   return (data ?? []).map(mapSurveySummary);
+}
+
+export async function listSurveyRetentionWarnings(
+  surveyIds: string[],
+  windowDays = 10,
+): Promise<SurveyRetentionWarning[]> {
+  if (surveyIds.length === 0) {
+    return [];
+  }
+
+  const client = requireSurveyClient();
+  const dueBefore = new Date();
+  dueBefore.setDate(dueBefore.getDate() + windowDays);
+
+  const { data, error } = await client
+    .from('survey_responses')
+    .select('survey_id, retention_due_at')
+    .in('survey_id', surveyIds)
+    .not('retention_due_at', 'is', null)
+    .lte('retention_due_at', dueBefore.toISOString())
+    .order('retention_due_at', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return mapSurveyRetentionWarnings(data ?? []);
 }
 
 export async function createSurveyDraft(
@@ -275,29 +308,21 @@ export async function updateSurveyPrivacySettings(
   input: UpsertSurveyPrivacySettingsInput,
 ): Promise<SurveyPrivacySettings> {
   const client = requireSurveyClient();
-  const payload: TablesInsert<'survey_privacy_settings'> = {
-    survey_id: input.surveyId,
-    enabled: input.enabled,
-    personal_data_expected: input.personalDataExpected,
-    controller_name: normalizeOptionalText(input.controllerName),
-    controller_contact: normalizeOptionalText(input.controllerContact),
-    purpose: normalizeOptionalText(input.purpose),
-    legal_basis: input.legalBasis,
-    legal_basis_note: normalizeOptionalText(input.legalBasisNote),
-    consent_text:
-      input.legalBasis === 'consent'
-        ? normalizeOptionalText(input.consentText)
-        : null,
-    retention_days: input.retentionDays,
-    retention_action: input.retentionAction,
-    respondent_notice: normalizeOptionalText(input.respondentNotice),
-  };
-
   const { data, error } = await client
-    .from('survey_privacy_settings')
-    .upsert(payload, { onConflict: 'survey_id' })
-    .select(surveyPrivacySettingsSelect)
-    .single();
+    .rpc('update_survey_privacy_settings', {
+      p_survey_id: input.surveyId,
+      p_enabled: input.enabled,
+      p_personal_data_expected: input.personalDataExpected,
+      p_controller_name: input.controllerName,
+      p_controller_contact: input.controllerContact,
+      p_purpose: input.purpose,
+      p_legal_basis: input.legalBasis,
+      p_legal_basis_note: input.legalBasisNote,
+      p_consent_text: input.consentText,
+      p_retention_days: input.retentionDays,
+      p_retention_action: input.retentionAction,
+      p_respondent_notice: input.respondentNotice,
+    });
 
   if (error) {
     throw error;
@@ -608,6 +633,39 @@ function mapSurveySummary(row: SurveyRow): SurveySummary {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function mapSurveyRetentionWarnings(
+  rows: SurveyResponseRetentionRow[],
+): SurveyRetentionWarning[] {
+  const warningsBySurveyId = new Map<string, SurveyRetentionWarning>();
+
+  for (const row of rows) {
+    if (!row.retention_due_at) {
+      continue;
+    }
+
+    const existing = warningsBySurveyId.get(row.survey_id);
+
+    if (!existing) {
+      warningsBySurveyId.set(row.survey_id, {
+        surveyId: row.survey_id,
+        responseCountDueSoon: 1,
+        earliestRetentionDueAt: row.retention_due_at,
+      });
+      continue;
+    }
+
+    existing.responseCountDueSoon += 1;
+
+    if (row.retention_due_at < existing.earliestRetentionDueAt) {
+      existing.earliestRetentionDueAt = row.retention_due_at;
+    }
+  }
+
+  return [...warningsBySurveyId.values()].sort((left, right) =>
+    left.earliestRetentionDueAt.localeCompare(right.earliestRetentionDueAt),
+  );
 }
 
 function mapSurveyPrivacySettings(

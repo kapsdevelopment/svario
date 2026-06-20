@@ -6,20 +6,40 @@ import { useAuth } from '../../../application/auth/AuthProvider';
 import { useDeleteSurvey } from '../../../application/surveys/useDeleteSurvey';
 import { useRepeatSurveyOnce } from '../../../application/surveys/useRepeatSurveyOnce';
 import { useSurveyList } from '../../../application/surveys/useSurveyList';
+import { useSurveyRetentionWarnings } from '../../../application/surveys/useSurveyRetentionWarnings';
 import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
-import type { SurveySummary } from '../../../domain/surveys/survey';
+import type {
+  SurveyRetentionWarning,
+  SurveySummary,
+} from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
 export function SurveyListPage() {
   const { account } = useAuth();
   const navigate = useNavigate();
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
+  const surveyIds = surveys.map((survey) => survey.id);
+  const retentionWarningsQuery = useSurveyRetentionWarnings(surveyIds);
   const { data: workspaces = [] } = useWorkspaces(account?.id);
   const deleteSurvey = useDeleteSurvey();
   const repeatSurveyOnce = useRepeatSurveyOnce();
   const workspaceNameById = new Map(
     workspaces.map((workspace) => [workspace.id, workspace.name]),
   );
+  const surveyById = new Map(surveys.map((survey) => [survey.id, survey]));
+  const retentionWarningItems = (retentionWarningsQuery.data ?? [])
+    .map((warning) => {
+      const survey = surveyById.get(warning.surveyId);
+      return survey ? { survey, warning } : null;
+    })
+    .filter(
+      (
+        item,
+      ): item is {
+        survey: SurveySummary;
+        warning: SurveyRetentionWarning;
+      } => item !== null,
+    );
 
   async function handleDeleteSurvey(survey: SurveySummary) {
     const shouldDelete = window.confirm(
@@ -89,6 +109,15 @@ export function SurveyListPage() {
         </div>
       ) : null}
 
+      {retentionWarningsQuery.isError ? (
+        <div className="form-alert form-alert--error" role="alert">
+          {getErrorMessage(
+            retentionWarningsQuery.error,
+            'Kunne ikke hente varsler om automatisk sletting.',
+          )}
+        </div>
+      ) : null}
+
       {!isLoading && !isError && surveys.length === 0 ? (
         <Panel
           title="Ingen skjemaer ennå"
@@ -100,6 +129,38 @@ export function SurveyListPage() {
             </Link>
           }
         />
+      ) : null}
+
+      {!isLoading &&
+      !isError &&
+      !retentionWarningsQuery.isLoading &&
+      retentionWarningItems.length > 0 ? (
+        <Panel
+          title="Svar som slettes snart"
+          subtitle={formatRetentionWarningPanelSubtitle(retentionWarningItems)}
+        >
+          <div className="retention-warning-list">
+            {retentionWarningItems.map(({ survey, warning }) => (
+              <div className="retention-warning-row" key={survey.id}>
+                <div className="retention-warning-row__content">
+                  <strong>{survey.title}</strong>
+                  <p>{formatRetentionWarning(warning)}</p>
+                </div>
+                <Link
+                  className="button button--secondary"
+                  to={routes.editSurveyPrivacy(survey.id)}
+                >
+                  <Pencil size={18} aria-hidden="true" />
+                  Vurder lagringstid
+                </Link>
+              </div>
+            ))}
+          </div>
+          <p className="retention-warning-note">
+            Når du forlenger lagringstiden, bekrefter du at du har vurdert at
+            svarene fortsatt er nødvendige for formålet.
+          </p>
+        </Panel>
       ) : null}
 
       {!isLoading && !isError && surveys.length > 0 ? (
@@ -215,10 +276,60 @@ function formatUpdatedAt(value: string) {
   return `Oppdatert ${formatDate(value)}`;
 }
 
-function getErrorMessage(error: unknown) {
+function formatRetentionWarningPanelSubtitle(
+  items: Array<{ warning: SurveyRetentionWarning }>,
+) {
+  const surveyCount = items.length;
+  const responseCount = items.reduce(
+    (sum, item) => sum + item.warning.responseCountDueSoon,
+    0,
+  );
+
+  return `${responseCount} svar på ${surveyCount} ${
+    surveyCount === 1 ? 'skjema' : 'skjemaer'
+  }`;
+}
+
+function formatRetentionWarning(warning: SurveyRetentionWarning) {
+  const responseLabel =
+    warning.responseCountDueSoon === 1
+      ? '1 svar'
+      : `${warning.responseCountDueSoon} svar`;
+
+  return `${responseLabel} slettes ${formatRetentionDueAt(
+    warning.earliestRetentionDueAt,
+  )}.`;
+}
+
+function formatRetentionDueAt(value: string) {
+  const dueAt = new Date(value);
+  const daysUntilDue = Math.ceil(
+    (dueAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+  );
+  const formattedDate = formatDate(value);
+
+  if (daysUntilDue < 0) {
+    return `forfalt ${formattedDate}`;
+  }
+
+  if (daysUntilDue === 0) {
+    return `i dag (${formattedDate})`;
+  }
+
+  if (daysUntilDue === 1) {
+    return `i morgen (${formattedDate})`;
+  }
+
+  return `om ${daysUntilDue} dager (${formattedDate})`;
+}
+
+function getErrorMessage(
+  error: unknown,
+  fallback = 'Kunne ikke hente skjemaer.',
+) {
   if (error instanceof Error) {
     return error.message;
   }
 
-  return 'Kunne ikke hente skjemaer.';
+  return fallback;
 }

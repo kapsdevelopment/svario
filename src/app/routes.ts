@@ -7,6 +7,7 @@ export const routes = {
   surveys: '/surveys',
   newSurvey: '/surveys/new',
   editSurvey: (surveyId: string) => `/surveys/${surveyId}/edit`,
+  editSurveyPrivacy: (surveyId: string) => `/surveys/${surveyId}/edit#privacy`,
   profile: '/profile',
   results: (surveyId: string) => `/surveys/${surveyId}/results`,
   resultsPresentation: (surveyId: string) =>

@@ -933,6 +933,23 @@ export type Database = {
         Args: { p_survey_id: string }
         Returns: string
       }
+      update_survey_privacy_settings: {
+        Args: {
+          p_consent_text?: string | null
+          p_controller_contact?: string | null
+          p_controller_name?: string | null
+          p_enabled: boolean
+          p_legal_basis?: Database["public"]["Enums"]["survey_legal_basis"] | null
+          p_legal_basis_note?: string | null
+          p_personal_data_expected: boolean
+          p_purpose?: string | null
+          p_respondent_notice?: string | null
+          p_retention_action?: Database["public"]["Enums"]["survey_retention_action"]
+          p_retention_days?: number | null
+          p_survey_id: string
+        }
+        Returns: Database["public"]["Tables"]["survey_privacy_settings"]["Row"]
+      }
       sync_my_identity: {
         Args: {
           p_email?: string

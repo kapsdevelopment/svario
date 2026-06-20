@@ -86,6 +86,12 @@ export type SurveyPrivacySettings = {
   updatedAt: string;
 };
 
+export type SurveyRetentionWarning = {
+  surveyId: string;
+  responseCountDueSoon: number;
+  earliestRetentionDueAt: string;
+};
+
 export type UpsertSurveyPrivacySettingsInput = {
   surveyId: string;
   enabled: boolean;

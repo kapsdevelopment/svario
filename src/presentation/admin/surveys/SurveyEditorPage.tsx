@@ -15,7 +15,7 @@ import {
   Type,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
@@ -177,10 +177,30 @@ const retentionPresetOptions = [
   { label: '12 måneder', value: 365 },
   { label: '24 måneder', value: 730 },
 ] as const;
+const durationPresets = [
+  { label: '24 timer', days: 1 },
+  { label: '1 uke', days: 7 },
+  { label: '2 uker', days: 14 },
+  { label: '3 uker', days: 21 },
+  { label: '1 mnd', months: 1 },
+] as const;
 
 export function SurveyEditorPage() {
   const { surveyId } = useParams();
+  const location = useLocation();
   const { data: survey, error, isError, isLoading } = useSurveyEditor(surveyId);
+
+  useEffect(() => {
+    if (!survey || location.hash !== '#privacy') {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document.getElementById('privacy')?.scrollIntoView({
+        block: 'start',
+      });
+    });
+  }, [location.hash, survey]);
 
   if (!surveyId) {
     return (
@@ -364,6 +384,19 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     } catch {
       return;
     }
+  }
+
+  function handleBasicDurationPreset(
+    preset: (typeof durationPresets)[number],
+  ) {
+    setBasicValidationError(null);
+    setBasicMessage(null);
+
+    const startDate = parseDateTimeInputValue(basicStartsAt) ?? new Date();
+    const endDate = addDuration(startDate, preset);
+
+    setBasicStartsAt(formatDateTimeInputValue(startDate));
+    setBasicEndsAt(formatDateTimeInputValue(endDate));
   }
 
   async function handleAddSection(event: FormEvent<HTMLFormElement>) {
@@ -628,6 +661,23 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 onChange={(event) => setBasicEndsAt(event.target.value)}
               />
             </label>
+          </div>
+
+          <div className="duration-presets" aria-label="Hurtigvalg for varighet">
+            <span>Varighet</span>
+            <div>
+              {durationPresets.map((preset) => (
+                <button
+                  className="duration-preset-button"
+                  type="button"
+                  disabled={updateBasicInfo.isPending}
+                  key={preset.label}
+                  onClick={() => handleBasicDurationPreset(preset)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {survey.responseCount > 0 ? (
@@ -1272,15 +1322,16 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   }
 
   return (
-    <Panel
-      title="Personvern"
-      subtitle={
-        completionIssues.length === 0
-          ? 'Klar for publisering'
-          : 'Mangler før publisering'
-      }
-    >
-      <form className="form-stack" onSubmit={handleSavePrivacy}>
+    <div id="privacy" className="scroll-anchor">
+      <Panel
+        title="Personvern"
+        subtitle={
+          completionIssues.length === 0
+            ? 'Klar for publisering'
+            : 'Mangler før publisering'
+        }
+      >
+        <form className="form-stack" onSubmit={handleSavePrivacy}>
         <div className="form-alert form-alert--info privacy-alert" role="note">
           Når du lager skjema og sender det ut, er du behandlingsansvarlig for
           formål og lagringstid.
@@ -1443,6 +1494,10 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                     </option>
                   ))}
                 </select>
+                <span className="field-help">
+                  Endringer oppdaterer også eksisterende svar som ikke allerede
+                  er slettet.
+                </span>
               </label>
             </div>
 
@@ -1538,8 +1593,9 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
             {updatePrivacySettings.isPending ? 'Lagrer...' : 'Lagre personvern'}
           </button>
         </div>
-      </form>
-    </Panel>
+        </form>
+      </Panel>
+    </div>
   );
 }
 
@@ -2080,6 +2136,35 @@ function toDateTimeInputValue(value: string | null) {
 
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return localDate.toISOString().slice(0, 16);
+}
+
+function parseDateTimeInputValue(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateTimeInputValue(date: Date) {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function addDuration(
+  startDate: Date,
+  preset: (typeof durationPresets)[number],
+) {
+  const endDate = new Date(startDate);
+
+  if ('months' in preset) {
+    endDate.setMonth(endDate.getMonth() + preset.months);
+    return endDate;
+  }
+
+  endDate.setDate(endDate.getDate() + preset.days);
+  return endDate;
 }
 
 const statusLabel = {

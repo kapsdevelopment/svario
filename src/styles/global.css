@@ -260,6 +260,10 @@ h2 {
   gap: 28px;
 }
 
+.scroll-anchor {
+  scroll-margin-top: 24px;
+}
+
 .panel {
   border: 1px solid #d9d3c7;
   border-radius: 8px;
@@ -491,6 +495,49 @@ select {
   gap: 14px;
 }
 
+.duration-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.duration-presets > span {
+  color: #607681;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.duration-presets > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.duration-preset-button {
+  min-height: 34px;
+  border: 1px solid #d9d3c7;
+  border-radius: 999px;
+  background: #f8f4ec;
+  color: #33443e;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 7px 11px;
+}
+
+.duration-preset-button:hover {
+  border-color: #b9c8bd;
+  background: #eef4f1;
+  color: #183a34;
+}
+
+.duration-preset-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .checkbox-row {
   display: flex;
   flex-wrap: wrap;
@@ -581,6 +628,43 @@ select {
 .privacy-note p {
   margin: 0;
   font-weight: 700;
+  line-height: 1.45;
+}
+
+.retention-warning-list {
+  display: grid;
+  gap: 12px;
+}
+
+.retention-warning-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dfd2bd;
+  border-radius: 8px;
+  background: #fbf6ee;
+  padding: 14px;
+}
+
+.retention-warning-row__content {
+  display: grid;
+  gap: 4px;
+}
+
+.retention-warning-row strong {
+  color: #17201d;
+}
+
+.retention-warning-row p,
+.retention-warning-note {
+  margin: 0;
+  color: #607681;
+  font-weight: 700;
+}
+
+.retention-warning-note {
+  margin-top: 12px;
   line-height: 1.45;
 }
 
@@ -2640,6 +2724,14 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .retention-warning-row {
+    display: grid;
+  }
+
+  .retention-warning-row .button {
+    width: 100%;
+  }
+
   .basic-info-form__primary,
   .basic-info-form__secondary {
     grid-template-columns: 1fr;
@@ -2650,6 +2742,20 @@ select {
   }
 
   .basic-info-form__footer .button {
+    width: 100%;
+  }
+
+  .duration-presets {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .duration-presets > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .duration-preset-button {
     width: 100%;
   }
 

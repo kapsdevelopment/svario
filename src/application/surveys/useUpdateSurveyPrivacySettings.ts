@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateSurveyPrivacySettings } from '../../data/surveys/surveyRepository';
 import type { UpsertSurveyPrivacySettingsInput } from '../../domain/surveys/survey';
 import { surveyEditorQueryKey } from './useSurveyEditor';
+import { surveyRetentionWarningsQueryKey } from './useSurveyRetentionWarnings';
 
 export function useUpdateSurveyPrivacySettings(surveyId: string) {
   const queryClient = useQueryClient();
@@ -11,8 +12,13 @@ export function useUpdateSurveyPrivacySettings(surveyId: string) {
     mutationFn: (input: UpsertSurveyPrivacySettingsInput) =>
       updateSurveyPrivacySettings(input),
     onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: surveyEditorQueryKey(surveyId),
-      }),
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: surveyEditorQueryKey(surveyId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: surveyRetentionWarningsQueryKey,
+        }),
+      ]),
   });
 }
