@@ -322,6 +322,7 @@ export async function updateSurveyPrivacySettings(
       p_retention_days: input.retentionDays,
       p_retention_action: input.retentionAction,
       p_respondent_notice: input.respondentNotice,
+      p_retention_change_reason: input.retentionChangeReason ?? null,
     });
 
   if (error) {

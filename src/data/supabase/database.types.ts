@@ -944,6 +944,7 @@ export type Database = {
           p_personal_data_expected: boolean
           p_purpose?: string | null
           p_respondent_notice?: string | null
+          p_retention_change_reason?: string | null
           p_retention_action?: Database["public"]["Enums"]["survey_retention_action"]
           p_retention_days?: number | null
           p_survey_id: string
@@ -991,7 +992,10 @@ export type Database = {
         | "legal_obligation"
         | "public_task"
         | "other"
-      survey_privacy_event_type: "response_deleted" | "response_anonymized"
+      survey_privacy_event_type:
+        | "response_deleted"
+        | "response_anonymized"
+        | "retention_extended"
       survey_retention_action: "delete_response" | "anonymize_response"
       survey_response_mode: "anonymous" | "identified"
       survey_status: "draft" | "published" | "closed"
@@ -1148,7 +1152,11 @@ export const Constants = {
         "public_task",
         "other",
       ],
-      survey_privacy_event_type: ["response_deleted", "response_anonymized"],
+      survey_privacy_event_type: [
+        "response_deleted",
+        "response_anonymized",
+        "retention_extended",
+      ],
       survey_retention_action: ["delete_response", "anonymize_response"],
       survey_response_mode: ["anonymous", "identified"],
       survey_status: ["draft", "published", "closed"],

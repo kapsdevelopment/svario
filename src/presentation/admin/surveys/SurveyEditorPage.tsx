@@ -1166,6 +1166,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const [retentionDays, setRetentionDays] = useState(
     String(initialSettings?.retentionDays ?? 90),
   );
+  const [retentionChangeReason, setRetentionChangeReason] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -1202,6 +1203,13 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const expectsPersonalData =
     isIdentified || effectivePersonalDataMode !== 'none';
   const isActive = settingsEnabled || expectsPersonalData;
+  const parsedRetentionDays = parseRetentionDays(retentionDays);
+  const savedRetentionDays = initialSettings?.retentionDays ?? null;
+  const isExtendingRetention =
+    survey.responseCount > 0 &&
+    parsedRetentionDays !== null &&
+    savedRetentionDays !== null &&
+    parsedRetentionDays > savedRetentionDays;
   const surveyKindOption = getPrivacySurveyKindOption(surveyKind);
   const personalDataModeOption = getPersonalDataModeOption(
     effectivePersonalDataMode,
@@ -1224,7 +1232,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
     legalBasisNote,
     consentText,
     respondentNotice,
-    parseRetentionDays(retentionDays),
+    parsedRetentionDays,
   );
   const completionIssues = getPrivacyCompletionIssues({
     ...survey,
@@ -1293,10 +1301,15 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
     setValidationError(null);
     setSaveMessage(null);
 
-    const parsedRetentionDays = parseRetentionDays(retentionDays);
-
     if (retentionDays.trim() && parsedRetentionDays === null) {
       setValidationError('Lagringstid må være et helt antall dager.');
+      return;
+    }
+
+    if (isExtendingRetention && !retentionChangeReason.trim()) {
+      setValidationError(
+        'Skriv en kort begrunnelse for hvorfor lagringstiden forlenges.',
+      );
       return;
     }
 
@@ -1314,7 +1327,11 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
         retentionDays: parsedRetentionDays,
         retentionAction: 'delete_response',
         respondentNotice,
+        retentionChangeReason: isExtendingRetention
+          ? retentionChangeReason
+          : null,
       });
+      setRetentionChangeReason('');
       setSaveMessage('Personverninnstillingene er lagret.');
     } catch {
       return;
@@ -1500,6 +1517,25 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                 </span>
               </label>
             </div>
+
+            {isExtendingRetention ? (
+              <label>
+                Begrunnelse for forlengelse
+                <textarea
+                  rows={2}
+                  value={retentionChangeReason}
+                  disabled={updatePrivacySettings.isPending}
+                  placeholder="Kort vurdering av hvorfor svarene fortsatt er nødvendige for formålet."
+                  onChange={(event) =>
+                    setRetentionChangeReason(event.target.value)
+                  }
+                />
+                <span className="field-help">
+                  Begrunnelsen lagres i personvernloggen for skjemaet og vises
+                  ikke til respondenten.
+                </span>
+              </label>
+            ) : null}
 
             {needsLegalBasisNote(legalBasis) ? (
               <label>

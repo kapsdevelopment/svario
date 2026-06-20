@@ -105,6 +105,7 @@ export type UpsertSurveyPrivacySettingsInput = {
   retentionDays: number | null;
   retentionAction: SurveyRetentionAction;
   respondentNotice: string | null;
+  retentionChangeReason?: string | null;
 };
 
 export type SurveySection = {
