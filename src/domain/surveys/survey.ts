@@ -60,6 +60,15 @@ export type CreateSurveyDraftInput = {
   endsAt: string | null;
 };
 
+export type UpdateSurveyBasicInfoInput = {
+  surveyId: string;
+  title: string;
+  description: string | null;
+  responseMode: SurveyResponseMode;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+
 export type SurveyPrivacySettings = {
   surveyId: string;
   enabled: boolean;

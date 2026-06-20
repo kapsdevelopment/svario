@@ -14,7 +14,7 @@ import {
   Trash2,
   Type,
 } from 'lucide-react';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
@@ -24,6 +24,7 @@ import { useDeleteSurveyQuestion } from '../../../application/surveys/useDeleteS
 import { useDeleteSurveySection } from '../../../application/surveys/useDeleteSurveySection';
 import { usePublishSurvey } from '../../../application/surveys/usePublishSurvey';
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
+import { useUpdateSurveyBasicInfo } from '../../../application/surveys/useUpdateSurveyBasicInfo';
 import { useUpdateSurveyPrivacySettings } from '../../../application/surveys/useUpdateSurveyPrivacySettings';
 import {
   questionScaleDefaults,
@@ -189,7 +190,24 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const deleteSection = useDeleteSurveySection(survey.id);
   const deleteQuestion = useDeleteSurveyQuestion(survey.id);
   const publishSurvey = usePublishSurvey(survey.id);
+  const updateBasicInfo = useUpdateSurveyBasicInfo(survey.id);
 
+  const [basicTitle, setBasicTitle] = useState(survey.title);
+  const [basicDescription, setBasicDescription] = useState(
+    survey.description ?? '',
+  );
+  const [basicResponseMode, setBasicResponseMode] =
+    useState(survey.responseMode);
+  const [basicStartsAt, setBasicStartsAt] = useState(
+    toDateTimeInputValue(survey.startsAt),
+  );
+  const [basicEndsAt, setBasicEndsAt] = useState(
+    toDateTimeInputValue(survey.endsAt),
+  );
+  const [basicValidationError, setBasicValidationError] = useState<
+    string | null
+  >(null);
+  const [basicMessage, setBasicMessage] = useState<string | null>(null);
   const [sectionTitle, setSectionTitle] = useState('');
   const [sectionDescription, setSectionDescription] = useState('');
   const [type, setType] = useState<QuestionType>('multiple_choice');
@@ -248,6 +266,69 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       ),
     [scaleMax, scaleMin, scaleVariant],
   );
+
+  useEffect(() => {
+    setBasicTitle(survey.title);
+    setBasicDescription(survey.description ?? '');
+    setBasicResponseMode(survey.responseMode);
+    setBasicStartsAt(toDateTimeInputValue(survey.startsAt));
+    setBasicEndsAt(toDateTimeInputValue(survey.endsAt));
+  }, [
+    survey.description,
+    survey.endsAt,
+    survey.responseMode,
+    survey.startsAt,
+    survey.title,
+  ]);
+
+  async function handleSaveBasicInfo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBasicValidationError(null);
+    setBasicMessage(null);
+
+    const normalizedTitle = basicTitle.trim();
+
+    if (!normalizedTitle) {
+      setBasicValidationError('Skjemaet må ha en tittel.');
+      return;
+    }
+
+    if (
+      survey.responseCount > 0 &&
+      basicResponseMode !== survey.responseMode
+    ) {
+      setBasicValidationError(
+        'Svarmodus kan ikke endres etter at skjemaet har fått svar.',
+      );
+      return;
+    }
+
+    const normalizedStartsAt = toIsoDateTime(basicStartsAt);
+    const normalizedEndsAt = toIsoDateTime(basicEndsAt);
+
+    if (
+      normalizedStartsAt &&
+      normalizedEndsAt &&
+      new Date(normalizedEndsAt) <= new Date(normalizedStartsAt)
+    ) {
+      setBasicValidationError('Slutttidspunkt må være etter starttidspunkt.');
+      return;
+    }
+
+    try {
+      await updateBasicInfo.mutateAsync({
+        surveyId: survey.id,
+        title: normalizedTitle,
+        description: basicDescription,
+        responseMode: basicResponseMode,
+        startsAt: normalizedStartsAt,
+        endsAt: normalizedEndsAt,
+      });
+      setBasicMessage('Grunninfo er oppdatert.');
+    } catch {
+      return;
+    }
+  }
 
   async function handleAddSection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -455,13 +536,104 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       </div>
 
       <Panel title="Grunninfo" subtitle={formatSurveyWindow(survey)}>
-        {survey.description ? <p>{survey.description}</p> : null}
-        <div className="status-row">
-          <span className={`status-pill status-pill--${currentStatus}`}>
-            {statusLabel[currentStatus]}
-          </span>
-          <span>{survey.slug}</span>
-        </div>
+        <form className="form-stack" onSubmit={handleSaveBasicInfo}>
+          <div className="form-grid form-grid--two">
+            <label>
+              Tittel
+              <input
+                type="text"
+                value={basicTitle}
+                disabled={updateBasicInfo.isPending}
+                onChange={(event) => setBasicTitle(event.target.value)}
+              />
+            </label>
+            <label>
+              Beskrivelse
+              <textarea
+                rows={3}
+                value={basicDescription}
+                disabled={updateBasicInfo.isPending}
+                onChange={(event) => setBasicDescription(event.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="form-grid">
+            <label>
+              Besvarelser
+              <select
+                value={basicResponseMode}
+                disabled={survey.responseCount > 0 || updateBasicInfo.isPending}
+                onChange={(event) =>
+                  setBasicResponseMode(
+                    event.target.value as SurveySummary['responseMode'],
+                  )
+                }
+              >
+                <option value="anonymous">Anonyme</option>
+                <option value="identified">Identifiserte</option>
+              </select>
+            </label>
+            <label>
+              Starter
+              <input
+                type="datetime-local"
+                value={basicStartsAt}
+                disabled={updateBasicInfo.isPending}
+                onChange={(event) => setBasicStartsAt(event.target.value)}
+              />
+            </label>
+            <label>
+              Slutter
+              <input
+                type="datetime-local"
+                value={basicEndsAt}
+                disabled={updateBasicInfo.isPending}
+                onChange={(event) => setBasicEndsAt(event.target.value)}
+              />
+            </label>
+          </div>
+
+          {survey.responseCount > 0 ? (
+            <div className="form-alert form-alert--info" role="status">
+              Svarmodus er låst fordi skjemaet har innsendte svar.
+            </div>
+          ) : null}
+
+          <div className="status-row">
+            <span className={`status-pill status-pill--${currentStatus}`}>
+              {statusLabel[currentStatus]}
+            </span>
+            <span>{survey.slug}</span>
+          </div>
+
+          {basicValidationError ? (
+            <div className="form-alert form-alert--error" role="alert">
+              {basicValidationError}
+            </div>
+          ) : null}
+          {updateBasicInfo.isError ? (
+            <div className="form-alert form-alert--error" role="alert">
+              {getErrorMessage(updateBasicInfo.error)}
+            </div>
+          ) : null}
+          {basicMessage ? (
+            <div className="form-alert form-alert--success" role="status">
+              {basicMessage}
+            </div>
+          ) : null}
+
+          <div className="form-actions">
+            <button
+              className="button button--secondary"
+              type="submit"
+              disabled={updateBasicInfo.isPending}
+            >
+              <Save size={18} aria-hidden="true" />
+              {updateBasicInfo.isPending ? 'Lagrer...' : 'Lagre grunninfo'}
+            </button>
+          </div>
+        </form>
       </Panel>
 
       {structureLockMessage ? (
@@ -999,13 +1171,13 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
       }
     >
       <form className="form-stack" onSubmit={handleSavePrivacy}>
-        <div className="form-alert form-alert--info" role="note">
+        <div className="form-alert form-alert--info privacy-alert" role="note">
           Når du lager skjema og sender det ut, er du behandlingsansvarlig for
           formål og lagringstid.
         </div>
 
         <div className="privacy-assistant">
-          <div className="form-grid form-grid--two">
+          <div className="privacy-field-grid">
             <label>
               Hva slags undersøkelse lager du?
               <select
@@ -1027,6 +1199,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
             <label>
               Samler du inn personopplysninger?
               <select
+                className={isIdentified ? 'select--locked' : undefined}
                 value={effectivePersonalDataMode}
                 disabled={isIdentified || updatePrivacySettings.isPending}
                 onChange={(event) =>
@@ -1061,16 +1234,19 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
         </div>
 
         {isIdentified ? (
-          <div className="form-alert form-alert--info" role="status">
-            Identifiserte skjemaer samler inn opplysninger som kan identifisere
-            respondenten. Derfor må personverninnstillingene fylles ut før
-            publisering.
+          <div className="privacy-note" role="status">
+            <ShieldCheck size={18} aria-hidden="true" />
+            <p>
+              Identifiserte skjemaer samler inn opplysninger som kan
+              identifisere respondenten. Derfor må personverninnstillingene
+              fylles ut før publisering.
+            </p>
           </div>
         ) : null}
 
         {isActive ? (
-          <>
-            <div className="form-grid form-grid--two">
+          <div className="privacy-details">
+            <div className="privacy-field-grid">
               <label>
                 Behandlingsansvarlig
                 <input
@@ -1111,7 +1287,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
               />
             </label>
 
-            <div className="form-grid form-grid--two">
+            <div className="privacy-field-grid">
               <label>
                 Hvorfor kan du bruke svarene?
                 <select
@@ -1198,7 +1374,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                 retention-jobben kjører.
               </p>
             </div>
-          </>
+          </div>
         ) : (
           <div className="privacy-summary">
             <ShieldCheck size={18} aria-hidden="true" />
@@ -1754,6 +1930,29 @@ function getPublishedIntroText(responseCount: number) {
   }
 
   return 'Skjemaet kan åpnes av respondenter med lenken. Strukturen er låst for å bevare historiske svar.';
+}
+
+function toIsoDateTime(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toISOString();
+}
+
+function toDateTimeInputValue(value: string | null) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
 }
 
 const statusLabel = {

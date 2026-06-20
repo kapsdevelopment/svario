@@ -22,6 +22,7 @@ import {
   type SurveyResults,
   type SurveySection,
   type SurveySummary,
+  type UpdateSurveyBasicInfoInput,
   type UpsertSurveyPrivacySettingsInput,
   type UpdateQuestionVisualizationInput,
 } from '../../domain/surveys/survey';
@@ -233,6 +234,38 @@ export async function publishSurvey(surveyId: string): Promise<SurveySummary> {
 
   if (!data) {
     throw new Error('Kunne ikke publisere skjemaet.');
+  }
+
+  return mapSurveySummary(data);
+}
+
+export async function updateSurveyBasicInfo(
+  input: UpdateSurveyBasicInfoInput,
+): Promise<SurveySummary> {
+  const client = requireSurveyClient();
+  const title = input.title.trim();
+
+  if (!title) {
+    throw new Error('Skjemaet må ha en tittel.');
+  }
+
+  const payload: TablesUpdate<'surveys'> = {
+    title,
+    description: normalizeOptionalText(input.description),
+    response_mode: input.responseMode,
+    starts_at: input.startsAt,
+    ends_at: input.endsAt,
+  };
+
+  const { data, error } = await client
+    .from('surveys')
+    .update(payload)
+    .eq('id', input.surveyId)
+    .select(surveySummarySelect)
+    .single();
+
+  if (error) {
+    throw error;
   }
 
   return mapSurveySummary(data);

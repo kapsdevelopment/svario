@@ -409,6 +409,11 @@ select {
   padding-right: 34px;
 }
 
+.select--locked:disabled {
+  background: #fff;
+  padding-right: 12px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -461,6 +466,10 @@ select {
   line-height: 1.45;
 }
 
+.privacy-alert {
+  margin-top: 0;
+}
+
 .privacy-assistant {
   display: grid;
   gap: 12px;
@@ -473,6 +482,41 @@ select {
 .privacy-assistant__actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.privacy-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+  align-items: start;
+}
+
+.privacy-details {
+  display: grid;
+  gap: 16px;
+}
+
+.privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #b7c7c1;
+  border-radius: 8px;
+  background: #eef4f1;
+  color: #183a34;
+  padding: 12px;
+}
+
+.privacy-note svg {
+  flex: 0 0 auto;
+  color: #315f54;
+  margin-top: 3px;
+}
+
+.privacy-note p {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .inline-actions {
@@ -2529,6 +2573,18 @@ select {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .privacy-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .privacy-assistant__actions {
+    justify-content: stretch;
+  }
+
+  .privacy-assistant__actions .button {
+    width: 100%;
   }
 
   .lookup-field {

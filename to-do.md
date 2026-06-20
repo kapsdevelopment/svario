@@ -62,6 +62,7 @@ Arbeidsliste for MVP: React/Vite webapp med Supabase Auth, Postgres/RLS og GitHu
 - [x] Lage oversikt over aktive, historiske og utkast-skjemaer.
 - [x] Lage opprettelse av nytt spørreskjema.
 - [x] Lage første redigeringsside for draft-skjema.
+- [x] Gjøre grunninfo redigerbar etter at skjemaet er opprettet.
 - [x] Støtte seksjoner i skjema.
 - [x] Støtte spørsmålstypene flervalg, fritekst og konfigurerbar skala.
 - [x] Støtte 1-5 stjerner som rating-variant av skala.
