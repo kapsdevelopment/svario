@@ -439,6 +439,58 @@ select {
   min-width: fit-content;
 }
 
+.basic-info-form {
+  display: grid;
+  gap: 16px;
+}
+
+.basic-info-form label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #33443e;
+  font-weight: 800;
+}
+
+.basic-info-form__primary {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.86fr) minmax(320px, 1.4fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.basic-info-form__primary input,
+.basic-info-form__primary textarea,
+.basic-info-form__secondary input,
+.basic-info-form__secondary select {
+  background: rgba(255, 253, 248, 0.92);
+}
+
+.basic-info-form__primary input,
+.basic-info-form__secondary input,
+.basic-info-form__secondary select {
+  min-height: 48px;
+}
+
+.basic-info-form__primary textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.basic-info-form__secondary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+
+.basic-info-form__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
 .checkbox-row {
   display: flex;
   flex-wrap: wrap;
@@ -464,6 +516,19 @@ select {
   font-size: 0.86rem;
   font-weight: 600;
   line-height: 1.45;
+}
+
+.field-help__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #315f54;
+  font-weight: 800;
+  margin-left: 6px;
+}
+
+.field-help__link:hover {
+  color: #183a34;
 }
 
 .privacy-alert {
@@ -2573,6 +2638,19 @@ select {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .basic-info-form__primary,
+  .basic-info-form__secondary {
+    grid-template-columns: 1fr;
+  }
+
+  .basic-info-form__footer {
+    display: grid;
+  }
+
+  .basic-info-form__footer .button {
+    width: 100%;
   }
 
   .privacy-field-grid {

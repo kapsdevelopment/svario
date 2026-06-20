@@ -18,6 +18,8 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { useAuth } from '../../../application/auth/AuthProvider';
+import { useMyProfile } from '../../../application/profiles/useMyProfile';
 import { useAddSurveyQuestion } from '../../../application/surveys/useAddSurveyQuestion';
 import { useAddSurveySection } from '../../../application/surveys/useAddSurveySection';
 import { useDeleteSurveyQuestion } from '../../../application/surveys/useDeleteSurveyQuestion';
@@ -26,6 +28,7 @@ import { usePublishSurvey } from '../../../application/surveys/usePublishSurvey'
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
 import { useUpdateSurveyBasicInfo } from '../../../application/surveys/useUpdateSurveyBasicInfo';
 import { useUpdateSurveyPrivacySettings } from '../../../application/surveys/useUpdateSurveyPrivacySettings';
+import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import {
   questionScaleDefaults,
   questionScaleLimits,
@@ -62,6 +65,45 @@ const legalBasisLabel = {
   public_task: 'Allmenn interesse / offentlig myndighet',
   other: 'Annet',
 } satisfies Record<SurveyLegalBasis, string>;
+
+const legalBasisGuidanceOverview = {
+  label: 'Datatilsynet',
+  title: 'Les mer hos Datatilsynet',
+  url: 'https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/om-behandlingsgrunnlag/',
+} as const;
+
+const legalBasisGuidance = {
+  consent: {
+    label: 'Datatilsynet',
+    title: 'Les mer om samtykke hos Datatilsynet',
+    url: 'https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/om-behandlingsgrunnlag/samtykke/',
+  },
+  legitimate_interests: {
+    label: 'Datatilsynet',
+    title: 'Les mer om interesseavveiing hos Datatilsynet',
+    url: 'https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/om-behandlingsgrunnlag/nodvendig-for-a-ivareta-legitime-interesser---interesseavveiing/',
+  },
+  contract: {
+    label: 'Datatilsynet',
+    title: 'Les mer om avtale som behandlingsgrunnlag hos Datatilsynet',
+    url: 'https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/om-behandlingsgrunnlag/nodvendig-for-a-oppfylle-en-avtale/',
+  },
+  legal_obligation: {
+    label: 'Datatilsynet',
+    title: 'Les mer om rettslig plikt hos Datatilsynet',
+    url: 'https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/om-behandlingsgrunnlag/nodvendig-for-a-oppfylle-en-rettslig-plikt/',
+  },
+  public_task: {
+    label: 'Datatilsynet',
+    title:
+      'Les mer om allmenn interesse eller offentlig myndighet hos Datatilsynet',
+    url: 'https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/om-behandlingsgrunnlag/nodvendig-for-a-utfore-en-oppgave/',
+  },
+  other: legalBasisGuidanceOverview,
+} satisfies Record<
+  SurveyLegalBasis,
+  { label: string; title: string; url: string }
+>;
 
 type PrivacySurveyKind =
   | 'customer_feedback'
@@ -536,8 +578,8 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       </div>
 
       <Panel title="Grunninfo" subtitle={formatSurveyWindow(survey)}>
-        <form className="form-stack" onSubmit={handleSaveBasicInfo}>
-          <div className="form-grid form-grid--two">
+        <form className="basic-info-form" onSubmit={handleSaveBasicInfo}>
+          <div className="basic-info-form__primary">
             <label>
               Tittel
               <input
@@ -550,7 +592,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             <label>
               Beskrivelse
               <textarea
-                rows={3}
+                rows={4}
                 value={basicDescription}
                 disabled={updateBasicInfo.isPending}
                 onChange={(event) => setBasicDescription(event.target.value)}
@@ -558,7 +600,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             </label>
           </div>
 
-          <div className="form-grid">
+          <div className="basic-info-form__secondary">
             <label>
               Besvarelser
               <select
@@ -600,13 +642,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             </div>
           ) : null}
 
-          <div className="status-row">
-            <span className={`status-pill status-pill--${currentStatus}`}>
-              {statusLabel[currentStatus]}
-            </span>
-            <span>{survey.slug}</span>
-          </div>
-
           {basicValidationError ? (
             <div className="form-alert form-alert--error" role="alert">
               {basicValidationError}
@@ -623,7 +658,13 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             </div>
           ) : null}
 
-          <div className="form-actions">
+          <div className="basic-info-form__footer">
+            <div className="status-row">
+              <span className={`status-pill status-pill--${currentStatus}`}>
+                {statusLabel[currentStatus]}
+              </span>
+              <span>{survey.slug}</span>
+            </div>
             <button
               className="button button--secondary"
               type="submit"
@@ -1040,9 +1081,12 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 }
 
 function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
+  const auth = useAuth();
   const updatePrivacySettings = useUpdateSurveyPrivacySettings(survey.id);
   const initialSettings = survey.privacySettings;
   const isIdentified = survey.responseMode === 'identified';
+  const myProfile = useMyProfile(auth.account?.id);
+  const workspaces = useWorkspaces(auth.account?.id);
 
   const [surveyKind, setSurveyKind] = useState<PrivacySurveyKind>(
     inferPrivacySurveyKind(survey),
@@ -1053,8 +1097,14 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const [controllerName, setControllerName] = useState(
     initialSettings?.controllerName ?? '',
   );
+  const [controllerNameEdited, setControllerNameEdited] = useState(
+    Boolean(initialSettings?.controllerName),
+  );
   const [controllerContact, setControllerContact] = useState(
     initialSettings?.controllerContact ?? '',
+  );
+  const [controllerContactEdited, setControllerContactEdited] = useState(
+    Boolean(initialSettings?.controllerContact),
   );
   const [purpose, setPurpose] = useState(initialSettings?.purpose ?? '');
   const [legalBasis, setLegalBasis] = useState<SurveyLegalBasis | ''>(
@@ -1075,6 +1125,31 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
+  const currentWorkspace = workspaces.data?.find(
+    (workspace) => workspace.id === survey.workspaceId,
+  );
+  const profileDisplayName = getTrimmedSuggestion(myProfile.data?.displayName);
+  const profileContactEmail = getTrimmedSuggestion(myProfile.data?.contactEmail);
+  const authEmail = getTrimmedSuggestion(auth.user?.email);
+  const waitForWorkspaceSuggestion =
+    Boolean(survey.workspaceId) && workspaces.isLoading;
+  const controllerNameSuggestion = waitForWorkspaceSuggestion
+    ? null
+    : getTrimmedSuggestion(currentWorkspace?.name) ??
+      profileDisplayName ??
+      null;
+  const controllerContactSuggestion = profileContactEmail ?? authEmail ?? null;
+  const controllerNameHelp = currentWorkspace
+    ? 'Foreslått fra arbeidsflaten. Kan endres for dette skjemaet.'
+    : profileDisplayName
+      ? 'Foreslått fra profilen. Kan endres for dette skjemaet.'
+      : 'Hvem bestemmer hvorfor svarene samles inn og hvor lenge de lagres?';
+  const controllerContactHelp = profileContactEmail
+    ? 'Foreslått fra profilens kontakt-e-post. Kan endres for dette skjemaet.'
+    : authEmail
+      ? 'Foreslått fra innlogget e-post. Kan endres for dette skjemaet.'
+      : 'E-post eller kontaktpunkt for spørsmål om personvern.';
+
   const effectivePersonalDataMode = isIdentified ? 'direct' : personalDataMode;
   const settingsEnabled =
     isIdentified || effectivePersonalDataMode !== 'none';
@@ -1088,6 +1163,9 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const legalBasisDescription = legalBasis
     ? getLegalBasisDescription(legalBasis)
     : null;
+  const legalBasisGuidanceLink = legalBasis
+    ? legalBasisGuidance[legalBasis]
+    : legalBasisGuidanceOverview;
   const currentSettings = buildDraftPrivacySettings(
     survey,
     initialSettings,
@@ -1106,6 +1184,42 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
     ...survey,
     privacySettings: currentSettings,
   });
+
+  useEffect(() => {
+    if (
+      controllerNameEdited ||
+      initialSettings?.controllerName ||
+      controllerName.trim() ||
+      !controllerNameSuggestion
+    ) {
+      return;
+    }
+
+    setControllerName(controllerNameSuggestion);
+  }, [
+    controllerName,
+    controllerNameEdited,
+    controllerNameSuggestion,
+    initialSettings?.controllerName,
+  ]);
+
+  useEffect(() => {
+    if (
+      controllerContactEdited ||
+      initialSettings?.controllerContact ||
+      controllerContact.trim() ||
+      !controllerContactSuggestion
+    ) {
+      return;
+    }
+
+    setControllerContact(controllerContactSuggestion);
+  }, [
+    controllerContact,
+    controllerContactEdited,
+    controllerContactSuggestion,
+    initialSettings?.controllerContact,
+  ]);
 
   function handleApplyPrivacySuggestion() {
     const suggestion = buildPrivacySuggestion({
@@ -1254,12 +1368,12 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                   value={controllerName}
                   disabled={updatePrivacySettings.isPending}
                   placeholder="Virksomhet eller prosjekt"
-                  onChange={(event) => setControllerName(event.target.value)}
+                  onChange={(event) => {
+                    setControllerNameEdited(true);
+                    setControllerName(event.target.value);
+                  }}
                 />
-                <span className="field-help">
-                  Hvem bestemmer hvorfor svarene samles inn og hvor lenge de
-                  lagres?
-                </span>
+                <span className="field-help">{controllerNameHelp}</span>
               </label>
               <label>
                 Kontakt
@@ -1268,11 +1382,12 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                   value={controllerContact}
                   disabled={updatePrivacySettings.isPending}
                   placeholder="personvern@example.no"
-                  onChange={(event) => setControllerContact(event.target.value)}
+                  onChange={(event) => {
+                    setControllerContactEdited(true);
+                    setControllerContact(event.target.value);
+                  }}
                 />
-                <span className="field-help">
-                  E-post eller kontaktpunkt for spørsmål om personvern.
-                </span>
+                <span className="field-help">{controllerContactHelp}</span>
               </label>
             </div>
 
@@ -1307,6 +1422,16 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                 <span className="field-help">
                   Dette kalles rettslig grunnlag.
                   {legalBasisDescription ? ` ${legalBasisDescription}` : ''}
+                  <a
+                    className="field-help__link"
+                    href={legalBasisGuidanceLink.url}
+                    rel="noreferrer"
+                    target="_blank"
+                    title={legalBasisGuidanceLink.title}
+                  >
+                    Les mer hos {legalBasisGuidanceLink.label}
+                    <ExternalLink size={14} aria-hidden="true" />
+                  </a>
                 </span>
               </label>
               <label>
@@ -1648,6 +1773,12 @@ function includesAny(value: string, needles: string[]) {
   return needles.some((needle) => value.includes(needle));
 }
 
+function getTrimmedSuggestion(value: string | null | undefined) {
+  const trimmedValue = value?.trim();
+
+  return trimmedValue ? trimmedValue : null;
+}
+
 function getInitialPersonalDataMode(
   survey: Pick<SurveyEditor, 'responseMode'>,
   settings: SurveyPrivacySettings | null,
@@ -1761,7 +1892,7 @@ function getPrivacySuggestionBase(
     purpose: 'forstå og forbedre kundeopplevelsen og tjenestene våre',
     legalBasis: 'legitimate_interests',
     legalBasisNote:
-      'Vi bruker svarene til forbedring og begrenser opplysningene til det som er nødvendig.',
+      'Vi har vurdert at formålet er saklig, at opplysningene er nødvendige, og at hensynet til respondentenes rettigheter ikke veier tyngre.',
   };
 }
 
@@ -1799,7 +1930,7 @@ function getLegalBasisDescription(legalBasis: SurveyLegalBasis) {
   }
 
   if (legalBasis === 'legitimate_interests') {
-    return 'Bruk når dere har et saklig behov og har vurdert respondentens interesser.';
+    return 'Bruk når dere har en berettiget interesse, behandlingen er nødvendig, og respondentens rettigheter ikke veier tyngre.';
   }
 
   if (legalBasis === 'contract') {
