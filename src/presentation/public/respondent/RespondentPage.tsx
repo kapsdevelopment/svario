@@ -245,6 +245,9 @@ function RespondentPrivacyNotice({
           deg, for eksempel navn, e-postadresse eller lignende.
         </p>
       ) : null}
+      {privacySettings.respondentNotice ? (
+        <p>{privacySettings.respondentNotice}</p>
+      ) : null}
       <details>
         <summary>Personvern</summary>
         <dl>

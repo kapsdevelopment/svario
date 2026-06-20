@@ -454,6 +454,27 @@ select {
   padding: 0 12px;
 }
 
+.field-help {
+  color: #607681;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.privacy-assistant {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: #f8f4ec;
+  padding: 12px;
+}
+
+.privacy-assistant__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .inline-actions {
   display: flex;
   gap: 6px;

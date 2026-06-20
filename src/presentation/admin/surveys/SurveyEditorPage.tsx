@@ -62,6 +62,77 @@ const legalBasisLabel = {
   other: 'Annet',
 } satisfies Record<SurveyLegalBasis, string>;
 
+type PrivacySurveyKind =
+  | 'customer_feedback'
+  | 'employee_survey'
+  | 'student_project'
+  | 'event_registration'
+  | 'other';
+
+type PersonalDataMode = 'none' | 'direct' | 'possible';
+
+const privacySurveyKindOptions = [
+  {
+    value: 'student_project',
+    label: 'Student-/forskningsprosjekt',
+    description:
+      'Passer når svarene brukes i en oppgave, studie eller analyseprosjekt.',
+  },
+  {
+    value: 'customer_feedback',
+    label: 'Kundetilbakemelding',
+    description:
+      'Passer for evaluering av tjenester, produkter eller kundeopplevelse.',
+  },
+  {
+    value: 'employee_survey',
+    label: 'Medarbeiderundersøkelse',
+    description:
+      'Passer for puls, trivsel eller intern forbedring i en virksomhet.',
+  },
+  {
+    value: 'event_registration',
+    label: 'Arrangement/påmelding',
+    description:
+      'Passer når svarene trengs for å administrere deltakelse eller oppfølging.',
+  },
+  {
+    value: 'other',
+    label: 'Annet',
+    description:
+      'Bruk egne formuleringer hvis undersøkelsen ikke passer i kategoriene.',
+  },
+] as const satisfies ReadonlyArray<{
+  value: PrivacySurveyKind;
+  label: string;
+  description: string;
+}>;
+
+const personalDataModeOptions = [
+  {
+    value: 'none',
+    label: 'Nei, den er anonym',
+    description:
+      'Bruk når du ikke ber om navn, e-post eller fritekst som kan identifisere noen.',
+  },
+  {
+    value: 'direct',
+    label: 'Ja, navn/e-post eller lignende',
+    description:
+      'Bruk når svarene kobles til opplysninger som kan identifisere respondenten.',
+  },
+  {
+    value: 'possible',
+    label: 'Kanskje, fritekst kan inneholde det',
+    description:
+      'Bruk når svarene er anonyme, men respondentene kan skrive personopplysninger selv.',
+  },
+] as const satisfies ReadonlyArray<{
+  value: PersonalDataMode;
+  label: string;
+  description: string;
+}>;
+
 const retentionPresetOptions = [
   { label: '30 dager', value: 30 },
   { label: '90 dager', value: 90 },
@@ -801,11 +872,11 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const initialSettings = survey.privacySettings;
   const isIdentified = survey.responseMode === 'identified';
 
-  const [enabled, setEnabled] = useState(
-    initialSettings?.enabled ?? isIdentified,
+  const [surveyKind, setSurveyKind] = useState<PrivacySurveyKind>(
+    inferPrivacySurveyKind(survey),
   );
-  const [personalDataExpected, setPersonalDataExpected] = useState(
-    initialSettings?.personalDataExpected ?? isIdentified,
+  const [personalDataMode, setPersonalDataMode] = useState<PersonalDataMode>(
+    getInitialPersonalDataMode(survey, initialSettings),
   );
   const [controllerName, setControllerName] = useState(
     initialSettings?.controllerName ?? '',
@@ -823,15 +894,28 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const [consentText, setConsentText] = useState(
     initialSettings?.consentText ?? '',
   );
+  const [respondentNotice, setRespondentNotice] = useState(
+    initialSettings?.respondentNotice ?? '',
+  );
   const [retentionDays, setRetentionDays] = useState(
     String(initialSettings?.retentionDays ?? 90),
   );
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  const settingsEnabled = isIdentified || enabled;
-  const expectsPersonalData = isIdentified || personalDataExpected;
+  const effectivePersonalDataMode = isIdentified ? 'direct' : personalDataMode;
+  const settingsEnabled =
+    isIdentified || effectivePersonalDataMode !== 'none';
+  const expectsPersonalData =
+    isIdentified || effectivePersonalDataMode !== 'none';
   const isActive = settingsEnabled || expectsPersonalData;
+  const surveyKindOption = getPrivacySurveyKindOption(surveyKind);
+  const personalDataModeOption = getPersonalDataModeOption(
+    effectivePersonalDataMode,
+  );
+  const legalBasisDescription = legalBasis
+    ? getLegalBasisDescription(legalBasis)
+    : null;
   const currentSettings = buildDraftPrivacySettings(
     survey,
     initialSettings,
@@ -843,12 +927,34 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
     legalBasis || null,
     legalBasisNote,
     consentText,
+    respondentNotice,
     parseRetentionDays(retentionDays),
   );
   const completionIssues = getPrivacyCompletionIssues({
     ...survey,
     privacySettings: currentSettings,
   });
+
+  function handleApplyPrivacySuggestion() {
+    const suggestion = buildPrivacySuggestion({
+      controllerContact,
+      controllerName,
+      retentionDays: parseRetentionDays(retentionDays),
+      survey,
+      surveyKind,
+    });
+
+    setPurpose(suggestion.purpose);
+    setLegalBasis(suggestion.legalBasis);
+    setLegalBasisNote(suggestion.legalBasisNote);
+    setConsentText(suggestion.consentText);
+    setRespondentNotice(suggestion.respondentNotice);
+    setRetentionDays(String(suggestion.retentionDays));
+
+    if (!isIdentified && personalDataMode === 'none') {
+      setPersonalDataMode('possible');
+    }
+  }
 
   async function handleSavePrivacy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -875,7 +981,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
         consentText,
         retentionDays: parsedRetentionDays,
         retentionAction: 'delete_response',
-        respondentNotice: null,
+        respondentNotice,
       });
       setSaveMessage('Personverninnstillingene er lagret.');
     } catch {
@@ -898,27 +1004,60 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
           formål og lagringstid.
         </div>
 
-        <div className="checkbox-row">
-          <label>
-            <input
-              type="checkbox"
-              checked={settingsEnabled}
-              disabled={isIdentified || updatePrivacySettings.isPending}
-              onChange={(event) => setEnabled(event.target.checked)}
-            />
-            Personverninnstillinger
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={expectsPersonalData}
-              disabled={isIdentified || updatePrivacySettings.isPending}
-              onChange={(event) =>
-                setPersonalDataExpected(event.target.checked)
-              }
-            />
-            Kan inneholde personopplysninger
-          </label>
+        <div className="privacy-assistant">
+          <div className="form-grid form-grid--two">
+            <label>
+              Hva slags undersøkelse lager du?
+              <select
+                value={surveyKind}
+                disabled={updatePrivacySettings.isPending}
+                onChange={(event) =>
+                  setSurveyKind(event.target.value as PrivacySurveyKind)
+                }
+              >
+                {privacySurveyKindOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <span className="field-help">{surveyKindOption.description}</span>
+            </label>
+
+            <label>
+              Samler du inn personopplysninger?
+              <select
+                value={effectivePersonalDataMode}
+                disabled={isIdentified || updatePrivacySettings.isPending}
+                onChange={(event) =>
+                  setPersonalDataMode(event.target.value as PersonalDataMode)
+                }
+              >
+                {personalDataModeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <span className="field-help">
+                {isIdentified
+                  ? 'Identifiserte skjemaer krever personverninnstillinger.'
+                  : personalDataModeOption.description}
+              </span>
+            </label>
+          </div>
+
+          <div className="privacy-assistant__actions">
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={updatePrivacySettings.isPending}
+              onClick={handleApplyPrivacySuggestion}
+            >
+              <ShieldCheck size={18} aria-hidden="true" />
+              Bruk forslag
+            </button>
+          </div>
         </div>
 
         {isIdentified ? (
@@ -941,6 +1080,10 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                   placeholder="Virksomhet eller prosjekt"
                   onChange={(event) => setControllerName(event.target.value)}
                 />
+                <span className="field-help">
+                  Hvem bestemmer hvorfor svarene samles inn og hvor lenge de
+                  lagres?
+                </span>
               </label>
               <label>
                 Kontakt
@@ -951,11 +1094,14 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                   placeholder="personvern@example.no"
                   onChange={(event) => setControllerContact(event.target.value)}
                 />
+                <span className="field-help">
+                  E-post eller kontaktpunkt for spørsmål om personvern.
+                </span>
               </label>
             </div>
 
             <label>
-              Formål
+              Hva skal svarene brukes til?
               <input
                 type="text"
                 value={purpose}
@@ -967,7 +1113,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
 
             <div className="form-grid form-grid--two">
               <label>
-                Rettslig grunnlag
+                Hvorfor kan du bruke svarene?
                 <select
                   value={legalBasis}
                   disabled={updatePrivacySettings.isPending}
@@ -982,9 +1128,13 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                     </option>
                   ))}
                 </select>
+                <span className="field-help">
+                  Dette kalles rettslig grunnlag.
+                  {legalBasisDescription ? ` ${legalBasisDescription}` : ''}
+                </span>
               </label>
               <label>
-                Lagringstid
+                Hvor lenge trenger du svarene?
                 <select
                   value={retentionDays}
                   disabled={updatePrivacySettings.isPending}
@@ -1001,7 +1151,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
 
             {needsLegalBasisNote(legalBasis) ? (
               <label>
-                Notat om grunnlag
+                Kort vurdering
                 <input
                   type="text"
                   value={legalBasisNote}
@@ -1012,9 +1162,20 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
               </label>
             ) : null}
 
+            <label>
+              Kort tekst til respondenten
+              <textarea
+                rows={3}
+                value={respondentNotice}
+                disabled={updatePrivacySettings.isPending}
+                placeholder="Kort forklaring av hva svarene brukes til, hvem som er ansvarlig og hvor lenge de lagres."
+                onChange={(event) => setRespondentNotice(event.target.value)}
+              />
+            </label>
+
             {legalBasis === 'consent' ? (
               <label>
-                Samtykketekst
+                Tekst respondenten godkjenner
                 <textarea
                   rows={3}
                   value={consentText}
@@ -1022,6 +1183,10 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                   placeholder="Jeg samtykker til at svaret mitt behandles for formålet beskrevet over."
                   onChange={(event) => setConsentText(event.target.value)}
                 />
+                <span className="field-help">
+                  Bruk samtykke bare når deltakelsen er frivillig og samtykket
+                  kan trekkes tilbake.
+                </span>
               </label>
             ) : null}
 
@@ -1034,7 +1199,16 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
               </p>
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="privacy-summary">
+            <ShieldCheck size={18} aria-hidden="true" />
+            <p>
+              Anonyme skjema uten personopplysninger trenger normalt færre
+              personvernfelt. Svario lagrer fortsatt ikke IP-adresse på
+              besvarelser.
+            </p>
+          </div>
+        )}
 
         {completionIssues.length > 0 ? (
           <div className="form-alert form-alert--error" role="alert">
@@ -1241,6 +1415,232 @@ function getStructureLockMessage(
   return null;
 }
 
+type PrivacySuggestion = {
+  purpose: string;
+  legalBasis: SurveyLegalBasis | '';
+  legalBasisNote: string;
+  consentText: string;
+  respondentNotice: string;
+  retentionDays: number;
+};
+
+function inferPrivacySurveyKind(survey: Pick<SurveyEditor, 'title'>) {
+  const title = survey.title.toLowerCase();
+
+  if (
+    includesAny(title, [
+      'master',
+      'bachelor',
+      'oppgave',
+      'student',
+      'forsk',
+      'studie',
+    ])
+  ) {
+    return 'student_project';
+  }
+
+  if (
+    includesAny(title, [
+      'medarbeider',
+      'ansatt',
+      'trivsel',
+      'puls',
+      'arbeidsmiljø',
+      'arbeidsmiljo',
+    ])
+  ) {
+    return 'employee_survey';
+  }
+
+  if (
+    includesAny(title, ['arrangement', 'påmelding', 'pamelding', 'kurs', 'event'])
+  ) {
+    return 'event_registration';
+  }
+
+  if (
+    includesAny(title, ['kunde', 'nps', 'tilfreds', 'service', 'produkt'])
+  ) {
+    return 'customer_feedback';
+  }
+
+  return 'customer_feedback';
+}
+
+function includesAny(value: string, needles: string[]) {
+  return needles.some((needle) => value.includes(needle));
+}
+
+function getInitialPersonalDataMode(
+  survey: Pick<SurveyEditor, 'responseMode'>,
+  settings: SurveyPrivacySettings | null,
+): PersonalDataMode {
+  if (survey.responseMode === 'identified') {
+    return 'direct';
+  }
+
+  if (settings?.enabled && settings.personalDataExpected) {
+    return 'possible';
+  }
+
+  return 'none';
+}
+
+function getPrivacySurveyKindOption(kind: PrivacySurveyKind) {
+  return (
+    privacySurveyKindOptions.find((option) => option.value === kind) ??
+    privacySurveyKindOptions[0]
+  );
+}
+
+function getPersonalDataModeOption(mode: PersonalDataMode) {
+  return (
+    personalDataModeOptions.find((option) => option.value === mode) ??
+    personalDataModeOptions[0]
+  );
+}
+
+function buildPrivacySuggestion({
+  controllerContact,
+  controllerName,
+  retentionDays,
+  survey,
+  surveyKind,
+}: {
+  controllerContact: string;
+  controllerName: string;
+  retentionDays: number | null;
+  survey: SurveyEditor;
+  surveyKind: PrivacySurveyKind;
+}): PrivacySuggestion {
+  const controller = controllerName.trim() || '[behandlingsansvarlig]';
+  const contact = controllerContact.trim() || '[kontaktperson/e-post]';
+  const title = survey.title.trim() || 'undersøkelsen';
+  const fallbackDays = getSuggestedRetentionDays(surveyKind);
+  const days = retentionDays ?? fallbackDays;
+  const retentionLabel = formatPrivacyRetentionDays(days);
+  const base = getPrivacySuggestionBase(surveyKind, title);
+
+  if (base.legalBasis === 'consent') {
+    return {
+      ...base,
+      consentText: `Jeg samtykker til at ${controller} behandler svarene mine for å ${base.purpose}. Jeg kan trekke samtykket tilbake ved å kontakte ${contact}.`,
+      respondentNotice: `Deltakelse er frivillig. ${controller} bruker svarene for å ${base.purpose}. Du kan trekke samtykket tilbake ved å kontakte ${contact}. Svarene slettes automatisk etter ${retentionLabel}.`,
+      retentionDays: days,
+    };
+  }
+
+  const basisLabel = base.legalBasis
+    ? legalBasisLabel[base.legalBasis].toLowerCase()
+    : 'grunnlaget dere velger';
+
+  return {
+    ...base,
+    consentText: '',
+    respondentNotice: `${controller} bruker svarene for å ${base.purpose}. Behandlingen bygger på ${basisLabel}. Svarene slettes automatisk etter ${retentionLabel}. Kontakt ${contact} ved spørsmål om personvern.`,
+    retentionDays: days,
+  };
+}
+
+function getPrivacySuggestionBase(
+  surveyKind: PrivacySurveyKind,
+  title: string,
+): Omit<PrivacySuggestion, 'consentText' | 'respondentNotice' | 'retentionDays'> {
+  if (surveyKind === 'student_project') {
+    return {
+      purpose: `samle inn data til student-/forskningsprosjektet «${title}»`,
+      legalBasis: 'consent',
+      legalBasisNote:
+        'Deltakelse er frivillig, og respondenten kan trekke samtykket tilbake.',
+    };
+  }
+
+  if (surveyKind === 'employee_survey') {
+    return {
+      purpose: 'forstå og forbedre arbeidsmiljø, trivsel og interne prosesser',
+      legalBasis: 'legitimate_interests',
+      legalBasisNote:
+        'Samtykke er ofte lite egnet i arbeidsforhold. Vurder interesseavveiing eller annen intern hjemmel.',
+    };
+  }
+
+  if (surveyKind === 'event_registration') {
+    return {
+      purpose: `administrere deltakelse og følge opp arrangementet «${title}»`,
+      legalBasis: 'contract',
+      legalBasisNote: '',
+    };
+  }
+
+  if (surveyKind === 'other') {
+    return {
+      purpose: `behandle svarene i «${title}» til formålet du beskriver`,
+      legalBasis: '',
+      legalBasisNote: '',
+    };
+  }
+
+  return {
+    purpose: 'forstå og forbedre kundeopplevelsen og tjenestene våre',
+    legalBasis: 'legitimate_interests',
+    legalBasisNote:
+      'Vi bruker svarene til forbedring og begrenser opplysningene til det som er nødvendig.',
+  };
+}
+
+function getSuggestedRetentionDays(surveyKind: PrivacySurveyKind) {
+  if (surveyKind === 'student_project') {
+    return 365;
+  }
+
+  if (surveyKind === 'employee_survey') {
+    return 180;
+  }
+
+  return 90;
+}
+
+function formatPrivacyRetentionDays(days: number) {
+  if (days === 180) {
+    return '6 måneder';
+  }
+
+  if (days === 365) {
+    return '12 måneder';
+  }
+
+  if (days === 730) {
+    return '24 måneder';
+  }
+
+  return `${days} dager`;
+}
+
+function getLegalBasisDescription(legalBasis: SurveyLegalBasis) {
+  if (legalBasis === 'consent') {
+    return 'Respondenten sier aktivt ja før svaring.';
+  }
+
+  if (legalBasis === 'legitimate_interests') {
+    return 'Bruk når dere har et saklig behov og har vurdert respondentens interesser.';
+  }
+
+  if (legalBasis === 'contract') {
+    return 'Bruk når opplysningene trengs for å levere eller administrere noe respondenten har avtale om.';
+  }
+
+  if (legalBasis === 'legal_obligation') {
+    return 'Bruk når en lov eller forskrift pålegger dere å behandle opplysningene.';
+  }
+
+  if (legalBasis === 'public_task') {
+    return 'Bruk for offentlige oppgaver eller oppgaver i allmennhetens interesse.';
+  }
+
+  return 'Bruk bare hvis dere har vurdert et annet gyldig grunnlag.';
+}
+
 function buildDraftPrivacySettings(
   survey: SurveyEditor,
   currentSettings: SurveyPrivacySettings | null,
@@ -1252,6 +1652,7 @@ function buildDraftPrivacySettings(
   legalBasis: SurveyLegalBasis | null,
   legalBasisNote: string,
   consentText: string,
+  respondentNotice: string,
   retentionDays: number | null,
 ): SurveyPrivacySettings {
   const now = new Date().toISOString();
@@ -1268,7 +1669,7 @@ function buildDraftPrivacySettings(
     consentText: legalBasis === 'consent' ? consentText.trim() || null : null,
     retentionDays,
     retentionAction: currentSettings?.retentionAction ?? 'delete_response',
-    respondentNotice: currentSettings?.respondentNotice ?? null,
+    respondentNotice: respondentNotice.trim() || null,
     createdAt: currentSettings?.createdAt ?? now,
     updatedAt: currentSettings?.updatedAt ?? now,
   };
