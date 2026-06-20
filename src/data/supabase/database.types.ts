@@ -893,6 +893,19 @@ export type Database = {
         }
         Returns: string
       }
+      create_survey_draft: {
+        Args: {
+          p_description?: string | null
+          p_ends_at?: string | null
+          p_response_mode?: Database["public"]["Enums"]["survey_response_mode"]
+          p_slug?: string | null
+          p_starts_at?: string | null
+          p_title?: string | null
+          p_visibility?: Database["public"]["Enums"]["survey_visibility"]
+          p_workspace_id?: string | null
+        }
+        Returns: Database["public"]["Tables"]["surveys"]["Row"]
+      }
       delete_account_data_for_auth_user: {
         Args: { p_auth_user_id: string }
         Returns: string | null

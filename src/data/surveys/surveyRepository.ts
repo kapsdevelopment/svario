@@ -150,27 +150,23 @@ export async function createSurveyDraft(
     throw new Error('Skjemaet må ha en tittel.');
   }
 
-  const payload: TablesInsert<'surveys'> = {
-    owner_account_id: input.ownerAccountId,
-    workspace_id: input.workspaceId,
-    visibility: input.visibility,
-    title,
-    description: normalizeOptionalText(input.description),
-    slug: createSurveySlug(title),
-    status: 'draft',
-    response_mode: input.responseMode,
-    starts_at: input.startsAt,
-    ends_at: input.endsAt,
-  };
-
-  const { data, error } = await client
-    .from('surveys')
-    .insert(payload)
-    .select(surveySummarySelect)
-    .single();
+  const { data, error } = await client.rpc('create_survey_draft', {
+    p_workspace_id: input.workspaceId,
+    p_visibility: input.visibility,
+    p_title: title,
+    p_description: normalizeOptionalText(input.description),
+    p_slug: createSurveySlug(title),
+    p_response_mode: input.responseMode,
+    p_starts_at: input.startsAt,
+    p_ends_at: input.endsAt,
+  });
 
   if (error) {
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('Kunne ikke lagre skjemaet.');
   }
 
   return mapSurveySummary(data);

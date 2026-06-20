@@ -59,7 +59,6 @@ export function SurveyCreatePage() {
 
     try {
       const createdSurvey = await createSurveyDraft.mutateAsync({
-        ownerAccountId: account.id,
         workspaceId:
           workspaceId === individualWorkspaceValue ? null : workspaceId,
         visibility:

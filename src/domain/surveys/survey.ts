@@ -51,7 +51,6 @@ export type SurveySummary = {
 };
 
 export type CreateSurveyDraftInput = {
-  ownerAccountId: string;
   workspaceId: string | null;
   visibility: SurveyVisibility;
   title: string;
