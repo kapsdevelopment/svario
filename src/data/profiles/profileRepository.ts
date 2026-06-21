@@ -1,6 +1,6 @@
-import type { Profile } from '../../domain/profiles/profile';
+import type { Profile, UpdateProfileInput } from '../../domain/profiles/profile';
 import { supabase } from '../supabase/client';
-import type { Tables } from '../supabase/database.types';
+import type { Tables, TablesUpdate } from '../supabase/database.types';
 
 type ProfileRow = Pick<
   Tables<'profiles'>,
@@ -24,12 +24,45 @@ export async function getMyProfile(accountId: string): Promise<Profile> {
   return mapProfile(data);
 }
 
+export async function updateMyProfile(
+  input: UpdateProfileInput,
+): Promise<Profile> {
+  const client = requireProfileClient();
+  const displayName = normalizeOptionalText(input.displayName);
+
+  if (displayName && displayName.length > 120) {
+    throw new Error('Navnet kan maks være 120 tegn.');
+  }
+
+  const payload: TablesUpdate<'profiles'> = {
+    display_name: displayName,
+  };
+
+  const { data, error } = await client
+    .from('profiles')
+    .update(payload)
+    .eq('id', input.accountId)
+    .select(profileSelect)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapProfile(data);
+}
+
 function mapProfile(row: ProfileRow): Profile {
   return {
     id: row.id,
     displayName: row.display_name,
     contactEmail: row.contact_email,
   };
+}
+
+function normalizeOptionalText(value: string | null | undefined) {
+  const trimmedValue = value?.trim() ?? '';
+  return trimmedValue.length > 0 ? trimmedValue : null;
 }
 
 function requireProfileClient() {

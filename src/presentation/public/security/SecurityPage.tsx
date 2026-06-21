@@ -48,12 +48,12 @@ const dataPrinciples = [
   'Eksport og rapporter skal respektere samme anonymitetsvalg som selve skjemaet.',
 ];
 
-const productionTasks = [
-  'Ferdigstille trygg offentlig innsending via validert RPC/API.',
-  'Kjøre RLS-tester for eier, ikke-eier og anonym tilgang.',
-  'Avklare admin-MFA, e-postbekreftelse og session-krav for produksjon.',
-  'Signere og arkivere Supabase DPA for behandlingsansvarlig dokumentasjon.',
-  'Lage slette-, eksport-, retention- og hendelseshåndteringsrutiner.',
+const assurancePractices = [
+  'Offentlig innsending valideres server-side før svar lagres.',
+  'Tilgangsregler gjennomgås når datamodellen endres.',
+  'Admin-innlogging og session-krav vurderes etter faktisk risikobilde.',
+  'Leverandør- og personverndokumentasjon holdes oppdatert.',
+  'Slette-, eksport- og retention-rutiner dokumenteres og testes.',
 ];
 
 const sourceLinks = [
@@ -112,13 +112,13 @@ export function SecurityPage() {
           <p className="security-hero__lead">
             Svario bygges for virksomheter som trenger enkel innsamling,
             tydelige resultater og en ryddig sikkerhetsmodell. Denne siden
-            beskriver hva som er valgt, hva Supabase dekker, og hva som må være
-            ferdig før produksjonssetting.
+            beskriver hva som er valgt, hva Supabase dekker, og hvordan
+            sikkerhetsarbeidet følges opp.
           </p>
           <div className="security-badges" aria-label="Sikkerhetsstatus">
-            <span>Under utvikling</span>
+            <span>Åpen sikkerhetsmodell</span>
             <span>Supabase/Postgres</span>
-            <span>Sist oppdatert 15. juni 2026</span>
+            <span>Sist oppdatert 21. juni 2026</span>
           </div>
         </div>
 
@@ -197,12 +197,13 @@ export function SecurityPage() {
           <h2>Svario skal ikke overselge sikkerhet</h2>
           <p>
             Supabase har leverandørsertifiseringer og plattformkontroller.
-            Svario er ikke selv sertifisert ennå. Før offentlig produksjon skal
-            sikkerhetskravene dokumenteres, testes og holdes oppdatert.
+            Svario er ikke selv sertifisert ennå. Sikkerhetskravene
+            dokumenteres, testes og holdes oppdatert etter hvert som produktet
+            og kundebehovene utvikler seg.
           </p>
         </div>
         <div className="security-status-list">
-          {productionTasks.map((task) => (
+          {assurancePractices.map((task) => (
             <div key={task}>
               <TriangleAlert size={19} aria-hidden="true" />
               <span>{task}</span>

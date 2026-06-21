@@ -1,7 +1,8 @@
-# Svario Security And Trust Plan
+# Svario Security Overview
 
-Svario is pre-production. This document is a working security and trust plan for
-the product, the codebase and future customer-facing documentation.
+This document describes the main security and trust principles for Svario.
+Detailed internal backlog items, risk decisions and operational runbooks should
+live in private planning systems, not in this public repository.
 
 ## Current Architecture
 
@@ -62,14 +63,9 @@ Implemented:
 - Password change from the profile screen.
 - Production redirect URL configuration for `https://svario.no`.
 
-Before production:
-
-- Verify email confirmation behavior.
-- Decide whether MFA is required for admins.
-- Decide final password policy based on actual risk, magic link usage, rate
-  limits and MFA.
-- Revisit Supabase Passkeys when beta limitations, RP ID, allowed origins and
-  fallback flow are understood.
+Authentication requirements are reviewed as the product, customer usage and
+risk model evolve. Stronger admin controls can be introduced when the risk
+profile requires them.
 
 ## Privacy And Deletion
 
@@ -80,7 +76,8 @@ Svario supports practical deletion and export flows:
   results, after an explicit confirmation.
 - Admins can delete their account, including all surveys,
   responses, results and profile data, after a stronger confirmation step.
-- Retention rules must be documented before production use with real customers.
+- Retention rules should be documented when customers use Svario with real
+  respondent data.
 - Anonymous surveys must not store respondent-identifying fields.
 
 Account deletion needs careful implementation because deleting a Supabase Auth
@@ -88,17 +85,60 @@ user does not automatically invalidate every existing access token immediately.
 The app should sign the user out after deletion and keep token lifetimes
 appropriate for the sensitivity of the product.
 
+## Retention Routine
+
+Svario has product-level retention support for survey responses:
+
+- Survey owners choose a retention period when personal data is expected.
+- Submitted responses get a calculated `retention_due_at` timestamp.
+- A scheduled database job processes due responses in batches.
+- The default action is to delete the full response tree.
+- If anonymization is used, respondent identity, account reference and metadata
+  are removed before the response is kept as anonymous aggregate data.
+- Deletion, anonymization and retention extensions are logged as privacy events.
+- Extending retention for existing responses requires a reason.
+
+Operationally, backup and restore behavior must be checked against the selected
+Supabase plan. A restore can reintroduce data that was previously deleted or
+anonymized, so restored data must be reviewed before it is made available to
+customers.
+
+## Incident Response
+
+Svario should handle security and privacy incidents through a simple documented
+routine:
+
+1. Register the incident with time, source, affected systems and initial severity.
+2. Contain the issue by disabling access, stopping the affected flow, rotating
+   secrets or rolling back a deploy when needed.
+3. Investigate which accounts, workspaces, surveys, responses and providers may
+   be affected.
+4. Assess whether the issue affects confidentiality, integrity, availability,
+   deletion or retention.
+5. Notify affected customers without undue delay when customer data may be
+   affected.
+6. Give customers enough facts to assess their own duties toward respondents or
+   supervisory authorities.
+7. Document timeline, actions, communications and decisions.
+8. Close only after corrective measures are completed and follow-up work is
+   tracked.
+
+High-attention incidents include exposed service-role keys or database
+passwords, RLS/RPC mistakes, wrong cross-workspace access, anonymous exports
+containing identifying data, retention failures, backup restore side effects and
+suspicious admin or provider access.
+
 ## Operational Controls
 
-Before production, Svario should have:
+Svario should maintain:
 
-- A documented backup and restore expectation based on the selected Supabase
+- Documented backup and restore expectations based on the selected Supabase
   plan.
-- A basic incident response routine for exposed keys, accidental data exposure,
+- A security incident response routine for exposed keys, accidental data exposure,
   wrong access, suspicious activity and deletion mistakes.
 - A clear owner for rotating Supabase keys and GitHub repository secrets.
-- Supabase security advisors/checks run and reviewed.
-- RLS tests for owner, non-owner and anonymous access.
+- Periodic platform security reviews.
+- Access-control checks for relevant user roles and anonymous flows.
 - Manual browser checks for admin and respondent flows.
 
 ## Third Parties
@@ -109,7 +149,7 @@ Current planned providers:
 - GitHub Pages: static frontend hosting and deployment.
 - GitHub Actions: build and deployment automation.
 
-Before production, confirm and document:
+Customer-facing third-party documentation should cover:
 
 - Supabase DPA status.
 - Supabase subprocessors.

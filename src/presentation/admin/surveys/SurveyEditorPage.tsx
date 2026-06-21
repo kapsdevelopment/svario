@@ -14,7 +14,7 @@ import {
   Trash2,
   Type,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
@@ -41,6 +41,7 @@ import {
   type SurveySection,
   type SurveySummary,
 } from '../../../domain/surveys/survey';
+import type { WorkspaceWithMembership } from '../../../domain/workspaces/workspace';
 import { Panel } from '../../shared/components/Panel';
 
 const questionTypeLabels = {
@@ -247,6 +248,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const deleteQuestion = useDeleteSurveyQuestion(survey.id);
   const publishSurvey = usePublishSurvey(survey.id);
   const updateBasicInfo = useUpdateSurveyBasicInfo(survey.id);
+  const updatePrivacySettings = useUpdateSurveyPrivacySettings(survey.id);
 
   const [basicTitle, setBasicTitle] = useState(survey.title);
   const [basicDescription, setBasicDescription] = useState(
@@ -361,6 +363,10 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
     const normalizedStartsAt = toIsoDateTime(basicStartsAt);
     const normalizedEndsAt = toIsoDateTime(basicEndsAt);
+    const shouldResetPrivacyToAnonymous =
+      survey.responseMode === 'identified' &&
+      basicResponseMode === 'anonymous' &&
+      survey.privacySettings !== null;
 
     if (
       normalizedStartsAt &&
@@ -380,8 +386,36 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         startsAt: normalizedStartsAt,
         endsAt: normalizedEndsAt,
       });
-      setBasicMessage('Grunninfo er oppdatert.');
+
+      if (shouldResetPrivacyToAnonymous && survey.privacySettings) {
+        await updatePrivacySettings.mutateAsync({
+          surveyId: survey.id,
+          enabled: false,
+          personalDataExpected: false,
+          controllerName: survey.privacySettings.controllerName,
+          controllerContact: survey.privacySettings.controllerContact,
+          purpose: survey.privacySettings.purpose,
+          legalBasis: survey.privacySettings.legalBasis,
+          legalBasisNote: survey.privacySettings.legalBasisNote,
+          consentText: survey.privacySettings.consentText,
+          retentionDays: survey.privacySettings.retentionDays,
+          retentionAction: survey.privacySettings.retentionAction,
+          respondentNotice: survey.privacySettings.respondentNotice,
+          retentionChangeReason: null,
+        });
+      }
+
+      setBasicMessage(
+        shouldResetPrivacyToAnonymous
+          ? 'Grunninfo er oppdatert. Personvern er satt til anonym.'
+          : 'Grunninfo er oppdatert.',
+      );
     } catch {
+      if (shouldResetPrivacyToAnonymous) {
+        setBasicValidationError(
+          'Grunninfo kan være lagret, men personvernmodus kunne ikke settes til anonym. Prøv å lagre personvern manuelt.',
+        );
+      }
       return;
     }
   }
@@ -1129,6 +1163,8 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const updatePrivacySettings = useUpdateSurveyPrivacySettings(survey.id);
   const initialSettings = survey.privacySettings;
   const isIdentified = survey.responseMode === 'identified';
+  const previousResponseModeRef = useRef(survey.responseMode);
+  const previousControllerNameSuggestionRef = useRef<string | null>(null);
   const myProfile = useMyProfile(auth.account?.id);
   const workspaces = useWorkspaces(auth.account?.id);
 
@@ -1182,13 +1218,16 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
     ? null
     : getTrimmedSuggestion(currentWorkspace?.name) ??
       profileDisplayName ??
+      profileContactEmail ??
+      authEmail ??
       null;
   const controllerContactSuggestion = profileContactEmail ?? authEmail ?? null;
-  const controllerNameHelp = currentWorkspace
-    ? 'Foreslått fra arbeidsflaten. Kan endres for dette skjemaet.'
-    : profileDisplayName
-      ? 'Foreslått fra profilen. Kan endres for dette skjemaet.'
-      : 'Hvem bestemmer hvorfor svarene samles inn og hvor lenge de lagres?';
+  const controllerNameHelp = getControllerNameHelp({
+    currentWorkspace,
+    profileDisplayName,
+    usedEmailFallback:
+      !currentWorkspace && !profileDisplayName && Boolean(controllerNameSuggestion),
+  });
   const controllerContactHelp = profileContactEmail
     ? 'Foreslått fra profilens kontakt-e-post. Kan endres for dette skjemaet.'
     : authEmail
@@ -1240,16 +1279,32 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   });
 
   useEffect(() => {
+    const previousResponseMode = previousResponseModeRef.current;
+    previousResponseModeRef.current = survey.responseMode;
+
+    if (
+      previousResponseMode === 'identified' &&
+      survey.responseMode === 'anonymous'
+    ) {
+      setPersonalDataMode('none');
+    }
+  }, [survey.responseMode]);
+
+  useEffect(() => {
+    const previousSuggestion = previousControllerNameSuggestionRef.current;
+    previousControllerNameSuggestionRef.current = controllerNameSuggestion;
+
     if (
       controllerNameEdited ||
       initialSettings?.controllerName ||
-      controllerName.trim() ||
       !controllerNameSuggestion
     ) {
       return;
     }
 
-    setControllerName(controllerNameSuggestion);
+    if (!controllerName.trim() || controllerName.trim() === previousSuggestion) {
+      setControllerName(controllerNameSuggestion);
+    }
   }, [
     controllerName,
     controllerNameEdited,
@@ -1484,8 +1539,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                   ))}
                 </select>
                 <span className="field-help">
-                  Dette kalles rettslig grunnlag.
-                  {legalBasisDescription ? ` ${legalBasisDescription}` : ''}
+                  {legalBasisDescription}
                   <a
                     className="field-help__link"
                     href={legalBasisGuidanceLink.url}
@@ -1556,7 +1610,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
                 rows={3}
                 value={respondentNotice}
                 disabled={updatePrivacySettings.isPending}
-                placeholder="Kort forklaring av hva svarene brukes til, hvem som er ansvarlig og hvor lenge de lagres."
+                placeholder="F.eks. Vi i [virksomhet/prosjekt] bruker svarene til ... Svarene slettes etter ..."
                 onChange={(event) => setRespondentNotice(event.target.value)}
               />
             </label>
@@ -1867,6 +1921,34 @@ function getTrimmedSuggestion(value: string | null | undefined) {
   return trimmedValue ? trimmedValue : null;
 }
 
+function getControllerNameHelp({
+  currentWorkspace,
+  profileDisplayName,
+  usedEmailFallback,
+}: {
+  currentWorkspace: WorkspaceWithMembership | undefined;
+  profileDisplayName: string | null;
+  usedEmailFallback: boolean;
+}) {
+  if (currentWorkspace?.type === 'business') {
+    return 'Foreslått fra bedriften/arbeidsflaten. Kan endres for dette skjemaet.';
+  }
+
+  if (currentWorkspace?.type === 'team') {
+    return 'Foreslått fra teamet/arbeidsflaten. Kan endres for dette skjemaet.';
+  }
+
+  if (profileDisplayName) {
+    return 'Foreslått fra profilen. Kan endres for dette skjemaet.';
+  }
+
+  if (usedEmailFallback) {
+    return 'Foreslått fra registrert e-post for personlig konto. Kan endres for dette skjemaet.';
+  }
+
+  return 'Hvem bestemmer hvorfor svarene samles inn og hvor lenge de lagres?';
+}
+
 function getInitialPersonalDataMode(
   survey: Pick<SurveyEditor, 'responseMode'>,
   settings: SurveyPrivacySettings | null,
@@ -1916,12 +1998,13 @@ function buildPrivacySuggestion({
   const days = retentionDays ?? fallbackDays;
   const retentionLabel = formatPrivacyRetentionDays(days);
   const base = getPrivacySuggestionBase(surveyKind, title);
+  const purposeSentence = toSentenceContinuation(base.purpose);
 
   if (base.legalBasis === 'consent') {
     return {
       ...base,
-      consentText: `Jeg samtykker til at ${controller} behandler svarene mine for å ${base.purpose}. Jeg kan trekke samtykket tilbake ved å kontakte ${contact}.`,
-      respondentNotice: `Deltakelse er frivillig. ${controller} bruker svarene for å ${base.purpose}. Du kan trekke samtykket tilbake ved å kontakte ${contact}. Svarene slettes automatisk etter ${retentionLabel}.`,
+      consentText: `Jeg samtykker til at ${controller} behandler svarene mine for å ${purposeSentence}. Jeg kan trekke samtykket tilbake ved å kontakte ${contact}.`,
+      respondentNotice: `Deltakelse er frivillig. ${controller} bruker svarene for å ${purposeSentence}. Du kan trekke samtykket tilbake ved å kontakte ${contact}. Svarene slettes automatisk etter ${retentionLabel}.`,
       retentionDays: days,
     };
   }
@@ -1933,9 +2016,13 @@ function buildPrivacySuggestion({
   return {
     ...base,
     consentText: '',
-    respondentNotice: `${controller} bruker svarene for å ${base.purpose}. Behandlingen bygger på ${basisLabel}. Svarene slettes automatisk etter ${retentionLabel}. Kontakt ${contact} ved spørsmål om personvern.`,
+    respondentNotice: `${controller} bruker svarene for å ${purposeSentence}. Behandlingen bygger på ${basisLabel}. Svarene slettes automatisk etter ${retentionLabel}. Kontakt ${contact} ved spørsmål om personvern.`,
     retentionDays: days,
   };
+}
+
+function toSentenceContinuation(value: string) {
+  return value.charAt(0).toLocaleLowerCase('nb-NO') + value.slice(1);
 }
 
 function getPrivacySuggestionBase(
@@ -1944,7 +2031,7 @@ function getPrivacySuggestionBase(
 ): Omit<PrivacySuggestion, 'consentText' | 'respondentNotice' | 'retentionDays'> {
   if (surveyKind === 'student_project') {
     return {
-      purpose: `samle inn data til student-/forskningsprosjektet «${title}»`,
+      purpose: `Samle inn data til student-/forskningsprosjektet «${title}»`,
       legalBasis: 'consent',
       legalBasisNote:
         'Deltakelse er frivillig, og respondenten kan trekke samtykket tilbake.',
@@ -1953,7 +2040,7 @@ function getPrivacySuggestionBase(
 
   if (surveyKind === 'employee_survey') {
     return {
-      purpose: 'forstå og forbedre arbeidsmiljø, trivsel og interne prosesser',
+      purpose: 'Forstå og forbedre arbeidsmiljø, trivsel og interne prosesser',
       legalBasis: 'legitimate_interests',
       legalBasisNote:
         'Samtykke er ofte lite egnet i arbeidsforhold. Vurder interesseavveiing eller annen intern hjemmel.',
@@ -1962,7 +2049,7 @@ function getPrivacySuggestionBase(
 
   if (surveyKind === 'event_registration') {
     return {
-      purpose: `administrere deltakelse og følge opp arrangementet «${title}»`,
+      purpose: `Administrere deltakelse og følge opp arrangementet «${title}»`,
       legalBasis: 'contract',
       legalBasisNote: '',
     };
@@ -1970,14 +2057,14 @@ function getPrivacySuggestionBase(
 
   if (surveyKind === 'other') {
     return {
-      purpose: `behandle svarene i «${title}» til formålet du beskriver`,
+      purpose: `Behandle svarene i «${title}» til formålet du beskriver`,
       legalBasis: '',
       legalBasisNote: '',
     };
   }
 
   return {
-    purpose: 'forstå og forbedre kundeopplevelsen og tjenestene våre',
+    purpose: 'Forstå og forbedre kundeopplevelsen og tjenestene våre',
     legalBasis: 'legitimate_interests',
     legalBasisNote:
       'Vi har vurdert at formålet er saklig, at opplysningene er nødvendige, og at hensynet til respondentenes rettigheter ikke veier tyngre.',

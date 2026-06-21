@@ -34,6 +34,15 @@ supabase/config.toml.local
 exports/
 reports/
 
+# Internal planning, legal drafts and security work notes
+TODO.md
+to-do.md
+docs/legal/
+docs/internal/
+security-notes/
+threat-model*.md
+risk-register*.md
+
 # Logs
 *.log
 npm-debug.log*

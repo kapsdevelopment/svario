@@ -41,7 +41,7 @@ export function TrustCenterPage() {
             personverninnstillinger i produktet.
           </p>
           <div className="security-badges" aria-label="Trust Center status">
-            <span>Under utvikling</span>
+            <span>Levende dokumentasjon</span>
             <span>Kapsdevelopment AS</span>
             <span>Sist oppdatert 21. juni 2026</span>
           </div>

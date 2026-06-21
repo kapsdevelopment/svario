@@ -3,16 +3,21 @@ import {
   CheckCircle2,
   KeyRound,
   Link2,
+  Save,
   Search,
   Trash2,
   UserMinus,
   Users,
 } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import {
+  useMyProfile,
+  useUpdateMyProfile,
+} from '../../../application/profiles/useMyProfile';
 import { useCreateWorkspace } from '../../../application/workspaces/useCreateWorkspace';
 import { useCreateWorkspaceInvitation } from '../../../application/workspaces/useCreateWorkspaceInvitation';
 import { useDeleteWorkspace } from '../../../application/workspaces/useDeleteWorkspace';
@@ -32,6 +37,10 @@ const minimumPasswordLength = 6;
 export function ProfilePage() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const [profileDisplayName, setProfileDisplayName] = useState('');
+  const [profileDisplayNameEdited, setProfileDisplayNameEdited] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -50,12 +59,49 @@ export function ProfilePage() {
   const [invitationLinks, setInvitationLinks] = useState<Record<string, string>>(
     {},
   );
+  const myProfile = useMyProfile(auth.account?.id);
+  const updateMyProfile = useUpdateMyProfile();
   const workspaces = useWorkspaces(auth.account?.id);
   const createWorkspace = useCreateWorkspace();
   const createWorkspaceInvitation = useCreateWorkspaceInvitation();
   const lookupOrganization = useLookupOrganizationByNumber();
   const removeWorkspaceMember = useRemoveWorkspaceMember();
   const deleteWorkspace = useDeleteWorkspace();
+
+  useEffect(() => {
+    if (!profileDisplayNameEdited) {
+      setProfileDisplayName(myProfile.data?.displayName ?? '');
+    }
+  }, [myProfile.data?.displayName, profileDisplayNameEdited]);
+
+  async function handleProfileUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileMessage(null);
+    setProfileError(null);
+
+    if (!auth.account?.id) {
+      setProfileError('Profilen er ikke klargjort ennå.');
+      return;
+    }
+
+    const displayName = profileDisplayName.trim();
+
+    try {
+      const updatedProfile = await updateMyProfile.mutateAsync({
+        accountId: auth.account.id,
+        displayName: displayName || null,
+      });
+      setProfileDisplayName(updatedProfile.displayName ?? '');
+      setProfileDisplayNameEdited(false);
+      setProfileMessage(
+        updatedProfile.displayName
+          ? 'Profilnavnet er oppdatert.'
+          : 'Profilnavnet er fjernet.',
+      );
+    } catch (error) {
+      setProfileError(getErrorMessage(error, 'Kunne ikke lagre profilen.'));
+    }
+  }
 
   async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -249,6 +295,8 @@ export function ProfilePage() {
     }
   }
 
+  const profileContactEmail = myProfile.data?.contactEmail ?? auth.user?.email ?? '';
+
   return (
     <div className="page">
       <header className="page-header">
@@ -257,6 +305,80 @@ export function ProfilePage() {
           <h1>Min profil</h1>
         </div>
       </header>
+
+      <Panel
+        title="Profil"
+        subtitle="Brukes som forslag i skjemaer og personvernfelter."
+      >
+        <form className="form-stack" onSubmit={handleProfileUpdate}>
+          <div className="form-grid form-grid--two">
+            <label>
+              Navn
+              <input
+                type="text"
+                value={profileDisplayName}
+                disabled={myProfile.isLoading || updateMyProfile.isPending}
+                maxLength={120}
+                placeholder="Navn eller organisasjon"
+                onChange={(event) => {
+                  setProfileDisplayName(event.target.value);
+                  setProfileDisplayNameEdited(true);
+                  setProfileMessage(null);
+                  setProfileError(null);
+                }}
+              />
+              <span className="field-help">
+                Brukes som forslag til behandlingsansvarlig for individuelle
+                skjemaer.
+              </span>
+            </label>
+            <label>
+              Registrert e-post
+              <input
+                aria-readonly="true"
+                placeholder="Ingen e-post registrert"
+                readOnly
+                value={profileContactEmail}
+              />
+              <span className="field-help">
+                Brukes som forslag til personvernkontakt. Kan overstyres per
+                skjema.
+              </span>
+            </label>
+          </div>
+
+          <div className="form-actions">
+            <button
+              className="button button--primary"
+              disabled={
+                myProfile.isLoading ||
+                updateMyProfile.isPending ||
+                !auth.account?.id
+              }
+              type="submit"
+            >
+              <Save size={18} aria-hidden="true" />
+              {updateMyProfile.isPending ? 'Lagrer...' : 'Lagre profil'}
+            </button>
+          </div>
+        </form>
+
+        {myProfile.isError ? (
+          <p className="form-alert form-alert--error" role="alert">
+            {getErrorMessage(myProfile.error, 'Kunne ikke hente profilen.')}
+          </p>
+        ) : null}
+        {profileMessage ? (
+          <p className="form-alert form-alert--success" role="status">
+            {profileMessage}
+          </p>
+        ) : null}
+        {profileError ? (
+          <p className="form-alert form-alert--error" role="alert">
+            {profileError}
+          </p>
+        ) : null}
+      </Panel>
 
       <Panel title="Konto" subtitle={auth.user?.email ?? 'Innlogget admin'}>
         <dl className="definition-list">

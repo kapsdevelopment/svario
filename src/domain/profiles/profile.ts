@@ -3,3 +3,8 @@ export type Profile = {
   displayName: string | null;
   contactEmail: string | null;
 };
+
+export type UpdateProfileInput = {
+  accountId: string;
+  displayName: string | null;
+};
