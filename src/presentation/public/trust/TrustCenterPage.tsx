@@ -64,12 +64,12 @@ export function TrustCenterPage() {
       <section className="trust-section" aria-labelledby="trust-documents">
         <div className="trust-section__header">
           <p className="eyebrow">Dokumenter</p>
-          <h2 id="trust-documents">Offentlige arbeidsutkast</h2>
+          <h2 id="trust-documents">Juridiske tekster på web</h2>
           <p>
             Dokumentene er skrevet med inspirasjon fra nordiske
             spørreskjemaleverandører og Datatilsynet, men med Svario sin egen
-            ordlyd og status. De må juridisk kvalitetssikres før de brukes som
-            bindende avtale.
+            ordlyd. De publiseres som egne websider i Trust Center, med status
+            og versjon synlig på hvert dokument.
           </p>
         </div>
 

@@ -22,13 +22,17 @@ Kunden er behandlingsansvarlig for:
 
 - formålet med hvert spørreskjema,
 - hvilke spørsmål som stilles,
+- hvilke respondentgrupper som inviteres,
 - om skjemaet er anonymt, identifisert eller kan inneholde personopplysninger i fritekst,
+- hvilke personopplysninger det er nødvendig å samle inn,
 - rettslig grunnlag,
 - lagringstid,
 - informasjonen som gis til respondentene,
-- vurderingen av om det er nødvendig å fortsette å lagre svar.
+- vurderingen av om det er nødvendig å samle inn eller fortsette å lagre svar.
 
 Svario er databehandler for spørreskjemaer, besvarelser og respondentopplysninger som behandles på kundens vegne.
+
+Svario stiller teknisk løsning, teknisk lagring, tilgangsstyring, eksport, retention og sletting til rådighet. Svario bestemmer ikke kundens konkrete formål, innhold, rettslige grunnlag eller spesifikke lagringsbehov for et skjema.
 
 Kapsdevelopment AS er selvstendig behandlingsansvarlig for egne konto-, sikkerhets-, drifts-, avtale- og kontaktopplysninger der Kapsdevelopment AS selv bestemmer formålet.
 
@@ -42,6 +46,10 @@ Svario skal bare behandle personopplysninger etter dokumenterte instrukser fra k
 - eventuelle supplerende avtalevilkår.
 
 Svario skal varsle kunden dersom Svario mener en instruks er i strid med personvernregelverket, så langt dette er tillatt.
+
+Produktvalg kunden gjør i Svario, inkludert anonym/identifisert modus, rettslig grunnlag, respondenttekst og lagringstid, er kundens dokumenterte instruks for den aktuelle behandlingen.
+
+Standardvalg, hjelpetekster og forslag i Svario er praktisk produktstøtte. De er ikke juridisk rådgivning og er ikke en vurdering av om kundens konkrete innsamling, rettslige grunnlag eller lagringstid er lovlig eller nødvendig.
 
 ## 4. Behandlingens art, formål og varighet
 
@@ -102,9 +110,11 @@ Kunden skal:
 - ha rettslig grunnlag for personopplysningene som samles inn,
 - gi respondentene forståelig informasjon om formål, ansvarlig virksomhet, kontaktpunkt, rettslig grunnlag og lagringstid,
 - velge en lagringstid som ikke er lengre enn nødvendig,
+- kontrollere at eventuelle forslag, standardtekster og produktvalg passer med kundens faktiske bruk før skjemaet publiseres,
 - ikke samle inn flere personopplysninger enn nødvendig,
 - ikke bruke Svario til særlige kategorier personopplysninger eller høyrisikobehandling uten særskilt vurdering og avtale,
-- svare på henvendelser fra registrerte når kunden er behandlingsansvarlig.
+- svare på henvendelser fra registrerte når kunden er behandlingsansvarlig,
+- vurdere eventuell varsling til respondenter eller Datatilsynet når kunden er behandlingsansvarlig.
 
 ## 9. Tekniske og organisatoriske tiltak
 

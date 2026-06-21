@@ -14,6 +14,8 @@ Svario er en spørreskjematjeneste levert av Kapsdevelopment AS.
 
 Kunden oppretter spørreskjema, velger om skjemaet er anonymt eller identifisert, bestemmer formål og lagringstid, og administrerer svarene.
 
+Svario har ansvar for den tekniske løsningen, teknisk lagring, tilgangsstyring, drift og sletting etter kundens produktvalg. Kunden har ansvar for den konkrete datainnsamlingen, rettslig grunnlag, respondentinformasjon og vurderingen av hvor lenge svarene skal lagres.
+
 Svario behandler besvarelser på vegne av kunden og skal ikke bruke besvarelser til annonsering, profilering, salg av data eller trening av modeller.
 
 ## 2. Dataminimering og personvern som standard
@@ -25,6 +27,7 @@ Tiltak:
 - anonyme skjemaer skal ikke lagre respondentnavn, e-postadresse eller Svario-konto-id,
 - identifiserte skjemaer krever personverninnstillinger før publisering,
 - skjemaeier må oppgi formål, kontaktpunkt, rettslig grunnlag og lagringstid når personopplysninger forventes,
+- skjemaeier er ansvarlig for å vurdere om personopplysninger faktisk er nødvendige for formålet,
 - Svario lagrer ikke IP-adresse på spørreskjemabesvarelser i appens besvarelsestabeller,
 - respondenter får kort personverninformasjon før innsending,
 - samtykke må aktivt bekreftes når skjemaeier velger samtykke som rettslig grunnlag.
@@ -70,9 +73,9 @@ RLS-regler skal testes for eier, ikke-eier og anonym respondenttilgang før prod
 
 Tiltak:
 
-- skjemaeier velger lagringstid for persondata i skjemaet,
+- skjemaeier velger lagringstid for persondata i skjemaet og er ansvarlig for at lagringstiden kan begrunnes,
 - besvarelser får beregnet slettefrist,
-- en daglig retention-jobb sletter svar når fristen er passert,
+- en daglig retention-jobb sletter svar når fristen er passert, basert på kundens valgte lagringstid,
 - skjemaeier varsles i appen når svar nærmer seg automatisk sletting,
 - dersom skjemaeier forlenger lagringstid for eksisterende svar, kreves begrunnelse,
 - forlengelser logges som personvernhendelser.

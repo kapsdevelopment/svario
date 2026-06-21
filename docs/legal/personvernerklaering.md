@@ -12,7 +12,9 @@ Nettside: https://kapsdevelopment.com/
 
 Kontaktpunkt: kontaktskjemaet på https://kapsdevelopment.com/. Skjemaet skal kunne brukes til spørsmål om personvern, sikkerhet, innsyn, retting, sletting og andre rettigheter. Henvendelser rutes internt til riktig mottaker.
 
-For spørreskjemaer er det vanligvis skjemaeieren som er behandlingsansvarlig for formål, innhold, rettslig grunnlag og lagringstid. Svario er databehandler for besvarelsene.
+For spørreskjemaer som en kunde oppretter, sender ut eller administrerer i Svario, er kunden/skjemaeieren behandlingsansvarlig for den konkrete innsamlingen.
+
+Kunden bestemmer formål, spørsmål, respondentgruppe, rettslig grunnlag, eventuell identifisering, informasjon til respondentene og hvor lenge svarene skal lagres. Svario er databehandler for besvarelsene og behandler dem etter kundens instrukser og produktvalg.
 
 For Svario-kontoer, drift, sikkerhet, avtaleoppfølging og administrasjon er Kapsdevelopment AS behandlingsansvarlig.
 
@@ -50,7 +52,7 @@ Svario bruker ikke spørreskjemabesvarelser til annonsering, profilering, salg a
 
 ## 4. Rettslig grunnlag
 
-For kundens spørreskjemaer velger og dokumenterer kunden rettslig grunnlag. Svario legger til rette for at kunden kan beskrive formål, rettslig grunnlag, kontaktpunkt og lagringstid for hvert skjema.
+For kundens spørreskjemaer velger, vurderer og dokumenterer kunden rettslig grunnlag. Svario legger til rette for at kunden kan beskrive formål, rettslig grunnlag, kontaktpunkt og lagringstid for hvert skjema.
 
 For Svario sine egne behandlingsformål kan rettslig grunnlag blant annet være:
 
@@ -61,7 +63,7 @@ For Svario sine egne behandlingsformål kan rettslig grunnlag blant annet være:
 
 ## 5. Lagringstid
 
-Besvarelser lagres etter lagringstiden skjemaeier velger for skjemaet. Når lagringstiden utløper, slettes svar automatisk når retention-jobben kjører.
+Besvarelser lagres etter lagringstiden kunden velger for skjemaet. Kunden er ansvarlig for at valgt lagringstid ikke er lengre enn nødvendig for formålet. Når lagringstiden utløper, slettes svar automatisk når retention-jobben kjører.
 
 Dersom skjemaeier forlenger lagringstiden for et skjema med eksisterende svar, må skjemaeier oppgi en begrunnelse. Forlengelsen logges.
 
@@ -77,7 +79,7 @@ Svario selger ikke personopplysninger og deler ikke besvarelser med tredjeparter
 
 Registrerte kan ha rett til innsyn, retting, sletting, begrensning, dataportabilitet og protest etter GDPR.
 
-For svar i et kundestyrt skjema bør henvendelser normalt rettes til skjemaeieren, fordi skjemaeieren bestemmer formål og lagringstid. Svario kan bistå skjemaeieren ved behov.
+For svar i et kundestyrt skjema skal henvendelser normalt rettes til skjemaeieren, fordi skjemaeieren bestemmer formål, innhold, rettslig grunnlag og lagringstid. Svario kan bistå skjemaeieren som databehandler ved behov.
 
 Hvis henvendelsen gjelder Svario-konto, drift, sikkerhet eller Kapsdevelopment AS sin egen behandling, kan kontaktskjemaet på https://kapsdevelopment.com/ brukes.
 

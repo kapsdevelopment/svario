@@ -2,6 +2,8 @@
 
 Dette området samler arbeidsutkast for Svario sine personvern-, sikkerhets- og databehandlerdokumenter. Tekstene er laget for produkt- og implementasjonsarbeid, og må gjennomgås av juridisk kompetanse før de publiseres eller brukes som bindende avtale.
 
+De kundevendte juridiske tekstene publiseres som websider i Svario Trust Center. Markdown-filene her er interne arbeidsutkast og kildestøtte, ikke eneste publiseringsflate.
+
 ## Leverandør
 
 Svario leveres av Kapsdevelopment AS, org.nr. 937 284 624.
@@ -14,6 +16,7 @@ Offentlig kontaktpunkt bør være et kontaktskjema, ikke en åpent publisert e-p
 
 - `databehandleravtale.md`: utkast til databehandleravtale mellom skjemaeier og Svario.
 - `personvernerklaering.md`: utkast til personvernerklæring for Svario som tjeneste.
+- `tjenestevilkar.md`: utkast til tjenestevilkår for kundens bruk av Svario.
 - `tekniske-og-organisatoriske-tiltak.md`: praktisk TOMs-vedlegg med sikkerhets- og personverntiltak.
 - `underdatabehandlere.md`: oversikt over underdatabehandlere, datatyper, regioner og formål.
 
@@ -26,6 +29,7 @@ Offentlig kontaktpunkt bør være et kontaktskjema, ikke en åpent publisert e-p
 - GitHub Pages/GitHub Actions sin endelige rolle i produksjon.
 - Rutine for håndtering av innsyn, retting, sletting, eksport, dataportabilitet, protest, avvik og kundens instrukser.
 - Versjonsdato, godkjenningsansvarlig og juridisk kvalitetssikring.
+- Endelig vurdering av ansvarsbegrensning, akseptmekanisme og eventuelle betalingsvilkår.
 
 ## Kilder og inspirasjon
 
@@ -40,5 +44,6 @@ Nyttige kilder:
 - Netigate Legal, DPA, underdatabehandlere og TOMs: https://www.netigate.net/legal/
 - SurveyXact sin offentlige sikkerhets-/GDPR-posisjonering: https://www.surveyxact.com/
 - SurveyMonkey DPA som global referanse for Artikkel 28-struktur: https://www.surveymonkey.com/mp/legal/data-processing-agreement/
+- Famlo og Realz sine eksisterende privacy/terms-sider i lokale repoer er brukt som intern tekstinspirasjon for tjenestevilkår, særlig kundens ansvar, tillatt bruk, tilgjengelighet, sletting/opphør og ansvarsbegrensning.
 
 Tekstene her er skrevet med egen ordlyd for Svario. De skal ikke publiseres som kopier av andre leverandørers dokumenter.
