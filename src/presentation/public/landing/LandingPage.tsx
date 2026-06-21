@@ -52,8 +52,8 @@ export function LandingPage() {
             <button onClick={() => scrollToSection('produkt')} type="button">
               Produkt
             </button>
+            <Link to={routes.trust}>Trust Center</Link>
             <Link to={routes.privacy}>Personvern</Link>
-            <Link to={routes.security}>Sikkerhet</Link>
             <Link className="button button--secondary" to={routes.login}>
               Logg inn
             </Link>
@@ -72,7 +72,7 @@ export function LandingPage() {
               Gå til admin
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
-            <Link className="button button--secondary" to={routes.security}>
+            <Link className="button button--secondary" to={routes.trust}>
               Sikkerhet og personvern
             </Link>
           </div>
@@ -123,8 +123,8 @@ export function LandingPage() {
             kontrollerer, og hvilke krav som må være ferdige før produksjon.
           </p>
         </div>
-        <Link className="button button--primary" to={routes.security}>
-          Les sikkerhetssiden
+        <Link className="button button--primary" to={routes.trust}>
+          Åpne Trust Center
           <LockKeyhole size={18} aria-hidden="true" />
         </Link>
       </section>

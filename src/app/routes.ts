@@ -3,6 +3,8 @@ export const routes = {
   login: '/login',
   privacy: '/privacy',
   security: '/security',
+  trust: '/trust',
+  trustDocument: (slug: string) => `/trust/${slug}`,
   dashboard: '/dashboard',
   surveys: '/surveys',
   newSurvey: '/surveys/new',

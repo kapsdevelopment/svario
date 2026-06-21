@@ -59,6 +59,14 @@ const SecurityPage = lazyRoute(
   () => import('../presentation/public/security/SecurityPage'),
   'SecurityPage',
 );
+const TrustCenterPage = lazyRoute(
+  () => import('../presentation/public/trust/TrustCenterPage'),
+  'TrustCenterPage',
+);
+const TrustDocumentPage = lazyRoute(
+  () => import('../presentation/public/trust/TrustDocumentPage'),
+  'TrustDocumentPage',
+);
 
 export const router = createHashRouter([
   {
@@ -79,6 +87,16 @@ export const router = createHashRouter([
   {
     path: routes.security,
     element: page(<SecurityPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.trust,
+    element: page(<TrustCenterPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/trust/:documentSlug',
+    element: page(<TrustDocumentPage />),
     errorElement: <RouteErrorPage />,
   },
   {

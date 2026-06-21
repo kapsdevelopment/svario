@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  Building2,
   CheckCircle2,
   Cookie,
   Database,
@@ -7,6 +8,7 @@ import {
   EyeOff,
   HeartHandshake,
   LockKeyhole,
+  MessageSquare,
   ShieldCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -63,6 +65,7 @@ export function PrivacyPage() {
           </span>
         </Link>
         <nav className="marketing-topbar__nav" aria-label="Personvernside">
+          <Link to={routes.trust}>Trust Center</Link>
           <Link to={routes.home}>Forside</Link>
           <Link to={routes.security}>Sikkerhet</Link>
           <Link className="button button--secondary" to={routes.login}>
@@ -81,8 +84,8 @@ export function PrivacyPage() {
             resultater til den som eier skjemaet.
           </p>
           <div className="marketing-hero__actions">
-            <Link className="button button--primary" to={routes.security}>
-              Les om sikkerhet
+            <Link className="button button--primary" to={routes.trust}>
+              Åpne Trust Center
               <LockKeyhole size={18} aria-hidden="true" />
             </Link>
             <Link className="button button--secondary" to={routes.home}>
@@ -167,10 +170,34 @@ export function PrivacyPage() {
         </div>
       </section>
 
+      <section className="privacy-section privacy-section--split">
+        <div>
+          <p className="eyebrow">Ansvarlig leverandør</p>
+          <h2>Kapsdevelopment AS leverer Svario</h2>
+        </div>
+        <div className="privacy-no-list">
+          <div>
+            <Building2 size={20} aria-hidden="true" />
+            <span>Kapsdevelopment AS, org.nr. 937 284 624.</span>
+          </div>
+          <div>
+            <MessageSquare size={20} aria-hidden="true" />
+            <span>
+              Personvern- og sikkerhetshenvendelser kan sendes via
+              kontaktskjemaet på{' '}
+              <a href="https://kapsdevelopment.com/" rel="noreferrer" target="_blank">
+                kapsdevelopment.com
+              </a>
+              .
+            </span>
+          </div>
+        </div>
+      </section>
+
       <footer className="security-footer">
         <span>Svario Privacy</span>
-        <Link to={routes.security}>
-          Sikkerhetssiden
+        <Link to={routes.trust}>
+          Trust Center
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </footer>

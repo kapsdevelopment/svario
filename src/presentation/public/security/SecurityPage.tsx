@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  Building2,
   CheckCircle2,
   Database,
   ExternalLink,
@@ -7,6 +8,7 @@ import {
   FileText,
   KeyRound,
   LockKeyhole,
+  MessageSquare,
   Server,
   ShieldCheck,
   TriangleAlert,
@@ -94,6 +96,7 @@ export function SecurityPage() {
           <button onClick={() => scrollToSection('status')} type="button">
             Status
           </button>
+          <Link to={routes.trust}>Trust Center</Link>
           <Link to={routes.home}>Forside</Link>
           <Link to={routes.privacy}>Personvern</Link>
           <Link className="button button--secondary" to={routes.login}>
@@ -229,10 +232,33 @@ export function SecurityPage() {
         </div>
       </section>
 
+      <section className="security-section security-section--split">
+        <div>
+          <p className="eyebrow">Kontaktpunkt</p>
+          <h2>Personvern- og sikkerhetshenvendelser går via kontaktskjema</h2>
+        </div>
+        <div className="security-checklist">
+          <div>
+            <Building2 size={20} aria-hidden="true" />
+            <span>Kapsdevelopment AS, org.nr. 937 284 624, leverer Svario.</span>
+          </div>
+          <div>
+            <MessageSquare size={20} aria-hidden="true" />
+            <span>
+              Bruk kontaktskjemaet på{' '}
+              <a href="https://kapsdevelopment.com/" rel="noreferrer" target="_blank">
+                kapsdevelopment.com
+              </a>{' '}
+              for spørsmål om sikkerhet, personvern eller databehandleravtale.
+            </span>
+          </div>
+        </div>
+      </section>
+
       <footer className="security-footer">
         <span>Svario Trust</span>
-        <Link to={routes.home}>
-          Til forsiden
+        <Link to={routes.trust}>
+          Trust Center
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </footer>
