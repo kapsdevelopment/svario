@@ -316,10 +316,7 @@ export function ProfilePage() {
         </div>
       </header>
 
-      <Panel
-        title="Profil"
-        subtitle="Brukes som forslag i skjemaer og personvernfelter."
-      >
+      <Panel title="Profil">
         <form className="form-stack" onSubmit={handleProfileUpdate}>
           <div className="profile-form-fields">
             <label>
@@ -433,7 +430,7 @@ export function ProfilePage() {
 
       <Panel
         title="Arbeidsflater"
-        subtitle="Team er gratis. Bedrifter kan senere få fakturering og BRREG-oppslag."
+        subtitle="Opprett en type arbeidsflate som gjenspeiler hva slags gruppe du / dere er. Studentgruppe, eller organisasjon."
       >
         <form className="form-stack" onSubmit={handleCreateWorkspace}>
           <div className="form-grid">

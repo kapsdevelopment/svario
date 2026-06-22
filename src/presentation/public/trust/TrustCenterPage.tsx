@@ -42,7 +42,6 @@ export function TrustCenterPage() {
           </p>
           <div className="security-badges" aria-label="Trust Center status">
             <span>Levende dokumentasjon</span>
-            <span>Kapsdevelopment AS</span>
             <span>Sist oppdatert 21. juni 2026</span>
           </div>
         </div>
@@ -102,10 +101,9 @@ export function TrustCenterPage() {
           <p className="eyebrow">Kontaktpunkt</p>
           <h2>Kontakt via skjema, ikke åpen e-postadresse</h2>
           <p>
-            Personvern- og sikkerhetshenvendelser kan sendes via
-            kontaktskjemaet på Kapsdevelopment sin nettside. Det lar oss ha et
-            tydelig offentlig kontaktpunkt uten å publisere e-postadressen i
-            klartekst på web.
+            Personvern- og sikkerhetshenvendelser, eller generelle
+            henvendelser, kan sendes via kontaktskjemaet på Kapsdevelopment sin
+            nettside.
           </p>
         </div>
         <div className="trust-contact-list">

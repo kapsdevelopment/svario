@@ -786,7 +786,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             <p>
               {isPublished
                 ? getPublishedIntroText(survey.responseCount)
-                : 'Utkast er kun synlig i admin. Publisering gjør respondentlenken aktiv, og strukturen låses automatisk når første svar kommer inn.'}
+                : 'Utkast er kun synlig i admin. Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
             </p>
             {publishedAt ? (
               <span>Publisert {formatDateTime(publishedAt)}</span>
@@ -1444,7 +1444,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
         subtitle={
           completionIssues.length === 0
             ? 'Klar for publisering'
-            : 'Mangler før publisering'
+            : 'Må fullføres før publisering'
         }
       >
         <form className="form-stack" onSubmit={handleSavePrivacy}>
@@ -1680,8 +1680,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
               <ShieldCheck size={18} aria-hidden="true" />
               <p>
                 Svario lagrer ikke IP-adresse på besvarelser. Svar slettes
-                automatisk etter valgt lagringstid når den daglige
-                retention-jobben kjører.
+                automatisk etter valgt lagringstid.
               </p>
             </div>
           </div>

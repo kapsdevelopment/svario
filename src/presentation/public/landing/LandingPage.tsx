@@ -5,7 +5,6 @@ import {
   FileText,
   LockKeyhole,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -20,20 +19,20 @@ const benefits = [
   {
     icon: BarChart3,
     title: 'Resultater som kan brukes',
-    text: 'Svar skal bli til ryddige visualiseringer, eksport og rapporter uten tung analysejobb.',
+    text: 'Svar blir til fine visualiseringer som du kan presentere rett fra webapplikasjonen, eller eksportere om du ønsker det.',
   },
   {
     icon: ShieldCheck,
     title: 'Sikkerhet fra starten',
-    text: 'Svario bygges på Supabase/Postgres med RLS, dataminimering og tydelig trust-dokumentasjon.',
+    text: 'Svario bygges på sikker skyløsning i Europa med RLS, dataminimering og tydelig dokumentasjon.',
   },
 ];
 
 const principles = [
-  'Billig eller gratis å komme i gang',
-  'God nok til de fleste vanlige spørrebehov',
-  'Rolig respondentflyt på mobil og desktop',
-  'Tydelig skille mellom anonyme og identifiserte svar',
+  'Gratis for nå',
+  'Enkelt og uforpliktende å komme igang',
+  'Nøytral respondentopplevelse både på mobil og desktop.',
+  'Ta enkelt stilling til om svarene skal være anonyme eller ikke.',
 ];
 
 export function LandingPage() {
@@ -61,10 +60,10 @@ export function LandingPage() {
         </header>
 
         <div className="marketing-hero__content">
-          <p className="eyebrow">Spørreskjema for små og mellomstore virksomheter</p>
+          <p className="eyebrow">Spørreskjema for alle som trenger det</p>
           <h1 id="landing-title">Svario</h1>
           <p>
-            En rimelig spørreskjematjeneste for virksomheter som vil samle inn
+            En gratis spørreskjematjeneste for alle som trenger å samle inn
             svar, forstå resultatene og behandle persondata med respekt.
           </p>
           <div className="marketing-hero__actions">
@@ -87,8 +86,8 @@ export function LandingPage() {
         <div className="marketing-copy">
           <p>
             Mange spørreskjemaverktøy er enten for dyre, for tunge eller for
-            lite tydelige på persondata. Svario er laget for praktiske
-            adminflyter, rolige respondentopplevelser og gode visualiseringer.
+            lite tydelige på persondata. Svario er laget for enkelt oppsett,
+            nøytrale respondentopplevelser og gode visualiseringer.
           </p>
           <div className="marketing-principles">
             {principles.map((principle) => (
@@ -117,10 +116,10 @@ export function LandingPage() {
       <section className="marketing-trust">
         <div>
           <p className="eyebrow">Trust center</p>
-          <h2>Sikkerhetssiden skal være like praktisk som produktet</h2>
+          <h2>Sikkerhetssiden gir god informasjon og oversikt over data og sikkerhet.</h2>
           <p>
-            Svario beskriver hva som er beskyttet av Supabase, hva appen selv
-            kontrollerer, og hvilke krav som må være ferdige før produksjon.
+            Viktig informasjon om hvordan data behandles, hvor data er lagret
+            og løsningen er godt dokumentert i Trust Center. Sjekk det ut.
           </p>
         </div>
         <Link className="button button--primary" to={routes.trust}>
@@ -134,23 +133,13 @@ export function LandingPage() {
           <p className="eyebrow">Databruk</p>
           <h2>Dataene dine er ikke produktet vårt</h2>
           <p>
-            Svario skal ikke selge data, vise skjult markedsføring eller bruke
+            Svario vil aldri selge data, vise skjult markedsføring eller bruke
             besvarelser til andre formål enn selve spørreskjematjenesten.
           </p>
         </div>
         <Link className="button button--secondary" to={routes.privacy}>
-          Les personvernloftet
+          Personvern
         </Link>
-      </section>
-
-      <section className="marketing-preview" aria-label="Produktretning">
-        <div className="marketing-preview__panel">
-          <div>
-            <Sparkles size={20} aria-hidden="true" />
-            <span>Kommer i Svario</span>
-          </div>
-          <h2>Skjemabygger, respondentflyt, resultater og eksport i samme rolige arbeidsflate.</h2>
-        </div>
       </section>
     </main>
   );

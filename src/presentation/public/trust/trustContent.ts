@@ -507,14 +507,6 @@ export const trustReferences = [
     href: 'https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/hvordan-lage-en-databehandleravtale/hva-ma-en-databehandleravtale-inneholde/',
   },
   {
-    label: 'Questback Trust Center',
-    href: 'https://www.questback.com/trust-center/',
-  },
-  {
-    label: 'Netigate Legal',
-    href: 'https://www.netigate.net/legal/',
-  },
-  {
     label: 'Kapsdevelopment',
     href: 'https://kapsdevelopment.com/',
   },

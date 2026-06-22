@@ -19,22 +19,22 @@ const promises = [
   {
     icon: EyeOff,
     title: 'Vi bruker ikke svarene dine',
-    text: 'Besvarelser brukes ikke til analyse, trening, profilering, annonsering eller andre formål for Svario.',
+    text: 'Besvarelser brukes ikke til analyse, trening, profilering, annonsering eller andre formål.',
   },
   {
     icon: HeartHandshake,
     title: 'Vi selger aldri data',
-    text: 'Svario skal ikke finansieres gjennom salg av data, datadeling med annonsører eller skjult markedsføring.',
+    text: 'Svario finansieres ikke gjennom salg av data, datadeling med annonsører eller skjult markedsføring.',
   },
   {
     icon: Cookie,
     title: 'Ingen cookies for sporing',
-    text: 'Svario skal ikke bruke reklamecookies eller tredjepartsanalyse på respondent- og markedsføringssider.',
+    text: 'Svario bruker ikke reklamecookies eller tredjepartsanalyse.',
   },
   {
     icon: Database,
     title: 'Data blir værende i databasen',
-    text: 'Svar og kontoopplysninger lagres i Supabase/Postgres i Europa. Data flyter ikke videre til markedsføringssystemer.',
+    text: 'Svar og kontoopplysninger lagres i Europa.',
   },
 ];
 
@@ -76,10 +76,10 @@ export function PrivacyPage() {
 
       <section className="privacy-hero" aria-labelledby="privacy-title">
         <div>
-          <p className="eyebrow">Personvernloftet</p>
+          <p className="eyebrow">Personvern</p>
           <h1 id="privacy-title">Dataene dine er ikke produktet vårt</h1>
           <p>
-            Svario er en spørreskjematjeneste. Vi skal ikke bruke dataene dine
+            Svario er en spørreskjematjeneste. Vi vil aldri bruke dataene dine
             til noe annet enn å levere skjema, lagre besvarelser og vise
             resultater til den som eier skjemaet.
           </p>
