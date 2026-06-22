@@ -1,5 +1,7 @@
 import {
   Building2,
+  ChevronDown,
+  ChevronUp,
   CheckCircle2,
   KeyRound,
   Link2,
@@ -67,6 +69,7 @@ export function ProfilePage() {
   } | null>(null);
   const [workspaceToDelete, setWorkspaceToDelete] =
     useState<WorkspaceWithMembership | null>(null);
+  const [showAccountDetails, setShowAccountDetails] = useState(false);
   const myProfile = useMyProfile(auth.account?.id);
   const updateMyProfile = useUpdateMyProfile();
   const workspaces = useWorkspaces(auth.account?.id);
@@ -318,7 +321,7 @@ export function ProfilePage() {
         subtitle="Brukes som forslag i skjemaer og personvernfelter."
       >
         <form className="form-stack" onSubmit={handleProfileUpdate}>
-          <div className="form-grid form-grid--two">
+          <div className="profile-form-fields">
             <label>
               Navn
               <input
@@ -326,7 +329,7 @@ export function ProfilePage() {
                 value={profileDisplayName}
                 disabled={myProfile.isLoading || updateMyProfile.isPending}
                 maxLength={120}
-                placeholder="Navn eller organisasjon"
+                placeholder="Legg til navn eller organisasjon"
                 onChange={(event) => {
                   setProfileDisplayName(event.target.value);
                   setProfileDisplayNameEdited(true);
@@ -387,21 +390,45 @@ export function ProfilePage() {
         ) : null}
       </Panel>
 
-      <Panel title="Konto" subtitle={auth.user?.email ?? 'Innlogget admin'}>
-        <dl className="definition-list">
-          <div>
-            <dt>Svario-konto</dt>
-            <dd>{auth.account?.id ?? 'Ikke klargjort'}</dd>
-          </div>
-          <div>
-            <dt>Status</dt>
-            <dd>{auth.account?.status ?? 'Ukjent'}</dd>
-          </div>
-          <div>
-            <dt>Innlogging</dt>
-            <dd>{auth.user?.id ?? 'Ukjent'}</dd>
-          </div>
-        </dl>
+      <Panel
+        title="Konto"
+        subtitle={auth.user?.email ?? 'Innlogget admin'}
+        action={
+          <button
+            className="button button--secondary"
+            type="button"
+            aria-expanded={showAccountDetails}
+            onClick={() => setShowAccountDetails((isOpen) => !isOpen)}
+          >
+            {showAccountDetails ? (
+              <ChevronUp size={18} aria-hidden="true" />
+            ) : (
+              <ChevronDown size={18} aria-hidden="true" />
+            )}
+            {showAccountDetails ? 'Skjul detaljer' : 'Vis mer'}
+          </button>
+        }
+      >
+        {showAccountDetails ? (
+          <dl className="definition-list">
+            <div>
+              <dt>Svario-konto</dt>
+              <dd>{auth.account?.id ?? 'Ikke klargjort'}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>{auth.account?.status ?? 'Ukjent'}</dd>
+            </div>
+            <div>
+              <dt>Innlogging</dt>
+              <dd>{auth.user?.id ?? 'Ukjent'}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="field-help">
+            Tekniske konto-ID-er er skjult i vanlig bruk.
+          </p>
+        )}
       </Panel>
 
       <Panel

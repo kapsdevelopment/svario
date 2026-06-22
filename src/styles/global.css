@@ -428,6 +428,12 @@ select {
   grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
 }
 
+.profile-form-fields {
+  display: grid;
+  width: min(100%, 760px);
+  gap: 14px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
