@@ -30,6 +30,7 @@ import type {
   WorkspaceType,
   WorkspaceWithMembership,
 } from '../../../domain/workspaces/workspace';
+import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 
 const minimumPasswordLength = 6;
@@ -59,6 +60,13 @@ export function ProfilePage() {
   const [invitationLinks, setInvitationLinks] = useState<Record<string, string>>(
     {},
   );
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false);
+  const [memberRemovalTarget, setMemberRemovalTarget] = useState<{
+    workspace: WorkspaceWithMembership;
+    member: WorkspaceMember;
+  } | null>(null);
+  const [workspaceToDelete, setWorkspaceToDelete] =
+    useState<WorkspaceWithMembership | null>(null);
   const myProfile = useMyProfile(auth.account?.id);
   const updateMyProfile = useUpdateMyProfile();
   const workspaces = useWorkspaces(auth.account?.id);
@@ -132,18 +140,12 @@ export function ProfilePage() {
     }
   }
 
-  async function handleDeleteAccount() {
+  function handleDeleteAccount() {
     setDeleteAccountError(null);
+    setDeleteAccountDialogOpen(true);
+  }
 
-    const confirmation = window.prompt(
-      'Dette sletter kontoen din, alle spørreundersøkelser, svar og resultater permanent. Skriv SLETT for å bekrefte.',
-    );
-
-    if (confirmation !== 'SLETT') {
-      setDeleteAccountError('Sletting ble avbrutt.');
-      return;
-    }
-
+  async function confirmDeleteAccount() {
     setIsDeletingAccount(true);
 
     try {
@@ -153,6 +155,7 @@ export function ProfilePage() {
       setDeleteAccountError(getErrorMessage(error, 'Kunne ikke slette kontoen.'));
     } finally {
       setIsDeletingAccount(false);
+      setDeleteAccountDialogOpen(false);
     }
   }
 
@@ -257,41 +260,45 @@ export function ProfilePage() {
     }
   }
 
-  async function handleRemoveMember(
+  function handleRemoveMember(
     workspace: WorkspaceWithMembership,
     member: WorkspaceMember,
   ) {
-    const shouldRemove = window.confirm(
-      `Fjerne medlem ${member.accountId.slice(0, 8)} fra ${workspace.name}?`,
-    );
+    setMemberRemovalTarget({ workspace, member });
+  }
 
-    if (!shouldRemove) {
+  async function confirmRemoveMember() {
+    if (!memberRemovalTarget) {
       return;
     }
 
     try {
       await removeWorkspaceMember.mutateAsync({
-        workspaceId: workspace.id,
-        accountId: member.accountId,
+        workspaceId: memberRemovalTarget.workspace.id,
+        accountId: memberRemovalTarget.member.accountId,
       });
     } catch {
       return;
+    } finally {
+      setMemberRemovalTarget(null);
     }
   }
 
-  async function handleDeleteWorkspace(workspace: WorkspaceWithMembership) {
-    const confirmation = window.prompt(
-      `Dette sletter arbeidsflaten "${workspace.name}", alle skjemaer i arbeidsflaten og alle svar permanent. Skriv ${workspace.name} for å bekrefte.`,
-    );
+  function handleDeleteWorkspace(workspace: WorkspaceWithMembership) {
+    setWorkspaceToDelete(workspace);
+  }
 
-    if (confirmation !== workspace.name) {
+  async function confirmDeleteWorkspace() {
+    if (!workspaceToDelete) {
       return;
     }
 
     try {
-      await deleteWorkspace.mutateAsync(workspace.id);
+      await deleteWorkspace.mutateAsync(workspaceToDelete.id);
     } catch {
       return;
+    } finally {
+      setWorkspaceToDelete(null);
     }
   }
 
@@ -383,7 +390,7 @@ export function ProfilePage() {
       <Panel title="Konto" subtitle={auth.user?.email ?? 'Innlogget admin'}>
         <dl className="definition-list">
           <div>
-            <dt>Domain account</dt>
+            <dt>Svario-konto</dt>
             <dd>{auth.account?.id ?? 'Ikke klargjort'}</dd>
           </div>
           <div>
@@ -391,7 +398,7 @@ export function ProfilePage() {
             <dd>{auth.account?.status ?? 'Ukjent'}</dd>
           </div>
           <div>
-            <dt>Auth user</dt>
+            <dt>Innlogging</dt>
             <dd>{auth.user?.id ?? 'Ukjent'}</dd>
           </div>
         </dl>
@@ -626,6 +633,53 @@ export function ProfilePage() {
           <p className="form-alert form-alert--error">{deleteAccountError}</p>
         ) : null}
       </Panel>
+
+      <ConfirmDialog
+        open={memberRemovalTarget !== null}
+        title="Fjerne medlem?"
+        description={`${formatWorkspaceMemberName(
+          memberRemovalTarget?.member ?? null,
+          auth.account?.id ?? null,
+        )} mister tilgang til arbeidsflaten "${
+          memberRemovalTarget?.workspace.name ?? ''
+        }".`}
+        confirmLabel="Fjern medlem"
+        isPending={removeWorkspaceMember.isPending}
+        variant="danger"
+        onCancel={() => setMemberRemovalTarget(null)}
+        onConfirm={confirmRemoveMember}
+      />
+
+      <ConfirmDialog
+        open={workspaceToDelete !== null}
+        title="Slette arbeidsflaten?"
+        description={`Dette sletter "${
+          workspaceToDelete?.name ?? ''
+        }", alle skjemaer i arbeidsflaten og alle svar permanent.`}
+        confirmLabel="Slett arbeidsflate"
+        confirmationLabel={`Skriv ${
+          workspaceToDelete?.name ?? ''
+        } for å bekrefte`}
+        confirmationText={workspaceToDelete?.name}
+        isPending={deleteWorkspace.isPending}
+        variant="danger"
+        onCancel={() => setWorkspaceToDelete(null)}
+        onConfirm={confirmDeleteWorkspace}
+      />
+
+      <ConfirmDialog
+        open={deleteAccountDialogOpen}
+        title="Slette kontoen din?"
+        description="Dette sletter kontoen din, alle spørreundersøkelser, svar og resultater permanent. Handlingen kan ikke angres."
+        confirmLabel="Slett min konto"
+        confirmationLabel="Skriv SLETT for å bekrefte"
+        confirmationPlaceholder="SLETT"
+        confirmationText="SLETT"
+        isPending={isDeletingAccount}
+        variant="danger"
+        onCancel={() => setDeleteAccountDialogOpen(false)}
+        onConfirm={confirmDeleteAccount}
+      />
     </div>
   );
 }
@@ -719,9 +773,7 @@ function WorkspaceCard({
             <div className="workspace-member-row" key={member.accountId}>
               <div>
                 <strong>
-                  {member.accountId === accountId
-                    ? 'Deg'
-                    : `Medlem ${member.accountId.slice(0, 8)}`}
+                  {formatWorkspaceMemberName(member, accountId)}
                 </strong>
                 <span>{roleLabel[member.role]}</span>
               </div>
@@ -730,7 +782,7 @@ function WorkspaceCard({
                   className="icon-button icon-button--danger"
                   type="button"
                   disabled={isRemovingMember}
-                  aria-label={`Fjern medlem ${member.accountId.slice(0, 8)}`}
+                  aria-label={`Fjern ${formatWorkspaceMemberName(member, accountId)}`}
                   onClick={() => onRemoveMember(workspace, member)}
                 >
                   <UserMinus size={18} aria-hidden="true" />
@@ -748,6 +800,19 @@ function createInvitationLink(token: string) {
   return `${window.location.origin}${window.location.pathname}#${routes.joinWorkspace(
     token,
   )}`;
+}
+
+function formatWorkspaceMemberName(
+  member: WorkspaceMember | null,
+  currentAccountId: string | null,
+) {
+  if (!member) {
+    return 'Medlem';
+  }
+
+  return member.accountId === currentAccountId
+    ? 'Deg'
+    : `Medlem ${member.accountId.slice(0, 8)}`;
 }
 
 function formatBrregOrganizationMeta(organization: BusinessRegistryOrganization) {
@@ -800,7 +865,7 @@ const workspaceTypeLabel = {
 const roleLabel = {
   admin: 'Admin',
   member: 'Medlem',
-  owner: 'Owner',
+  owner: 'Eier',
 } satisfies Record<WorkspaceWithMembership['myRole'], string>;
 
 function getErrorMessage(error: unknown, fallback: string) {

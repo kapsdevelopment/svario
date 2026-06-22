@@ -42,6 +42,7 @@ import {
   type SurveySummary,
 } from '../../../domain/surveys/survey';
 import type { WorkspaceWithMembership } from '../../../domain/workspaces/workspace';
+import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 
 const questionTypeLabels = {
@@ -249,6 +250,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const publishSurvey = usePublishSurvey(survey.id);
   const updateBasicInfo = useUpdateSurveyBasicInfo(survey.id);
   const updatePrivacySettings = useUpdateSurveyPrivacySettings(survey.id);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [questionToDelete, setQuestionToDelete] =
+    useState<SurveyQuestion | null>(null);
+  const [sectionToDelete, setSectionToDelete] =
+    useState<SurveySection | null>(null);
 
   const [basicTitle, setBasicTitle] = useState(survey.title);
   const [basicDescription, setBasicDescription] = useState(
@@ -562,19 +568,17 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       return;
     }
 
-    const shouldPublish = window.confirm(
-      'Publisere skjemaet nå? Respondentlenken blir aktiv med en gang.',
-    );
+    setPublishDialogOpen(true);
+  }
 
-    if (!shouldPublish) {
-      return;
-    }
-
+  async function confirmPublishSurvey() {
     try {
       await publishSurvey.mutateAsync();
       setPublishMessage('Skjemaet er publisert. Lenken er aktiv.');
     } catch {
       return;
+    } finally {
+      setPublishDialogOpen(false);
     }
   }
 
@@ -595,33 +599,39 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     }
   }
 
-  async function handleDelete(question: SurveyQuestion) {
-    const shouldDelete = window.confirm(`Slette spørsmålet "${question.prompt}"?`);
+  function handleDelete(question: SurveyQuestion) {
+    setQuestionToDelete(question);
+  }
 
-    if (!shouldDelete) {
+  async function confirmDeleteQuestion() {
+    if (!questionToDelete) {
       return;
     }
 
     try {
-      await deleteQuestion.mutateAsync(question.id);
+      await deleteQuestion.mutateAsync(questionToDelete.id);
     } catch {
       return;
+    } finally {
+      setQuestionToDelete(null);
     }
   }
 
-  async function handleDeleteSection(section: SurveySection) {
-    const shouldDelete = window.confirm(
-      `Slette seksjonen "${section.title ?? 'Uten tittel'}"? Spørsmål flyttes til uten seksjon.`,
-    );
+  function handleDeleteSection(section: SurveySection) {
+    setSectionToDelete(section);
+  }
 
-    if (!shouldDelete) {
+  async function confirmDeleteSection() {
+    if (!sectionToDelete) {
       return;
     }
 
     try {
-      await deleteSection.mutateAsync(section.id);
+      await deleteSection.mutateAsync(sectionToDelete.id);
     } catch {
       return;
+    } finally {
+      setSectionToDelete(null);
     }
   }
 
@@ -1154,6 +1164,40 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
           ) : null}
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={publishDialogOpen}
+        title="Publisere skjemaet?"
+        description="Respondentlenken blir aktiv med en gang, og skjemaet kan deles med respondenter."
+        confirmLabel="Publiser skjema"
+        isPending={publishSurvey.isPending}
+        onCancel={() => setPublishDialogOpen(false)}
+        onConfirm={confirmPublishSurvey}
+      />
+
+      <ConfirmDialog
+        open={sectionToDelete !== null}
+        title="Slette seksjonen?"
+        description={`Spørsmål i "${
+          sectionToDelete?.title ?? 'Uten tittel'
+        }" flyttes til uten seksjon.`}
+        confirmLabel="Slett seksjon"
+        isPending={deleteSection.isPending}
+        variant="danger"
+        onCancel={() => setSectionToDelete(null)}
+        onConfirm={confirmDeleteSection}
+      />
+
+      <ConfirmDialog
+        open={questionToDelete !== null}
+        title="Slette spørsmålet?"
+        description={`"${questionToDelete?.prompt ?? ''}" fjernes fra skjemaet permanent.`}
+        confirmLabel="Slett spørsmål"
+        isPending={deleteQuestion.isPending}
+        variant="danger"
+        onCancel={() => setQuestionToDelete(null)}
+        onConfirm={confirmDeleteQuestion}
+      />
     </>
   );
 }

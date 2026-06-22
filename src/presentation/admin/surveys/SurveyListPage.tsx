@@ -1,4 +1,5 @@
 import { BarChart3, CopyPlus, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
@@ -12,6 +13,7 @@ import type {
   SurveyRetentionWarning,
   SurveySummary,
 } from '../../../domain/surveys/survey';
+import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 
 export function SurveyListPage() {
@@ -23,6 +25,12 @@ export function SurveyListPage() {
   const { data: workspaces = [] } = useWorkspaces(account?.id);
   const deleteSurvey = useDeleteSurvey();
   const repeatSurveyOnce = useRepeatSurveyOnce();
+  const [surveyToDelete, setSurveyToDelete] = useState<SurveySummary | null>(
+    null,
+  );
+  const [surveyToRepeat, setSurveyToRepeat] = useState<SurveySummary | null>(
+    null,
+  );
   const workspaceNameById = new Map(
     workspaces.map((workspace) => [workspace.id, workspace.name]),
   );
@@ -41,36 +49,43 @@ export function SurveyListPage() {
       } => item !== null,
     );
 
-  async function handleDeleteSurvey(survey: SurveySummary) {
-    const shouldDelete = window.confirm(
-      `Slette spørreundersøkelsen "${survey.title}"? Dette sletter også alle svar og resultater permanent.`,
-    );
+  function handleDeleteSurvey(survey: SurveySummary) {
+    setSurveyToDelete(survey);
+  }
 
-    if (!shouldDelete) {
+  async function confirmDeleteSurvey() {
+    if (!surveyToDelete) {
       return;
     }
 
     try {
-      await deleteSurvey.mutateAsync(survey.id);
+      await deleteSurvey.mutateAsync(surveyToDelete.id);
     } catch {
       return;
+    } finally {
+      setSurveyToDelete(null);
     }
   }
 
-  async function handleRepeatSurvey(survey: SurveySummary) {
-    const shouldRepeat = window.confirm(
-      `Lage en ny runde av "${survey.title}"? Spørsmål, seksjoner og innstillinger kopieres, men svarene blir ikke med.`,
-    );
+  function handleRepeatSurvey(survey: SurveySummary) {
+    setSurveyToRepeat(survey);
+  }
 
-    if (!shouldRepeat) {
+  async function confirmRepeatSurvey() {
+    if (!surveyToRepeat) {
       return;
     }
 
     try {
-      const repeatedSurveyId = await repeatSurveyOnce.mutateAsync(survey.id);
+      const repeatedSurveyId = await repeatSurveyOnce.mutateAsync(
+        surveyToRepeat.id,
+      );
+      setSurveyToRepeat(null);
       navigate(routes.editSurvey(repeatedSurveyId));
     } catch {
       return;
+    } finally {
+      setSurveyToRepeat(null);
     }
   }
 
@@ -220,6 +235,31 @@ export function SurveyListPage() {
           ))}
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={surveyToRepeat !== null}
+        title="Lag ny runde?"
+        description={`Spørsmål, seksjoner og innstillinger kopieres fra "${
+          surveyToRepeat?.title ?? ''
+        }", men svarene blir ikke med.`}
+        confirmLabel="Lag ny runde"
+        isPending={repeatSurveyOnce.isPending}
+        onCancel={() => setSurveyToRepeat(null)}
+        onConfirm={confirmRepeatSurvey}
+      />
+
+      <ConfirmDialog
+        open={surveyToDelete !== null}
+        title="Slette spørreundersøkelsen?"
+        description={`Dette sletter "${
+          surveyToDelete?.title ?? ''
+        }", alle svar og resultater permanent.`}
+        confirmLabel="Slett permanent"
+        isPending={deleteSurvey.isPending}
+        variant="danger"
+        onCancel={() => setSurveyToDelete(null)}
+        onConfirm={confirmDeleteSurvey}
+      />
     </div>
   );
 }

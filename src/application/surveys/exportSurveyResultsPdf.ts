@@ -5,6 +5,8 @@ import {
   type FreeTextWordCloudItem,
 } from './buildFreeTextWordCloud';
 import type {
+  QuestionVisualizationColorMode,
+  QuestionVisualizationType,
   SurveyChoiceResult,
   SurveyFreeTextResult,
   SurveyLikertResult,
@@ -37,6 +39,16 @@ type PdfWordCloudItem = FreeTextWordCloudItem & {
   y: number;
 };
 
+type PdfDistributionItem = {
+  color: string;
+  count: number;
+  id: string;
+  label: string;
+  percentage: number;
+};
+
+type PdfChartType = Extract<QuestionVisualizationType, 'bar' | 'pie'>;
+
 const colors = {
   ink: '#17201d',
   pine: '#183a34',
@@ -46,11 +58,24 @@ const colors = {
   paper: '#fffdf8',
   soft: '#f3f0e8',
   white: '#ffffff',
+  fjord: '#375c68',
+  rust: '#b86b3b',
+  gold: '#c2933a',
 };
+const colorfulPalette = [
+  '#2f6f73',
+  colors.rust,
+  '#6f6ca8',
+  colors.gold,
+  '#8a536b',
+  '#4d7f54',
+  '#c35f4b',
+  '#4d7fa0',
+];
 const wordCloudToneColors = {
   1: colors.pine,
   2: colors.moss,
-  3: '#375c68',
+  3: colors.fjord,
   4: '#7a5b45',
   5: colors.muted,
 } satisfies Record<FreeTextWordCloudItem['tone'], string>;
@@ -346,7 +371,11 @@ class PdfReportWriter {
     }
 
     if (result.question.type === 'multiple_choice') {
-      this.addChoiceResults(result.choiceResults);
+      this.addChoiceResults(
+        result.choiceResults,
+        result.question.visualizationType,
+        result.question.visualizationColorMode,
+      );
     }
 
     if (result.question.type === 'likert_scale') {
@@ -354,11 +383,17 @@ class PdfReportWriter {
         result.likertResults,
         result.likertAverage,
         result.question.scaleVariant,
+        result.question.visualizationType,
+        result.question.visualizationColorMode,
       );
     }
 
     if (result.question.type === 'free_text') {
-      this.addFreeTextResults(result.freeTextResults);
+      this.addFreeTextResults(
+        result.freeTextResults,
+        result.question.visualizationType,
+        result.question.visualizationColorMode,
+      );
     }
 
     if (result.skippedCount > 0) {
@@ -368,16 +403,14 @@ class PdfReportWriter {
     this.addRule(18);
   }
 
-  private addChoiceResults(results: SurveyChoiceResult[]) {
-    const rows = this.getChoiceRows(results);
-
-    this.addTable(
-      [
-        { header: 'Alternativ', width: this.contentWidth - 148 },
-        { align: 'right', header: 'Svar', width: 64 },
-        { align: 'right', header: 'Andel', width: 84 },
-      ],
-      rows,
+  private addChoiceResults(
+    results: SurveyChoiceResult[],
+    visualizationType: QuestionVisualizationType,
+    colorMode: QuestionVisualizationColorMode,
+  ) {
+    this.addDistributionVisual(
+      toChoiceDistributionItems(results, colorMode, colors.pine),
+      getPdfChartType(visualizationType),
       'Ingen alternativer er registrert.',
     );
   }
@@ -386,9 +419,9 @@ class PdfReportWriter {
     results: SurveyLikertResult[],
     average: number | null,
     scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
+    visualizationType: QuestionVisualizationType,
+    colorMode: QuestionVisualizationColorMode,
   ) {
-    const rows = this.getLikertRows(results);
-
     this.addWrappedText(formatLikertSummary(results, average, scaleVariant), {
       color: colors.pine,
       fontSize: 10,
@@ -396,18 +429,18 @@ class PdfReportWriter {
       gapAfter: 8,
       lineHeight: 14,
     });
-    this.addTable(
-      [
-        { header: 'Verdi', width: this.contentWidth - 148 },
-        { align: 'right', header: 'Svar', width: 64 },
-        { align: 'right', header: 'Andel', width: 84 },
-      ],
-      rows,
+    this.addDistributionVisual(
+      toLikertDistributionItems(results, colorMode),
+      getPdfChartType(visualizationType),
       'Ingen skalaverdier er registrert.',
     );
   }
 
-  private addFreeTextResults(results: SurveyFreeTextResult[]) {
+  private addFreeTextResults(
+    results: SurveyFreeTextResult[],
+    visualizationType: QuestionVisualizationType,
+    colorMode: QuestionVisualizationColorMode,
+  ) {
     if (results.length === 0) {
       this.addMutedLine('Ingen fritekstsvar ennå.');
       return;
@@ -415,8 +448,8 @@ class PdfReportWriter {
 
     const wordCloud = buildFreeTextWordCloud(results);
 
-    if (wordCloud.length > 0) {
-      this.addWordCloud(wordCloud);
+    if (visualizationType === 'word_cloud' && wordCloud.length > 0) {
+      this.addWordCloud(wordCloud, colorMode);
     }
 
     results.forEach((result, index) => {
@@ -443,7 +476,185 @@ class PdfReportWriter {
     });
   }
 
-  private addWordCloud(items: FreeTextWordCloudItem[]) {
+  private addDistributionVisual(
+    items: PdfDistributionItem[],
+    chartType: PdfChartType,
+    emptyMessage: string,
+  ) {
+    if (items.length === 0) {
+      this.addMutedLine(emptyMessage);
+      return;
+    }
+
+    if (chartType === 'pie') {
+      this.addPieDistribution(items);
+      return;
+    }
+
+    this.addBarDistribution(items);
+  }
+
+  private addBarDistribution(items: PdfDistributionItem[]) {
+    const chartHeight = this.getBarDistributionHeight(items);
+    const rowGap = 6;
+    const rowHeight = Math.min(
+      22,
+      (chartHeight - 18 - rowGap * Math.max(0, items.length - 1)) /
+        Math.max(1, items.length),
+    );
+    const labelWidth = Math.min(168, this.contentWidth * 0.34);
+    const valueWidth = 76;
+    const trackX = margins.page + labelWidth + 10;
+    const trackWidth = this.contentWidth - labelWidth - valueWidth - 24;
+    const maxCount = Math.max(1, ...items.map((item) => item.count));
+
+    this.ensureSpace(chartHeight + 14);
+    this.doc.setFillColor(colors.paper);
+    this.doc.roundedRect(
+      margins.page,
+      this.y,
+      this.contentWidth,
+      chartHeight,
+      8,
+      8,
+      'F',
+    );
+
+    let rowY = this.y + 14;
+    items.forEach((item) => {
+      const barWidth = Math.max(3, (item.count / maxCount) * trackWidth);
+      const textY = rowY + rowHeight / 2 + 3;
+
+      this.setTextStyle(8, 'bold', colors.ink);
+      this.doc.text(
+        this.truncateTextToWidth(item.label, labelWidth - 8),
+        margins.page + 10,
+        textY,
+      );
+
+      this.doc.setFillColor(colors.soft);
+      this.doc.roundedRect(trackX, rowY + 3, trackWidth, rowHeight - 6, 4, 4, 'F');
+      this.doc.setFillColor(item.color);
+      this.doc.roundedRect(trackX, rowY + 3, barWidth, rowHeight - 6, 4, 4, 'F');
+
+      this.setTextStyle(8, 'bold', colors.muted);
+      this.doc.text(
+        `${item.count} (${formatPercentage(item.percentage)})`,
+        margins.page + this.contentWidth - 10,
+        textY,
+        { align: 'right' },
+      );
+
+      rowY += rowHeight + rowGap;
+    });
+
+    this.y += chartHeight + 14;
+  }
+
+  private addPieDistribution(items: PdfDistributionItem[]) {
+    const chartHeight = this.getPieDistributionHeight(items);
+    const total = items.reduce((sum, item) => sum + item.count, 0);
+    const radius = 54;
+    const centerX = margins.page + 74;
+    const centerY = this.y + chartHeight / 2;
+    const legendX = margins.page + 154;
+    const legendWidth = this.contentWidth - 166;
+
+    this.ensureSpace(chartHeight + 14);
+    this.doc.setFillColor(colors.paper);
+    this.doc.roundedRect(
+      margins.page,
+      this.y,
+      this.contentWidth,
+      chartHeight,
+      8,
+      8,
+      'F',
+    );
+
+    if (total > 0) {
+      let startAngle = -Math.PI / 2;
+      items.forEach((item) => {
+        if (item.count === 0) {
+          return;
+        }
+
+        const endAngle = startAngle + (item.count / total) * Math.PI * 2;
+        this.drawPieSlice(centerX, centerY, radius, startAngle, endAngle, item.color);
+        startAngle = endAngle;
+      });
+    } else {
+      this.doc.setFillColor(colors.soft);
+      this.doc.circle(centerX, centerY, radius, 'F');
+    }
+
+    this.doc.setDrawColor(colors.white);
+    this.doc.setLineWidth(1.2);
+    this.doc.circle(centerX, centerY, radius, 'S');
+    this.doc.setLineWidth(0.2);
+
+    let legendY = this.y + 22;
+    items.forEach((item) => {
+      this.doc.setFillColor(item.color);
+      this.doc.roundedRect(legendX, legendY - 8, 8, 8, 2, 2, 'F');
+
+      this.setTextStyle(8, 'normal', colors.ink);
+      this.doc.text(
+        this.truncateTextToWidth(item.label, legendWidth - 96),
+        legendX + 15,
+        legendY,
+      );
+      this.setTextStyle(8, 'bold', colors.muted);
+      this.doc.text(
+        `${item.count} (${formatPercentage(item.percentage)})`,
+        margins.page + this.contentWidth - 10,
+        legendY,
+        { align: 'right' },
+      );
+
+      legendY += 16;
+    });
+
+    this.y += chartHeight + 14;
+  }
+
+  private drawPieSlice(
+    centerX: number,
+    centerY: number,
+    radius: number,
+    startAngle: number,
+    endAngle: number,
+    color: string,
+  ) {
+    const angleSpan = endAngle - startAngle;
+    const segments = Math.max(6, Math.ceil(angleSpan / (Math.PI / 18)));
+    const lines: number[][] = [
+      [
+        Math.cos(startAngle) * radius,
+        Math.sin(startAngle) * radius,
+      ],
+    ];
+
+    let previousX = centerX + Math.cos(startAngle) * radius;
+    let previousY = centerY + Math.sin(startAngle) * radius;
+
+    for (let index = 1; index <= segments; index += 1) {
+      const angle = startAngle + (angleSpan * index) / segments;
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+      lines.push([x - previousX, y - previousY]);
+      previousX = x;
+      previousY = y;
+    }
+
+    this.doc.setFillColor(color);
+    this.doc.lines(lines, centerX, centerY, [1, 1], 'F', true);
+  }
+
+  private addWordCloud(
+    items: FreeTextWordCloudItem[],
+    colorMode: QuestionVisualizationColorMode,
+  ) {
     const placedItems = this.buildWordCloudLayout(items);
 
     if (placedItems.length === 0) {
@@ -473,7 +684,11 @@ class PdfReportWriter {
     );
 
     placedItems.forEach((item) => {
-      this.setTextStyle(item.fontSize, 'bold', wordCloudToneColors[item.tone]);
+      this.setTextStyle(
+        item.fontSize,
+        'bold',
+        getWordCloudColor(item, colorMode),
+      );
       this.doc.text(item.word, margins.page + item.x, this.y + item.y, {
         align: 'center',
         angle: item.rotation,
@@ -649,7 +864,10 @@ class PdfReportWriter {
 
   private measureQuestionResponsesHeight(result: SurveyQuestionResult) {
     if (result.question.type === 'multiple_choice') {
-      return this.measureChoiceResultsHeight(result.choiceResults);
+      return this.measureChoiceResultsHeight(
+        result.choiceResults,
+        result.question.visualizationType,
+      );
     }
 
     if (result.question.type === 'likert_scale') {
@@ -657,15 +875,22 @@ class PdfReportWriter {
         result.likertResults,
         result.likertAverage,
         result.question.scaleVariant,
+        result.question.visualizationType,
       );
     }
 
-    return this.measureFreeTextResultsHeight(result.freeTextResults);
+    return this.measureFreeTextResultsHeight(
+      result.freeTextResults,
+      result.question.visualizationType,
+    );
   }
 
   private measureQuestionFirstResponseHeight(result: SurveyQuestionResult) {
     if (result.question.type === 'multiple_choice') {
-      return this.measureChoiceResultsStartHeight(result.choiceResults);
+      return this.measureChoiceResultsStartHeight(
+        result.choiceResults,
+        result.question.visualizationType,
+      );
     }
 
     if (result.question.type === 'likert_scale') {
@@ -673,43 +898,38 @@ class PdfReportWriter {
         result.likertResults,
         result.likertAverage,
         result.question.scaleVariant,
+        result.question.visualizationType,
       );
     }
 
-    return this.measureFreeTextResultsStartHeight(result.freeTextResults);
-  }
-
-  private measureChoiceResultsHeight(results: SurveyChoiceResult[]) {
-    const rows = this.getChoiceRows(results);
-
-    if (rows.length === 0) {
-      return this.measureMutedLineHeight('Ingen alternativer er registrert.');
-    }
-
-    return this.measureTableHeight(
-      [
-        { header: 'Alternativ', width: this.contentWidth - 148 },
-        { align: 'right', header: 'Svar', width: 64 },
-        { align: 'right', header: 'Andel', width: 84 },
-      ],
-      rows,
+    return this.measureFreeTextResultsStartHeight(
+      result.freeTextResults,
+      result.question.visualizationType,
     );
   }
 
-  private measureChoiceResultsStartHeight(results: SurveyChoiceResult[]) {
-    const rows = this.getChoiceRows(results);
-
-    if (rows.length === 0) {
+  private measureChoiceResultsHeight(
+    results: SurveyChoiceResult[],
+    visualizationType: QuestionVisualizationType,
+  ) {
+    if (results.length === 0) {
       return this.measureMutedLineHeight('Ingen alternativer er registrert.');
     }
 
-    return this.measureTableStartHeight(
-      [
-        { header: 'Alternativ', width: this.contentWidth - 148 },
-        { align: 'right', header: 'Svar', width: 64 },
-        { align: 'right', header: 'Andel', width: 84 },
-      ],
-      rows,
+    return this.measureDistributionHeight(results.length, visualizationType);
+  }
+
+  private measureChoiceResultsStartHeight(
+    results: SurveyChoiceResult[],
+    visualizationType: QuestionVisualizationType,
+  ) {
+    if (results.length === 0) {
+      return this.measureMutedLineHeight('Ingen alternativer er registrert.');
+    }
+
+    return Math.min(
+      this.measureDistributionHeight(results.length, visualizationType),
+      this.bodyHeight,
     );
   }
 
@@ -717,17 +937,13 @@ class PdfReportWriter {
     results: SurveyLikertResult[],
     average: number | null,
     scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
+    visualizationType: QuestionVisualizationType,
   ) {
     return (
       this.measureLikertSummaryHeight(results, average, scaleVariant) +
-      this.measureTableHeight(
-        [
-          { header: 'Verdi', width: this.contentWidth - 148 },
-          { align: 'right', header: 'Svar', width: 64 },
-          { align: 'right', header: 'Andel', width: 84 },
-        ],
-        this.getLikertRows(results),
-      )
+      (results.length === 0
+        ? this.measureMutedLineHeight('Ingen skalaverdier er registrert.')
+        : this.measureDistributionHeight(results.length, visualizationType))
     );
   }
 
@@ -735,16 +951,15 @@ class PdfReportWriter {
     results: SurveyLikertResult[],
     average: number | null,
     scaleVariant: SurveyQuestionResult['question']['scaleVariant'],
+    visualizationType: QuestionVisualizationType,
   ) {
     return (
       this.measureLikertSummaryHeight(results, average, scaleVariant) +
-      this.measureTableStartHeight(
-        [
-          { header: 'Verdi', width: this.contentWidth - 148 },
-          { align: 'right', header: 'Svar', width: 64 },
-          { align: 'right', header: 'Andel', width: 84 },
-        ],
-        this.getLikertRows(results),
+      Math.min(
+        results.length === 0
+          ? this.measureMutedLineHeight('Ingen skalaverdier er registrert.')
+          : this.measureDistributionHeight(results.length, visualizationType),
+        this.bodyHeight,
       )
     );
   }
@@ -765,12 +980,15 @@ class PdfReportWriter {
     );
   }
 
-  private measureFreeTextResultsHeight(results: SurveyFreeTextResult[]) {
+  private measureFreeTextResultsHeight(
+    results: SurveyFreeTextResult[],
+    visualizationType: QuestionVisualizationType,
+  ) {
     if (results.length === 0) {
       return this.measureMutedLineHeight('Ingen fritekstsvar ennå.');
     }
 
-    const wordCloudHeight = this.measureWordCloudHeight(results);
+    const wordCloudHeight = this.measureWordCloudHeight(results, visualizationType);
 
     return results.reduce(
       (height, result) => height + this.measureFreeTextResultHeight(result),
@@ -778,12 +996,15 @@ class PdfReportWriter {
     );
   }
 
-  private measureFreeTextResultsStartHeight(results: SurveyFreeTextResult[]) {
+  private measureFreeTextResultsStartHeight(
+    results: SurveyFreeTextResult[],
+    visualizationType: QuestionVisualizationType,
+  ) {
     if (results.length === 0) {
       return this.measureMutedLineHeight('Ingen fritekstsvar ennå.');
     }
 
-    const wordCloudHeight = this.measureWordCloudHeight(results);
+    const wordCloudHeight = this.measureWordCloudHeight(results, visualizationType);
     return wordCloudHeight > 0
       ? wordCloudHeight
       : this.measureFreeTextResultHeight(results[0]);
@@ -809,8 +1030,14 @@ class PdfReportWriter {
     );
   }
 
-  private measureWordCloudHeight(results: SurveyFreeTextResult[]) {
-    return buildFreeTextWordCloud(results).length > 0 ? 19 + wordCloudHeight + 18 : 0;
+  private measureWordCloudHeight(
+    results: SurveyFreeTextResult[],
+    visualizationType: QuestionVisualizationType,
+  ) {
+    return visualizationType === 'word_cloud' &&
+      buildFreeTextWordCloud(results).length > 0
+      ? 19 + wordCloudHeight + 18
+      : 0;
   }
 
   private measureSkippedHeight(result: SurveyQuestionResult) {
@@ -897,6 +1124,33 @@ class PdfReportWriter {
     );
   }
 
+  private measureDistributionHeight(
+    itemCount: number,
+    visualizationType: QuestionVisualizationType,
+  ) {
+    return getPdfChartType(visualizationType) === 'pie'
+      ? this.getPieDistributionHeight(itemCount) + 14
+      : this.getBarDistributionHeight(itemCount) + 14;
+  }
+
+  private getBarDistributionHeight(itemCountOrItems: number | { length: number }) {
+    const itemCount =
+      typeof itemCountOrItems === 'number'
+        ? itemCountOrItems
+        : itemCountOrItems.length;
+
+    return Math.min(260, Math.max(112, itemCount * 28 + 18));
+  }
+
+  private getPieDistributionHeight(itemCountOrItems: number | { length: number }) {
+    const itemCount =
+      typeof itemCountOrItems === 'number'
+        ? itemCountOrItems
+        : itemCountOrItems.length;
+
+    return Math.max(150, itemCount * 16 + 34);
+  }
+
   private prepareTableRows(
     columns: PdfColumn[],
     rows: string[][],
@@ -914,22 +1168,6 @@ class PdfReportWriter {
 
       return { cellLines, rowHeight };
     });
-  }
-
-  private getChoiceRows(results: SurveyChoiceResult[]) {
-    return results.map((result) => [
-      result.label,
-      String(result.count),
-      formatPercentage(result.percentage),
-    ]);
-  }
-
-  private getLikertRows(results: SurveyLikertResult[]) {
-    return results.map((result) => [
-      String(result.value),
-      String(result.count),
-      formatPercentage(result.percentage),
-    ]);
   }
 
   private drawTableHeader(columns: PdfColumn[]) {
@@ -1008,6 +1246,22 @@ class PdfReportWriter {
   private wrapText(text: string, width: number) {
     const normalizedText = text.trim() || ' ';
     return this.doc.splitTextToSize(normalizedText, width) as string[];
+  }
+
+  private truncateTextToWidth(text: string, width: number) {
+    if (this.doc.getTextWidth(text) <= width) {
+      return text;
+    }
+
+    let truncatedText = text;
+    while (
+      truncatedText.length > 1 &&
+      this.doc.getTextWidth(`${truncatedText}...`) > width
+    ) {
+      truncatedText = truncatedText.slice(0, -1);
+    }
+
+    return `${truncatedText.trimEnd()}...`;
   }
 
   private setTextStyle(
@@ -1249,6 +1503,64 @@ function sumNpsGroup(
   return results
     .filter((result) => predicate(result.value))
     .reduce((sum, result) => sum + result.count, 0);
+}
+
+function toChoiceDistributionItems(
+  results: SurveyChoiceResult[],
+  colorMode: QuestionVisualizationColorMode,
+  mutedColor: string,
+) {
+  return results.map((result, index) => ({
+    color: getChartColor(index, colorMode, mutedColor),
+    count: result.count,
+    id: result.optionId,
+    label: result.label,
+    percentage: result.percentage,
+  }));
+}
+
+function toLikertDistributionItems(
+  results: SurveyLikertResult[],
+  colorMode: QuestionVisualizationColorMode,
+) {
+  return results.map((result, index) => ({
+    color: getChartColor(index, colorMode, colors.moss),
+    count: result.count,
+    id: String(result.value),
+    label: String(result.value),
+    percentage: result.percentage,
+  }));
+}
+
+function getChartColor(
+  index: number,
+  colorMode: QuestionVisualizationColorMode,
+  mutedColor: string,
+) {
+  if (colorMode === 'muted') {
+    return mutedColor;
+  }
+
+  return colorfulPalette[index % colorfulPalette.length];
+}
+
+function getPdfChartType(
+  visualizationType: QuestionVisualizationType,
+): PdfChartType {
+  return visualizationType === 'pie' ? 'pie' : 'bar';
+}
+
+function getWordCloudColor(
+  item: FreeTextWordCloudItem,
+  colorMode: QuestionVisualizationColorMode,
+) {
+  if (colorMode === 'muted') {
+    return wordCloudToneColors[item.tone];
+  }
+
+  return colorfulPalette[
+    (hashWord(item.word) + item.tone) % colorfulPalette.length
+  ];
 }
 
 const statusLabel = {
