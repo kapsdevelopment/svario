@@ -2672,12 +2672,13 @@ select {
 
 .trust-document-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
 }
 
 .trust-document-card {
   display: grid;
+  grid-column: span 2;
   min-height: 320px;
   align-content: start;
   gap: 10px;
@@ -2687,6 +2688,14 @@ select {
   box-shadow: 0 16px 38px rgba(30, 43, 37, 0.07);
   color: #17201d;
   padding: 20px;
+}
+
+.trust-document-card:nth-child(4):nth-last-child(2) {
+  grid-column: 2 / span 2;
+}
+
+.trust-document-card:nth-child(5):last-child {
+  grid-column: 4 / span 2;
 }
 
 .trust-document-card svg {
@@ -3422,6 +3431,7 @@ select {
   .privacy-promise,
   .trust-highlight,
   .trust-document-card {
+    grid-column: auto;
     min-height: auto;
   }
 

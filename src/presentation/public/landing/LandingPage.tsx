@@ -29,7 +29,7 @@ const benefits = [
 ];
 
 const principles = [
-  'Gratis for nå',
+  'Gratis',
   'Enkelt og uforpliktende å komme igang',
   'Nøytral respondentopplevelse både på mobil og desktop.',
   'Ta enkelt stilling til om svarene skal være anonyme eller ikke.',
@@ -68,7 +68,7 @@ export function LandingPage() {
           </p>
           <div className="marketing-hero__actions">
             <Link className="button button--primary" to={routes.login}>
-              Gå til admin
+              Kom i gang
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
             <Link className="button button--secondary" to={routes.trust}>

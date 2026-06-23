@@ -61,16 +61,9 @@ export function TrustCenterPage() {
       </section>
 
       <section className="trust-section" aria-labelledby="trust-documents">
-        <div className="trust-section__header">
-          <p className="eyebrow">Dokumenter</p>
-          <h2 id="trust-documents">Juridiske tekster på web</h2>
-          <p>
-            Dokumentene er skrevet med inspirasjon fra nordiske
-            spørreskjemaleverandører og Datatilsynet, men med Svario sin egen
-            ordlyd. De publiseres som egne websider i Trust Center, med status
-            og versjon synlig på hvert dokument.
-          </p>
-        </div>
+        <h2 className="sr-only" id="trust-documents">
+          Dokumenter
+        </h2>
 
         <div className="trust-document-grid">
           {trustDocuments.map((document) => {
@@ -99,7 +92,7 @@ export function TrustCenterPage() {
       <section className="trust-band">
         <div>
           <p className="eyebrow">Kontaktpunkt</p>
-          <h2>Kontakt via skjema, ikke åpen e-postadresse</h2>
+          <h2>Kontakt</h2>
           <p>
             Personvern- og sikkerhetshenvendelser, eller generelle
             henvendelser, kan sendes via kontaktskjemaet på Kapsdevelopment sin

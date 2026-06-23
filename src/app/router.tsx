@@ -1,5 +1,5 @@
-import { Suspense, type ReactNode } from 'react';
-import { createHashRouter } from 'react-router-dom';
+import { Suspense, useEffect, type ReactNode } from 'react';
+import { createHashRouter, useLocation } from 'react-router-dom';
 
 import { AppShell } from '../presentation/shared/layout/AppShell';
 import { lazyRoute } from './lazyRoute';
@@ -156,7 +156,22 @@ export const router = createHashRouter([
 function page(element: ReactNode) {
   return (
     <Suspense fallback={<div className="route-loading">Laster...</div>}>
+      <ScrollToTop />
       {element}
     </Suspense>
   );
+}
+
+function ScrollToTop() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.hash, location.pathname, location.search]);
+
+  return null;
 }
