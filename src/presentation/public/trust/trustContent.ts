@@ -45,7 +45,7 @@ export const trustDocuments: TrustDocument[] = [
     shortTitle: 'Personvern',
     eyebrow: 'Personvern',
     updated: '21. juni 2026',
-    status: 'Arbeidsutkast for juridisk gjennomgang',
+    status: 'Levende dokumentasjon, oppdateres ved vesentlige endringer',
     summary:
       'Hvordan Svario behandler kontoopplysninger, spørreskjemadata, kontaktopplysninger og tekniske driftsdata.',
     icon: FileText,
@@ -113,7 +113,7 @@ export const trustDocuments: TrustDocument[] = [
     shortTitle: 'Tjenestevilkår',
     eyebrow: 'Vilkår',
     updated: '21. juni 2026',
-    status: 'Arbeidsutkast for juridisk gjennomgang',
+    status: 'Levende dokumentasjon, oppdateres ved vesentlige endringer',
     summary:
       'Regler for bruk av Svario, kundens ansvar, tillatt bruk, tilgjengelighet, opphør og ansvarsbegrensning.',
     icon: Scale,
@@ -233,7 +233,7 @@ export const trustDocuments: TrustDocument[] = [
     shortTitle: 'Databehandleravtale',
     eyebrow: 'DPA',
     updated: '21. juni 2026',
-    status: 'Arbeidsutkast for juridisk gjennomgang',
+    status: 'Levende dokumentasjon, oppdateres ved vesentlige endringer',
     summary:
       'Rollefordeling, produktvalg, sikkerhetstiltak, underdatabehandlere, avvik, revisjon og sletting.',
     icon: FileCheck2,
