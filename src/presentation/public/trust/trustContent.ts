@@ -135,6 +135,14 @@ export const trustDocuments: TrustDocument[] = [
         ],
       },
       {
+        title: 'Gratis bruk og lavrisiko',
+        paragraphs: [
+          'Svario er en standardisert gratis spørreskjematjeneste for lavrisiko bruk.',
+          'Tjenesten tilbyr innebygde personvernvalg, sletting, eksport og åpen dokumentasjon.',
+          'Svario gir ikke juridisk rådgivning, inngår ikke individuelle databehandlerforhandlinger i gratisversjonen, og støtter ikke høyrisiko eller sensitive behandlingsformål uten særskilt avtale.',
+        ],
+      },
+      {
         title: 'Konto og tilgang',
         bullets: [
           'Kunden skal oppgi riktige konto- og profilopplysninger.',
@@ -196,6 +204,10 @@ export const trustDocuments: TrustDocument[] = [
         title: 'Betaling og fremtidige betalte funksjoner',
         paragraphs: [
           'Dersom Svario senere tilbyr betalte funksjoner, kan egne pris-, faktura-, betalings- og refusjonsvilkår gjelde i tillegg til disse vilkårene.',
+          'Svario kan senere innføre betalingsplaner, begrense gratisversjonen eller flytte enkelte funksjoner til betalte planer.',
+          'Dette kan blant annet gjelde identifiserte skjemaer, organisasjonsarbeidsflater, flere medlemmer, større datamengder, eksport, rapportering, support eller andre avanserte funksjoner.',
+          'Eksisterende brukere vil ikke bli belastet automatisk. Betaling krever at kunden aktivt velger eller aksepterer en betalt plan.',
+          'Ved vesentlige endringer i gratisversjonen vil Svario så langt det er praktisk mulig gi rimelig forhåndsvarsel. Kunden kan da velge å fortsette på tilgjengelig gratisfunksjonalitet, oppgradere, eksportere egne data der eksport finnes, slette innhold eller avslutte bruken av tjenesten.',
           'Svario skal ikke finansieres gjennom salg av spørreskjemabesvarelser, skjult markedsføring eller kommersiell datadeling.',
         ],
       },
@@ -260,7 +272,7 @@ export const trustDocuments: TrustDocument[] = [
         ],
       },
       {
-        title: 'Behandlingens art og formål',
+        title: 'Databehandlingens art og formål',
         bullets: [
           'Opprettelse og administrasjon av spørreskjemaer.',
           'Innsamling, lagring, visning, filtrering og eksport av besvarelser.',
@@ -276,8 +288,13 @@ export const trustDocuments: TrustDocument[] = [
           'Behandle personopplysninger konfidensielt.',
           'Sikre at personer med tilgang er underlagt taushetsplikt eller tilsvarende konfidensialitetsplikt.',
           'Iverksette egnede tekniske og organisatoriske tiltak.',
-          'Bistå kunden med registrertrettigheter, avvik og relevante GDPR-vurderinger så langt det er rimelig.',
-          'Slette eller tilbakelevere personopplysninger ved avtalens opphør, med mindre lov krever videre lagring.',
+          'Gjøre tilgjengelig relevante standardfunksjoner og informasjon som kunden trenger for å håndtere rettigheter for personer opplysningene gjelder, avvik og egne GDPR-vurderinger, så langt det er mulig ut fra tjenestens art og informasjonen Svario har tilgjengelig.',
+          'Varsle kunden uten ugrunnet opphold dersom Svario blir kjent med et personvernbrudd som gjelder kundens personopplysninger.',
+          'Slette eller gjøre tilgjengelig eksport av personopplysninger ved opphør der funksjonaliteten finnes i Svario, med mindre lov krever videre lagring.',
+          'Gjøre det mulig for kunden å slette skjemaer, svar og konto i produktet der slik funksjonalitet er tilgjengelig.',
+        ],
+        paragraphs: [
+          'Svario gir ikke juridisk rådgivning og vurderer ikke kundens konkrete rettslige grunnlag, varslingsplikt eller personvernkonsekvenser.',
         ],
       },
       {
@@ -297,7 +314,7 @@ export const trustDocuments: TrustDocument[] = [
         paragraphs: [
           'Svario skal varsle kunden uten ugrunnet opphold dersom Svario blir kjent med et brudd på personopplysningssikkerheten som gjelder kundens personopplysninger.',
           'Svario skal gi kunden informasjon som er nødvendig for å dokumentere etterlevelse. Revisjon eller inspeksjon må avtales skriftlig på forhånd og gjennomføres slik at sikkerhet, konfidensialitet, driftsstabilitet og andre kunders data ikke settes i fare.',
-          'Ved opphør av kundeforholdet skal Svario slette eller tilbakelevere personopplysninger som behandles på kundens vegne, med mindre lov krever videre lagring.',
+          'Kunden kan selv eksportere og slette skjemaer, svar og konto der slik funksjonalitet finnes i Svario. Ved avsluttet bruk forventes kunden normalt å bruke disse selvbetjente funksjonene. Automatisk sletting etter valgt lagringstid fortsetter uavhengig av om kunden har eksportert data.',
         ],
       },
     ],
@@ -316,28 +333,17 @@ export const trustDocuments: TrustDocument[] = [
       {
         title: 'Oversikt',
         table: {
-          columns: ['Leverandør', 'Formål', 'Datatyper', 'Region', 'Status'],
+          columns: ['Leverandør', 'Brukes til', 'Region'],
           rows: [
             [
               'Supabase',
-              'Database, autentisering, Postgres API/RPC, edge functions og backend-drift.',
-              'Kontoopplysninger, profiler, arbeidsflater, skjemaer, besvarelser, respondentopplysninger ved identifiserte skjemaer og tekniske driftsdata.',
-              'Primary region er Supabase North EU, Stockholm. Backup- og supportimplikasjoner må bekreftes mot valgt Supabase-plan.',
-              'Obligatorisk.',
+              'Database, autentisering og backend-drift for Svario.',
+              'EU-region. Primær region er North EU, Stockholm.',
             ],
             [
-              'GitHub Pages',
-              'Hosting av statiske frontend-filer for Svario.',
-              'Normalt ikke spørreskjemabesvarelser. Tekniske webserverlogger kan forekomme hos GitHub.',
-              'Må bekreftes.',
-              'Obligatorisk dersom GitHub Pages brukes i produksjon.',
-            ],
-            [
-              'GitHub Actions',
-              'Bygg og deploy av frontend til GitHub Pages.',
-              'Kildekode, build-artifakter og miljøvariabler som er nødvendige for deploy. Skal ikke inneholde service-role keys eller produksjonshemmeligheter.',
-              'Må bekreftes.',
-              'Obligatorisk dersom GitHub Actions brukes for deploy.',
+              'GitHub',
+              'Hosting av statisk frontend, bygg og deploy.',
+              'Region og eventuell overføring følger GitHub sine vilkår og dokumentasjon.',
             ],
           ],
         },
@@ -359,7 +365,7 @@ export const trustDocuments: TrustDocument[] = [
         paragraphs: [
           'Svario skal bruke færrest mulig underdatabehandlere for spørreskjemadata.',
           'Leverandører skal bare brukes når de er nødvendige for drift, sikkerhet, hosting, autentisering, database, deploy eller tilsvarende tjenesteleveranser.',
-          'Svario skal ikke bruke underdatabehandlere til annonsering, kommersiell datadeling eller trening av modeller på kunders spørreskjemabesvarelser.',
+          'Svario bruker ikke underdatabehandlere til annonsering, kommersiell datadeling eller trening av modeller på kunders spørreskjemabesvarelser.',
         ],
       },
     ],
