@@ -84,7 +84,7 @@ export const trustDocuments: TrustDocument[] = [
       {
         title: 'IP-adresser og tekniske logger',
         paragraphs: [
-          'Svario lagrer ikke IP-adresse på spørreskjemabesvarelser i appens besvarelsestabeller.',
+          'Svario lagrer ikke IP-adresse på spørreskjemabesvarelser.',
           'Tekniske logger hos hosting-, database- eller sikkerhetsleverandører kan likevel forekomme for drift, sikkerhet og feilretting. Slike logger skal ikke brukes til analyse av respondenter, markedsføring eller salg av data.',
         ],
       },
@@ -378,13 +378,12 @@ export const trustDocuments: TrustDocument[] = [
     updated: '21. juni 2026',
     status: 'Levende dokumentasjon, oppdateres ved vesentlige endringer',
     summary:
-      'Praktisk sikkerhets- og personvernvedlegg for Svario, inkludert tilgang, RLS, kryptering, retention og hendelseshåndtering.',
+      'Praktisk sikkerhets- og personvernvedlegg for Svario, inkludert tilgangsstyring, kryptering, retention og hendelseshåndtering.',
     icon: ShieldCheck,
     sections: [
       {
-        title: 'Status',
+        title: 'Ansvarsdeling',
         paragraphs: [
-          'Svario er ikke ISO 27001-sertifisert. Tiltakene beskriver Svario sitt eget kontrollnivå og relevante leverandørkontroller der Svario bruker underdatabehandlere.',
           'Kunden oppretter spørreskjema, velger om skjemaet er anonymt eller identifisert, bestemmer formål og lagringstid, og administrerer svarene. Svario har ansvar for den tekniske løsningen, teknisk lagring, tilgangsstyring, drift og sletting etter kundens produktvalg.',
         ],
       },
@@ -395,19 +394,18 @@ export const trustDocuments: TrustDocument[] = [
           'Identifiserte skjemaer krever personverninnstillinger før publisering.',
           'Skjemaeier må oppgi formål, kontaktpunkt, rettslig grunnlag og lagringstid når personopplysninger forventes.',
           'Skjemaeier er ansvarlig for å vurdere om personopplysninger faktisk er nødvendige for formålet.',
-          'Svario lagrer ikke IP-adresse på spørreskjemabesvarelser i appens besvarelsestabeller.',
+          'Svario lagrer ikke IP-adresse på spørreskjemabesvarelser.',
           'Respondenter får kort personverninformasjon før innsending.',
           'Samtykke må aktivt bekreftes når skjemaeier velger samtykke som rettslig grunnlag.',
         ],
       },
       {
-        title: 'Tilgangsstyring og dataseparasjon',
+        title: 'Tilgangsstyring',
         bullets: [
-          'Adminbrukere autentiseres før de får tilgang til arbeidsflater og skjemaer.',
-          'Svario skiller Supabase Auth-bruker fra Svario sin domenekonto.',
-          'App-tabeller beskyttes med Row Level Security.',
-          'Eierkontroller ligger i databasen og skal ikke bare håndheves i brukergrensesnittet.',
-          'Service-role keys og databasepassord skal aldri eksponeres i frontend eller commits.',
+          'Administratorer må være innlogget før de får tilgang til arbeidsflater og skjemaer.',
+          'Data beskyttes med tilgangsstyring.',
+          'Tilgang til skjemaer, resultater og arbeidsflater begrenses til brukere som har rett til å se dem.',
+          'Tilgang for drift, sikkerhet og feilretting skal begrenses til det som er nødvendig.',
         ],
       },
       {
@@ -415,8 +413,6 @@ export const trustDocuments: TrustDocument[] = [
         bullets: [
           'Trafikk mellom nettleser og Supabase går over kryptert transport.',
           'Supabase oppgir kryptering av kundedata ved lagring på plattformnivå.',
-          'Hemmeligheter lagres i `.env.local`, GitHub secrets eller tilsvarende sikre miljøer.',
-          'Browser-visible Supabase URL og publishable key behandles som publiserbare verdier, ikke hemmeligheter.',
         ],
         paragraphs: [
           'Svario tilbyr ikke ende-til-ende-kryptering av hvert enkelt svar, fordi tjenesten må kunne beregne resultater, visualiseringer og eksport for autoriserte brukere.',
@@ -430,12 +426,8 @@ export const trustDocuments: TrustDocument[] = [
         ],
         bullets: [
           'Når et svar sendes inn, lagres et snapshot av personverninformasjonen som gjaldt på innsendelsestidspunktet.',
-          'Svar som omfattes av retention får `retention_due_at` basert på innsendelsestidspunkt og valgt lagringstid.',
-          'En daglig databasejobb behandler forfalte svar i kontrollerte batcher.',
-          'Standardhandlingen er sletting av hele svaret og tilhørende svarrader.',
-          'Dersom anonymisering brukes som retention-handling, fjernes respondentidentitet, konto-id og metadata før svaret beholdes som anonymt datagrunnlag.',
-          'Retention-jobben bruker låsing for å unngå at samme svar behandles parallelt.',
-          'Sletting, anonymisering og forlengelse av lagringstid logges som personvernhendelser.',
+          'Svar som omfattes av begrenset lagringstid får automatisk slettetidspunkt satt basert på innsendelsestidspunkt og valgt lagringstid.',
+          'Sletting og forlengelse av lagringstid logges som personvernhendelser.',
           'Skjemaeier må oppgi begrunnelse dersom lagringstiden forlenges for skjemaer med eksisterende svar.',
           'Skjemaeier varsles i appen når svar nærmer seg automatisk sletting.',
         ],
@@ -453,30 +445,15 @@ export const trustDocuments: TrustDocument[] = [
       {
         title: 'Hendelseshåndtering',
         paragraphs: [
-          'Svario skal håndtere sikkerhets- og personvernhendelser praktisk, raskt og dokumenterbart. Rutinen gjelder blant annet mistanke om feilsendt tilgang, eksponerte nøkler, RLS-feil, uautorisert innsyn, utilsiktet sletting, manglende retention eller mistenkelig aktivitet.',
-          'Kunden er normalt behandlingsansvarlig for spørreskjemasvarene. Svario skal derfor gi kunden nødvendig informasjon for å vurdere egne plikter overfor respondenter og tilsynsmyndighet.',
+          'Svario har som mål å håndtere sikkerhets- og personvernhendelser på en strukturert og dokumenterbar måte. Rutinen kan omfatte mistanke om feil tilgang, uautorisert innsyn, utilsiktet sletting, manglende sletting, eksponerte nøkler eller annen mistenkelig aktivitet.',
+          'Kunden er normalt behandlingsansvarlig for spørreskjemasvarene. Ved relevante hendelser kan Svario dele produkt- og hendelsesinformasjon innenfor rammene av tjenesten, slik at kunden kan gjøre egne vurderinger. Svario gir ikke juridisk rådgivning.',
         ],
         bullets: [
-          'Oppdage og registrere hendelsen med tidspunkt, kilde, berørte systemer og foreløpig alvorlighetsgrad.',
-          'Begrense skade, for eksempel ved å deaktivere tilgang, stoppe berørt funksjon, rotere nøkler eller tilbakekalle deploy.',
-          'Undersøke hvilke data, brukere, arbeidsflater, skjemaer og respondenter som kan være berørt.',
-          'Vurdere om hendelsen gjelder konfidensialitet, integritet, tilgjengelighet, sletting eller retention.',
-          'Varsle berørte kunder uten ugrunnet opphold dersom kundedata kan være berørt.',
-          'Gi kunden nok fakta til å vurdere eventuell varsling til respondenter eller Datatilsynet.',
-          'Dokumentere tiltak, tidslinje, beslutninger, kommunikasjon og læringspunkter.',
-          'Gjennomføre korrigerende tiltak før hendelsen lukkes, for eksempel policy-endring, migrering, test, dependency-oppdatering eller tilgangsrydding.',
-        ],
-      },
-      {
-        title: 'Hendelser som krever ekstra oppmerksomhet',
-        bullets: [
-          'Eksponert service-role key, databasepassord eller annen produksjonshemmelighet.',
-          'Feil i RLS, RPC eller arbeidsflater som kan gi innsyn på tvers av kontoer, teams eller organisasjoner.',
-          'Offentlig respondentlenke som viser mer data enn den skal.',
-          'Eksport eller PDF som inneholder identifiserende data fra et anonymt skjema.',
-          'Retention-jobb som ikke kjører, sletter feil data eller ikke sletter data som skulle vært slettet.',
-          'Restore fra backup som kan gjeninnføre data som tidligere er slettet eller anonymisert.',
-          'Mistanke om misbruk av admin-konto, invitasjonslenker eller GitHub/Supabase-tilgang.',
+          'Registrere og vurdere hendelsen basert på tilgjengelig informasjon.',
+          'Begrense skade der det er mulig og rimelig.',
+          'Undersøke hvilke data, brukere, arbeidsflater, skjemaer eller respondenter som kan være berørt.',
+          'Varsle berørte kunder når kundedata kan være berørt, i tråd med gjeldende krav og tilgjengelig informasjon.',
+          'Dokumentere relevante tiltak, beslutninger og læringspunkter.',
         ],
       },
       {
@@ -484,11 +461,7 @@ export const trustDocuments: TrustDocument[] = [
         bullets: [
           'Kontaktpunkt for personvern- og sikkerhetshenvendelser holdes oppdatert.',
           'Leverandør-, region- og databehandlerinformasjon gjennomgås ved endringer.',
-          'Backup-, restore- og retention-forventninger dokumenteres for kunder.',
-          'Admin-innlogging og tilgangskrav vurderes etter faktisk risikobilde.',
           'Tilgangsstyring og respondentflyter testes som del av releasearbeidet.',
-          'Rutiner for innsyn, sletting, dataportabilitet og avvik holdes ved like.',
-          'Juridiske tekster gjennomgås før de brukes som bindende avtalegrunnlag.',
         ],
       },
     ],
@@ -519,7 +492,7 @@ export const trustHighlights = [
   {
     icon: LockKeyhole,
     title: 'Dataminimering',
-    text: 'Svario lagrer ikke IP-adresse på besvarelser i appens besvarelsestabeller og skiller anonyme og identifiserte skjemaer tydelig.',
+    text: 'Svario lagrer ikke IP-adresse på besvarelser og skiller anonyme og identifiserte skjemaer tydelig.',
   },
   {
     icon: ListChecks,
@@ -528,8 +501,8 @@ export const trustHighlights = [
   },
   {
     icon: ShieldCheck,
-    title: 'RLS og domenekontoer',
-    text: 'Tilgang kontrolleres i Postgres med Row Level Security og Svario sitt eget domenekonto-eierskap.',
+    title: 'Tilgangsstyring',
+    text: 'Tilgang til skjemaer og resultater begrenses til brukere som har rett til å se dem.',
   },
 ];
 

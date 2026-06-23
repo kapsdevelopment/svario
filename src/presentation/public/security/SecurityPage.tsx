@@ -31,13 +31,13 @@ const platformControls = [
   },
   {
     icon: Database,
-    title: 'Postgres med RLS',
-    text: 'App-tabeller beskyttes med Row Level Security, smale grants og eierkontroller i databasen.',
+    title: 'Tilgangsstyring',
+    text: 'Data beskyttes med tilgangsstyring, og tilgang til skjemaer, resultater og arbeidsflater begrenses til brukere som har rett til å se dem.',
   },
   {
     icon: UserCheck,
-    title: 'Skilt identitetsmodell',
-    text: 'Svario skiller innlogget Supabase Auth-bruker fra Svario sin domenekonto og dataeierskap.',
+    title: 'Begrenset tilgang',
+    text: 'Tilgang for drift, sikkerhet og feilretting skal begrenses til det som er nødvendig.',
   },
 ];
 
@@ -51,7 +51,6 @@ const dataPrinciples = [
 const assurancePractices = [
   'Offentlig innsending valideres server-side før svar lagres.',
   'Tilgangsregler gjennomgås når datamodellen endres.',
-  'Admin-innlogging og session-krav vurderes etter faktisk risikobilde.',
   'Leverandør- og personverndokumentasjon holdes oppdatert.',
   'Slette-, eksport- og retention-rutiner dokumenteres og testes.',
 ];
@@ -131,7 +130,7 @@ export function SecurityPage() {
           <div>
             <KeyRound size={22} aria-hidden="true" />
             <span>Tilgang</span>
-            <strong>Supabase Auth, domenekontoer og RLS-eierskap</strong>
+            <strong>Tilgang begrenses til brukere som har rett til å se data</strong>
           </div>
           <div>
             <EyeOff size={22} aria-hidden="true" />
@@ -157,8 +156,9 @@ export function SecurityPage() {
           <p>
             Dette er ikke det samme som ende-til-ende-kryptering av hvert
             spørreskjemasvar. Svario må kunne beregne visualiseringer, eksport
-            og resultater. Derfor ligger den viktigste app-sikkerheten i RLS,
-            dataminimering, smale rettigheter, logging og testede tilgangsregler.
+            og resultater. Derfor ligger den viktigste app-sikkerheten i
+            tilgangsstyring, dataminimering, smale rettigheter, logging og
+            testede tilgangsregler.
           </p>
         </div>
       </section>

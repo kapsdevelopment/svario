@@ -24,7 +24,7 @@ const benefits = [
   {
     icon: ShieldCheck,
     title: 'Sikkerhet fra starten',
-    text: 'Svario bygges på sikker skyløsning i Europa med RLS, dataminimering og tydelig dokumentasjon.',
+    text: 'Svario bygges på sikker skyløsning i Europa med tilgangsstyring, dataminimering og tydelig dokumentasjon.',
   },
 ];
 
