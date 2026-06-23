@@ -249,7 +249,8 @@ export const trustDocuments: TrustDocument[] = [
           'Kunden styrer den konkrete behandlingen gjennom produktvalg i Svario, for eksempel om skjemaet er anonymt eller identifisert, hvilken respondenttekst som vises, hvilket rettslig grunnlag kunden oppgir og hvilken lagringstid som velges.',
           'Slike produktvalg gir ikke kunden rett til å kreve særskilt utvikling, manuell behandling, spesialrutiner eller andre avvik fra tjenestens dokumenterte funksjonalitet, med mindre dette er avtalt skriftlig med Kapsdevelopment AS.',
           'Svario kan avvise forespørsler eller valg som ligger utenfor tjenesten, er teknisk eller driftsmessig uforsvarlige, kan svekke sikkerheten eller er i strid med lov, vilkår eller personvernregelverk.',
-          'Svario tilstreber å behandle data i tråd med kundens valgte innstillinger, men tjenesten leveres med de tilgjengelighets-, endrings- og ansvarsbegrensningene som følger av vilkårene.',
+          'Svario tilstreber å behandle data i tråd med kundens valgte innstillinger, men dette er ikke en garanti for feilfri funksjonalitet, uavbrutt tilgjengelighet, permanent lagring eller at alle produktvalg alltid kan gjennomføres uten tekniske feil.',
+          'Tjenesten leveres med de tilgjengelighets-, endrings- og ansvarsbegrensningene som følger av vilkårene, så langt loven tillater det.',
         ],
       },
       {
