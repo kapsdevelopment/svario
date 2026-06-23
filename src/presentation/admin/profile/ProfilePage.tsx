@@ -27,6 +27,7 @@ import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import type {
   BusinessRegistryOrganization,
   WorkspaceMember,
+  WorkspaceOwner,
   WorkspaceType,
   WorkspaceWithMembership,
 } from '../../../domain/workspaces/workspace';
@@ -722,6 +723,9 @@ function WorkspaceCard({
   const canManageMembers =
     workspace.myRole === 'owner' || workspace.myRole === 'admin';
   const canDeleteWorkspace = workspace.myRole === 'owner';
+  const externalOwners = workspace.owners.filter(
+    (owner) => owner.accountId !== accountId,
+  );
 
   return (
     <article className="workspace-card">
@@ -729,8 +733,7 @@ function WorkspaceCard({
         <div>
           <h3>{workspace.name}</h3>
           <p>
-            {workspaceTypeLabel[workspace.type]} · {roleLabel[workspace.myRole]} ·{' '}
-            {workspace.members.length} medlem
+            {workspaceTypeLabel[workspace.type]} · {workspace.members.length} medlem
             {workspace.members.length === 1 ? '' : 'mer'}
           </p>
         </div>
@@ -766,6 +769,29 @@ function WorkspaceCard({
         </div>
       ) : null}
 
+      {externalOwners.length > 0 ? (
+        <div className="workspace-owner-summary">
+          <span>Eier av arbeidsflaten</span>
+          <div className="workspace-owner-list">
+            {externalOwners.map((owner) => {
+              const ownerContact = formatWorkspaceOwnerContact(owner);
+
+              return (
+                <div key={owner.accountId}>
+                  <strong>{formatWorkspaceOwnerName(owner)}</strong>
+                  {ownerContact ? <small>{ownerContact}</small> : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="workspace-role-summary">
+        <span>Du har rollen som</span>
+        <strong>{roleLabel[workspace.myRole]}</strong>
+      </div>
+
       {invitationLink ? (
         <label className="copy-field">
           Invitasjonslenke
@@ -774,11 +800,13 @@ function WorkspaceCard({
       ) : null}
 
       <div className="workspace-members">
+        <h4>Medlemmer</h4>
         {workspace.members.map((member) => {
           const canRemove =
             canManageMembers &&
             member.accountId !== accountId &&
             (member.role !== 'owner' || workspace.myRole === 'owner');
+          const memberIsCurrentUser = member.accountId === accountId;
 
           return (
             <div className="workspace-member-row" key={member.accountId}>
@@ -786,7 +814,9 @@ function WorkspaceCard({
                 <strong>
                   {formatWorkspaceMemberName(member, accountId)}
                 </strong>
-                <span>{roleLabel[member.role]}</span>
+                <span>
+                  {memberIsCurrentUser ? 'Din bruker' : roleLabel[member.role]}
+                </span>
               </div>
               {canRemove ? (
                 <button
@@ -822,8 +852,27 @@ function formatWorkspaceMemberName(
   }
 
   return member.accountId === currentAccountId
-    ? 'Deg'
+    ? 'Du'
     : `Medlem ${member.accountId.slice(0, 8)}`;
+}
+
+function formatWorkspaceOwnerName(owner: WorkspaceOwner) {
+  return (
+    owner.personalName?.trim() ||
+    owner.contactEmail?.trim() ||
+    `Medlem ${owner.accountId.slice(0, 8)}`
+  );
+}
+
+function formatWorkspaceOwnerContact(owner: WorkspaceOwner) {
+  const contactEmail = owner.contactEmail?.trim();
+  const personalName = owner.personalName?.trim();
+
+  if (!contactEmail || contactEmail === personalName) {
+    return null;
+  }
+
+  return contactEmail;
 }
 
 function formatBrregOrganizationMeta(organization: BusinessRegistryOrganization) {

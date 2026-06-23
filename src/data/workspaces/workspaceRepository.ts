@@ -3,6 +3,7 @@ import type {
   CreateWorkspaceInvitationInput,
   Workspace,
   WorkspaceMember,
+  WorkspaceOwner,
   WorkspaceWithMembership,
 } from '../../domain/workspaces/workspace';
 import { supabase } from '../supabase/client';
@@ -25,6 +26,13 @@ type WorkspaceMemberRow = Pick<
   Tables<'workspace_members'>,
   'account_id' | 'joined_at' | 'role' | 'status' | 'workspace_id'
 >;
+
+type WorkspaceOwnerRow = {
+  account_id: string;
+  contact_email: string | null;
+  personal_name: string | null;
+  workspace_id: string;
+};
 
 const workspaceSelect =
   'id, type, name, slug, organization_number, status, created_by_account_id, created_at, updated_at';
@@ -62,7 +70,16 @@ export async function listMyWorkspaces(
     throw memberError;
   }
 
+  const { data: owners, error: ownerError } = await client.rpc(
+    'list_my_workspace_owners',
+  );
+
+  if (ownerError) {
+    throw ownerError;
+  }
+
   const membersByWorkspace = new Map<string, WorkspaceMember[]>();
+  const ownersByWorkspace = new Map<string, WorkspaceOwner[]>();
 
   for (const member of members ?? []) {
     const mappedMember = mapWorkspaceMember(member);
@@ -70,6 +87,13 @@ export async function listMyWorkspaces(
       membersByWorkspace.get(mappedMember.workspaceId) ?? [];
     workspaceMembers.push(mappedMember);
     membersByWorkspace.set(mappedMember.workspaceId, workspaceMembers);
+  }
+
+  for (const owner of owners ?? []) {
+    const mappedOwner = mapWorkspaceOwner(owner);
+    const workspaceOwners = ownersByWorkspace.get(mappedOwner.workspaceId) ?? [];
+    workspaceOwners.push(mappedOwner);
+    ownersByWorkspace.set(mappedOwner.workspaceId, workspaceOwners);
   }
 
   return (workspaces ?? []).map((workspace) => {
@@ -82,6 +106,7 @@ export async function listMyWorkspaces(
       ...mapWorkspace(workspace),
       myRole: myMembership?.role ?? 'member',
       members: workspaceMembers,
+      owners: ownersByWorkspace.get(workspace.id) ?? [],
     };
   });
 }
@@ -180,6 +205,15 @@ function mapWorkspaceMember(row: WorkspaceMemberRow): WorkspaceMember {
     role: row.role,
     status: row.status,
     joinedAt: row.joined_at,
+  };
+}
+
+function mapWorkspaceOwner(row: WorkspaceOwnerRow): WorkspaceOwner {
+  return {
+    workspaceId: row.workspace_id,
+    accountId: row.account_id,
+    personalName: row.personal_name,
+    contactEmail: row.contact_email,
   };
 }
 

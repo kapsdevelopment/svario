@@ -924,6 +924,15 @@ export type Database = {
       ensure_account_initialized_v2: { Args: never; Returns: string }
       ensure_domain_account: { Args: never; Returns: string }
       ensure_user: { Args: never; Returns: string }
+      list_my_workspace_owners: {
+        Args: never
+        Returns: {
+          account_id: string
+          contact_email: string | null
+          personal_name: string | null
+          workspace_id: string
+        }[]
+      }
       remove_workspace_member: {
         Args: { p_account_id: string; p_workspace_id: string }
         Returns: undefined

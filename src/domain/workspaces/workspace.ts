@@ -28,9 +28,17 @@ export type WorkspaceMember = {
   joinedAt: string;
 };
 
+export type WorkspaceOwner = {
+  workspaceId: string;
+  accountId: string;
+  personalName: string | null;
+  contactEmail: string | null;
+};
+
 export type WorkspaceWithMembership = Workspace & {
   myRole: WorkspaceMemberRole;
   members: WorkspaceMember[];
+  owners: WorkspaceOwner[];
 };
 
 export type CreateWorkspaceInput = {
