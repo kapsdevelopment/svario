@@ -4,10 +4,10 @@ import type { Tables, TablesUpdate } from '../supabase/database.types';
 
 type ProfileRow = Pick<
   Tables<'profiles'>,
-  'contact_email' | 'display_name' | 'id'
+  'contact_email' | 'id' | 'personal_name'
 >;
 
-const profileSelect = 'id, display_name, contact_email';
+const profileSelect = 'id, personal_name, contact_email';
 
 export async function getMyProfile(accountId: string): Promise<Profile> {
   const client = requireProfileClient();
@@ -28,14 +28,14 @@ export async function updateMyProfile(
   input: UpdateProfileInput,
 ): Promise<Profile> {
   const client = requireProfileClient();
-  const displayName = normalizeOptionalText(input.displayName);
+  const personalName = normalizeOptionalText(input.personalName);
 
-  if (displayName && displayName.length > 120) {
+  if (personalName && personalName.length > 120) {
     throw new Error('Navnet kan maks være 120 tegn.');
   }
 
   const payload: TablesUpdate<'profiles'> = {
-    display_name: displayName,
+    personal_name: personalName,
   };
 
   const { data, error } = await client
@@ -55,7 +55,7 @@ export async function updateMyProfile(
 function mapProfile(row: ProfileRow): Profile {
   return {
     id: row.id,
-    displayName: row.display_name,
+    personalName: row.personal_name,
     contactEmail: row.contact_email,
   };
 }

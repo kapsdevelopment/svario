@@ -873,6 +873,31 @@ select {
   color: #17201d;
 }
 
+.account-sections {
+  display: grid;
+  gap: 24px;
+}
+
+.account-section {
+  display: grid;
+  gap: 14px;
+}
+
+.account-section + .account-section {
+  border-top: 1px solid #e6e0d6;
+  padding-top: 22px;
+}
+
+.account-section h3 {
+  margin: 0;
+  color: #17201d;
+  font-size: 1rem;
+}
+
+.account-section--danger h3 {
+  color: #7f1d1d;
+}
+
 .danger-zone {
   display: grid;
   gap: 16px;
@@ -1122,7 +1147,13 @@ select {
   grid-template-columns: 42px minmax(0, 1fr);
   gap: 14px;
   border-top: 1px solid #e6e0d6;
+  border-radius: 8px;
   padding-top: 16px;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .question-card:first-child {
@@ -1140,11 +1171,39 @@ select {
   color: #183a34;
 }
 
+.question-card--draggable .question-card__icon {
+  cursor: grab;
+}
+
+.question-card--dragging {
+  opacity: 0.46;
+  transform: scale(0.995);
+}
+
+.question-card--drop-target {
+  background: rgba(220, 231, 223, 0.42);
+  box-shadow: inset 4px 0 0 #4f6c5d;
+}
+
 .question-card__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.question-card__title {
+  display: grid;
+  gap: 7px;
+}
+
+.question-card__drag-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #607681;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .question-card h3 {

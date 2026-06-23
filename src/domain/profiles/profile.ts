@@ -1,10 +1,10 @@
 export type Profile = {
   id: string;
-  displayName: string | null;
+  personalName: string | null;
   contactEmail: string | null;
 };
 
 export type UpdateProfileInput = {
   accountId: string;
-  displayName: string | null;
+  personalName: string | null;
 };

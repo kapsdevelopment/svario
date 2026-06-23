@@ -3,6 +3,7 @@ import {
   Copy,
   ExternalLink,
   Gauge,
+  GripVertical,
   Layers2,
   ListChecks,
   Plus,
@@ -14,7 +15,14 @@ import {
   Trash2,
   Type,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type DragEvent,
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
@@ -25,6 +33,7 @@ import { useAddSurveySection } from '../../../application/surveys/useAddSurveySe
 import { useDeleteSurveyQuestion } from '../../../application/surveys/useDeleteSurveyQuestion';
 import { useDeleteSurveySection } from '../../../application/surveys/useDeleteSurveySection';
 import { usePublishSurvey } from '../../../application/surveys/usePublishSurvey';
+import { useReorderSurveyQuestions } from '../../../application/surveys/useReorderSurveyQuestions';
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
 import { useUpdateSurveyBasicInfo } from '../../../application/surveys/useUpdateSurveyBasicInfo';
 import { useUpdateSurveyPrivacySettings } from '../../../application/surveys/useUpdateSurveyPrivacySettings';
@@ -247,6 +256,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const addQuestion = useAddSurveyQuestion(survey.id);
   const deleteSection = useDeleteSurveySection(survey.id);
   const deleteQuestion = useDeleteSurveyQuestion(survey.id);
+  const reorderQuestions = useReorderSurveyQuestions(survey.id);
   const publishSurvey = usePublishSurvey(survey.id);
   const updateBasicInfo = useUpdateSurveyBasicInfo(survey.id);
   const updatePrivacySettings = useUpdateSurveyPrivacySettings(survey.id);
@@ -295,6 +305,14 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     string | null
   >(null);
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
+  const [draggedQuestion, setDraggedQuestion] = useState<{
+    questionId: string;
+    sectionId: string | null;
+  } | null>(null);
+  const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(
+    null,
+  );
+  const [reorderError, setReorderError] = useState<string | null>(null);
 
   const currentStatus = publishSurvey.data?.status ?? survey.status;
   const publishedAt = publishSurvey.data?.publishedAt ?? survey.publishedAt;
@@ -305,6 +323,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     survey.responseCount,
   );
   const canEditStructure = structureLockMessage === null;
+  const canReorderQuestions = canEditStructure && !reorderQuestions.isPending;
   const privacyIssues = getPrivacyCompletionIssues(survey);
   const canPublish =
     isDraft && survey.questions.length > 0 && privacyIssues.length === 0;
@@ -601,6 +620,103 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
   function handleDelete(question: SurveyQuestion) {
     setQuestionToDelete(question);
+  }
+
+  function handleQuestionDragStart(
+    question: SurveyQuestion,
+    event: DragEvent<HTMLElement>,
+  ) {
+    if (!canReorderQuestions) {
+      event.preventDefault();
+      return;
+    }
+
+    setReorderError(null);
+    setDraggedQuestion({
+      questionId: question.id,
+      sectionId: question.sectionId,
+    });
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', question.id);
+  }
+
+  function handleQuestionDragOver(
+    question: SurveyQuestion,
+    event: DragEvent<HTMLElement>,
+  ) {
+    if (
+      !canReorderQuestions ||
+      !draggedQuestion ||
+      draggedQuestion.questionId === question.id ||
+      draggedQuestion.sectionId !== question.sectionId
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragOverQuestionId(question.id);
+  }
+
+  function handleQuestionDragLeave(
+    question: SurveyQuestion,
+    event: DragEvent<HTMLElement>,
+  ) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+
+    setDragOverQuestionId((currentQuestionId) =>
+      currentQuestionId === question.id ? null : currentQuestionId,
+    );
+  }
+
+  async function handleQuestionDrop(
+    question: SurveyQuestion,
+    event: DragEvent<HTMLElement>,
+  ) {
+    event.preventDefault();
+    const activeQuestion = draggedQuestion;
+    setDraggedQuestion(null);
+    setDragOverQuestionId(null);
+
+    if (
+      !canReorderQuestions ||
+      !activeQuestion ||
+      activeQuestion.questionId === question.id ||
+      activeQuestion.sectionId !== question.sectionId
+    ) {
+      return;
+    }
+
+    const group = questionGroups.find((currentGroup) =>
+      currentGroup.questions.some(
+        (groupQuestion) => groupQuestion.id === question.id,
+      ),
+    );
+    const questionIds =
+      group?.questions.map((groupQuestion) => groupQuestion.id) ?? [];
+    const fromIndex = questionIds.indexOf(activeQuestion.questionId);
+    const toIndex = questionIds.indexOf(question.id);
+
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+      return;
+    }
+
+    try {
+      await reorderQuestions.mutateAsync({
+        surveyId: survey.id,
+        sectionId: question.sectionId,
+        questionIds: moveArrayItem(questionIds, fromIndex, toIndex),
+      });
+    } catch {
+      setReorderError('Kunne ikke endre rekkefølgen. Prøv igjen.');
+    }
+  }
+
+  function handleQuestionDragEnd() {
+    setDraggedQuestion(null);
+    setDragOverQuestionId(null);
   }
 
   async function confirmDeleteQuestion() {
@@ -1028,10 +1144,15 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                       : 'custom'
                   }
                   disabled={!canEditStructure || addQuestion.isPending}
-                  onChange={(event) => handleScalePresetChange(event.target.value)}
+                  onChange={(event) =>
+                    handleScalePresetChange(event.target.value)
+                  }
                 >
                   {scalePresets.map((preset) => (
-                    <option key={getScalePresetValue(preset)} value={getScalePresetValue(preset)}>
+                    <option
+                      key={getScalePresetValue(preset)}
+                      value={getScalePresetValue(preset)}
+                    >
                       {preset.label}
                     </option>
                   ))}
@@ -1145,8 +1266,20 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 <QuestionCard
                   key={question.id}
                   question={question}
-                  disabled={!canEditStructure || deleteQuestion.isPending}
+                  disabled={
+                    !canEditStructure ||
+                    deleteQuestion.isPending ||
+                    reorderQuestions.isPending
+                  }
+                  canDrag={canReorderQuestions && group.questions.length > 1}
+                  isDragging={draggedQuestion?.questionId === question.id}
+                  isDragOver={dragOverQuestionId === question.id}
                   onDelete={handleDelete}
+                  onDragStart={handleQuestionDragStart}
+                  onDragOver={handleQuestionDragOver}
+                  onDragLeave={handleQuestionDragLeave}
+                  onDrop={handleQuestionDrop}
+                  onDragEnd={handleQuestionDragEnd}
                 />
               ))}
               {group.questions.length === 0 ? (
@@ -1161,6 +1294,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               <ListChecks size={28} aria-hidden="true" />
               <p>Legg inn første spørsmål for å forme respondentflyten.</p>
             </div>
+          ) : null}
+          {reorderError ? (
+            <p className="form-error" role="alert">
+              {reorderError}
+            </p>
           ) : null}
         </div>
       </Panel>
@@ -1253,7 +1391,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const currentWorkspace = workspaces.data?.find(
     (workspace) => workspace.id === survey.workspaceId,
   );
-  const profileDisplayName = getTrimmedSuggestion(myProfile.data?.displayName);
+  const profilePersonalName = getTrimmedSuggestion(myProfile.data?.personalName);
   const profileContactEmail = getTrimmedSuggestion(myProfile.data?.contactEmail);
   const authEmail = getTrimmedSuggestion(auth.user?.email);
   const waitForWorkspaceSuggestion =
@@ -1261,16 +1399,18 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
   const controllerNameSuggestion = waitForWorkspaceSuggestion
     ? null
     : getTrimmedSuggestion(currentWorkspace?.name) ??
-      profileDisplayName ??
+      profilePersonalName ??
       profileContactEmail ??
       authEmail ??
       null;
   const controllerContactSuggestion = profileContactEmail ?? authEmail ?? null;
   const controllerNameHelp = getControllerNameHelp({
     currentWorkspace,
-    profileDisplayName,
+    profilePersonalName,
     usedEmailFallback:
-      !currentWorkspace && !profileDisplayName && Boolean(controllerNameSuggestion),
+      !currentWorkspace &&
+      !profilePersonalName &&
+      Boolean(controllerNameSuggestion),
   });
   const controllerContactHelp = profileContactEmail
     ? 'Foreslått fra profilens kontakt-e-post. Kan endres for dette skjemaet.'
@@ -1735,20 +1875,75 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
 function QuestionCard({
   question,
   disabled,
+  canDrag,
+  isDragging,
+  isDragOver,
   onDelete,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
 }: {
   question: SurveyQuestion;
   disabled: boolean;
+  canDrag: boolean;
+  isDragging: boolean;
+  isDragOver: boolean;
   onDelete: (question: SurveyQuestion) => void;
+  onDragStart: (
+    question: SurveyQuestion,
+    event: DragEvent<HTMLElement>,
+  ) => void;
+  onDragOver: (
+    question: SurveyQuestion,
+    event: DragEvent<HTMLElement>,
+  ) => void;
+  onDragLeave: (
+    question: SurveyQuestion,
+    event: DragEvent<HTMLElement>,
+  ) => void;
+  onDrop: (question: SurveyQuestion, event: DragEvent<HTMLElement>) => void;
+  onDragEnd: () => void;
 }) {
   return (
-    <article className="question-card">
-      <div className="question-card__icon" aria-hidden="true">
+    <article
+      className={[
+        'question-card',
+        canDrag ? 'question-card--draggable' : '',
+        isDragging ? 'question-card--dragging' : '',
+        isDragOver ? 'question-card--drop-target' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      draggable={canDrag}
+      onDragStart={(event) => onDragStart(question, event)}
+      onDragOver={(event) => onDragOver(question, event)}
+      onDragLeave={(event) => onDragLeave(question, event)}
+      onDrop={(event) => onDrop(question, event)}
+      onDragEnd={onDragEnd}
+    >
+      <div
+        className="question-card__icon"
+        aria-hidden="true"
+        title={canDrag ? 'Dra for å endre rekkefølge' : undefined}
+      >
         {getQuestionIcon(question)}
       </div>
       <div>
         <div className="question-card__header">
-          <h3>{question.prompt}</h3>
+          <div className="question-card__title">
+            <h3>{question.prompt}</h3>
+            {canDrag ? (
+              <span
+                className="question-card__drag-hint"
+                title="Dra for å endre rekkefølge"
+              >
+                <GripVertical size={16} aria-hidden="true" />
+                <span className="sr-only">Dra for å endre rekkefølge</span>
+              </span>
+            ) : null}
+          </div>
           <button
             className="icon-button"
             type="button"
@@ -1804,6 +1999,13 @@ function groupQuestionsBySection(
   }
 
   return groups;
+}
+
+function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number) {
+  const nextItems = [...items];
+  const [movedItem] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, movedItem);
+  return nextItems;
 }
 
 function getScalePresetValue(preset: (typeof scalePresets)[number]) {
@@ -1966,11 +2168,11 @@ function getTrimmedSuggestion(value: string | null | undefined) {
 
 function getControllerNameHelp({
   currentWorkspace,
-  profileDisplayName,
+  profilePersonalName,
   usedEmailFallback,
 }: {
   currentWorkspace: WorkspaceWithMembership | undefined;
-  profileDisplayName: string | null;
+  profilePersonalName: string | null;
   usedEmailFallback: boolean;
 }) {
   if (currentWorkspace?.type === 'business') {
@@ -1981,7 +2183,7 @@ function getControllerNameHelp({
     return 'Foreslått fra teamet/arbeidsflaten. Kan endres for dette skjemaet.';
   }
 
-  if (profileDisplayName) {
+  if (profilePersonalName) {
     return 'Foreslått fra profilen. Kan endres for dette skjemaet.';
   }
 

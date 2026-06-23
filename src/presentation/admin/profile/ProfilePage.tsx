@@ -1,7 +1,5 @@
 import {
   Building2,
-  ChevronDown,
-  ChevronUp,
   CheckCircle2,
   KeyRound,
   Link2,
@@ -40,8 +38,9 @@ const minimumPasswordLength = 6;
 export function ProfilePage() {
   const auth = useAuth();
   const navigate = useNavigate();
-  const [profileDisplayName, setProfileDisplayName] = useState('');
-  const [profileDisplayNameEdited, setProfileDisplayNameEdited] = useState(false);
+  const [profilePersonalName, setProfilePersonalName] = useState('');
+  const [profilePersonalNameEdited, setProfilePersonalNameEdited] =
+    useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
@@ -69,7 +68,6 @@ export function ProfilePage() {
   } | null>(null);
   const [workspaceToDelete, setWorkspaceToDelete] =
     useState<WorkspaceWithMembership | null>(null);
-  const [showAccountDetails, setShowAccountDetails] = useState(false);
   const myProfile = useMyProfile(auth.account?.id);
   const updateMyProfile = useUpdateMyProfile();
   const workspaces = useWorkspaces(auth.account?.id);
@@ -80,10 +78,10 @@ export function ProfilePage() {
   const deleteWorkspace = useDeleteWorkspace();
 
   useEffect(() => {
-    if (!profileDisplayNameEdited) {
-      setProfileDisplayName(myProfile.data?.displayName ?? '');
+    if (!profilePersonalNameEdited) {
+      setProfilePersonalName(myProfile.data?.personalName ?? '');
     }
-  }, [myProfile.data?.displayName, profileDisplayNameEdited]);
+  }, [myProfile.data?.personalName, profilePersonalNameEdited]);
 
   async function handleProfileUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,19 +93,19 @@ export function ProfilePage() {
       return;
     }
 
-    const displayName = profileDisplayName.trim();
+    const personalName = profilePersonalName.trim();
 
     try {
       const updatedProfile = await updateMyProfile.mutateAsync({
         accountId: auth.account.id,
-        displayName: displayName || null,
+        personalName: personalName || null,
       });
-      setProfileDisplayName(updatedProfile.displayName ?? '');
-      setProfileDisplayNameEdited(false);
+      setProfilePersonalName(updatedProfile.personalName ?? '');
+      setProfilePersonalNameEdited(false);
       setProfileMessage(
-        updatedProfile.displayName
-          ? 'Profilnavnet er oppdatert.'
-          : 'Profilnavnet er fjernet.',
+        updatedProfile.personalName
+          ? 'Navnet ditt er oppdatert.'
+          : 'Navnet ditt er fjernet.',
       );
     } catch (error) {
       setProfileError(getErrorMessage(error, 'Kunne ikke lagre profilen.'));
@@ -316,27 +314,30 @@ export function ProfilePage() {
         </div>
       </header>
 
-      <Panel title="Profil">
+      <Panel
+        title="Personlig profil"
+        subtitle="Brukes når du lager og sender ut individuelle skjemaer."
+      >
         <form className="form-stack" onSubmit={handleProfileUpdate}>
           <div className="profile-form-fields">
             <label>
-              Navn
+              Ditt navn
               <input
                 type="text"
-                value={profileDisplayName}
+                value={profilePersonalName}
                 disabled={myProfile.isLoading || updateMyProfile.isPending}
                 maxLength={120}
-                placeholder="Legg til navn eller organisasjon"
+                placeholder="Legg til navnet ditt"
                 onChange={(event) => {
-                  setProfileDisplayName(event.target.value);
-                  setProfileDisplayNameEdited(true);
+                  setProfilePersonalName(event.target.value);
+                  setProfilePersonalNameEdited(true);
                   setProfileMessage(null);
                   setProfileError(null);
                 }}
               />
               <span className="field-help">
-                Brukes som forslag til behandlingsansvarlig for individuelle
-                skjemaer.
+                Brukes som forslag til behandlingsansvarlig når skjemaet er
+                individuelt.
               </span>
             </label>
             <label>
@@ -388,49 +389,8 @@ export function ProfilePage() {
       </Panel>
 
       <Panel
-        title="Konto"
-        subtitle={auth.user?.email ?? 'Innlogget admin'}
-        action={
-          <button
-            className="button button--secondary"
-            type="button"
-            aria-expanded={showAccountDetails}
-            onClick={() => setShowAccountDetails((isOpen) => !isOpen)}
-          >
-            {showAccountDetails ? (
-              <ChevronUp size={18} aria-hidden="true" />
-            ) : (
-              <ChevronDown size={18} aria-hidden="true" />
-            )}
-            {showAccountDetails ? 'Skjul detaljer' : 'Vis mer'}
-          </button>
-        }
-      >
-        {showAccountDetails ? (
-          <dl className="definition-list">
-            <div>
-              <dt>Svario-konto</dt>
-              <dd>{auth.account?.id ?? 'Ikke klargjort'}</dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>{auth.account?.status ?? 'Ukjent'}</dd>
-            </div>
-            <div>
-              <dt>Innlogging</dt>
-              <dd>{auth.user?.id ?? 'Ukjent'}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="field-help">
-            Tekniske konto-ID-er er skjult i vanlig bruk.
-          </p>
-        )}
-      </Panel>
-
-      <Panel
-        title="Arbeidsflater"
-        subtitle="Opprett en type arbeidsflate som gjenspeiler hva slags gruppe du / dere er. Studentgruppe, eller organisasjon."
+        title="Organisasjoner og team"
+        subtitle="Arbeidsflater brukes når skjemaer skal sendes ut i kontekst av en bedrift, organisasjon eller gruppe."
       >
         <form className="form-stack" onSubmit={handleCreateWorkspace}>
           <div className="form-grid">
@@ -634,23 +594,50 @@ export function ProfilePage() {
         ) : null}
       </Panel>
 
-      <Panel title="Slett konto" subtitle="Permanent sletting">
-        <div className="danger-zone">
-          <p>
-            Sletter kontoen din, alle spørreundersøkelser, innsendte svar og
-            resultater. Dette kan ikke angres.
-          </p>
-          <div className="form-actions">
-            <button
-              className="button button--danger"
-              disabled={isDeletingAccount}
-              type="button"
-              onClick={handleDeleteAccount}
-            >
-              <Trash2 size={18} aria-hidden="true" />
-              {isDeletingAccount ? 'Sletter...' : 'Slett min konto'}
-            </button>
-          </div>
+      <Panel title="Konto" subtitle={auth.user?.email ?? 'Innlogget admin'}>
+        <div className="account-sections">
+          <section className="account-section">
+            <h3>Kontoinformasjon</h3>
+            <dl className="definition-list">
+              <div>
+                <dt>Registrert e-post</dt>
+                <dd>{auth.user?.email ?? 'Ingen e-post registrert'}</dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>{auth.account?.status ?? 'Ukjent'}</dd>
+              </div>
+              <div>
+                <dt>Svario-konto</dt>
+                <dd>{auth.account?.id ?? 'Ikke klargjort'}</dd>
+              </div>
+              <div>
+                <dt>Innlogging</dt>
+                <dd>{auth.user?.id ?? 'Ukjent'}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="account-section account-section--danger">
+            <h3>Permanent sletting av konto</h3>
+            <div className="danger-zone">
+              <p>
+                Sletter kontoen din, alle spørreundersøkelser, innsendte svar
+                og resultater. Dette kan ikke angres.
+              </p>
+              <div className="form-actions">
+                <button
+                  className="button button--danger"
+                  disabled={isDeletingAccount}
+                  type="button"
+                  onClick={handleDeleteAccount}
+                >
+                  <Trash2 size={18} aria-hidden="true" />
+                  {isDeletingAccount ? 'Sletter...' : 'Slett min konto'}
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
 
         {deleteAccountError ? (

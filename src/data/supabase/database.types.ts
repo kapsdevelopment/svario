@@ -200,6 +200,7 @@ export type Database = {
           display_name: string | null
           first_seen_auth_provider: string | null
           id: string
+          personal_name: string | null
           profile_completed_at: string | null
           profile_name_set_at: string | null
           support_label: string | null
@@ -212,6 +213,7 @@ export type Database = {
           display_name?: string | null
           first_seen_auth_provider?: string | null
           id: string
+          personal_name?: string | null
           profile_completed_at?: string | null
           profile_name_set_at?: string | null
           support_label?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           display_name?: string | null
           first_seen_auth_provider?: string | null
           id?: string
+          personal_name?: string | null
           profile_completed_at?: string | null
           profile_name_set_at?: string | null
           support_label?: string | null
@@ -932,6 +935,14 @@ export type Database = {
       repeat_survey_once: {
         Args: { p_survey_id: string }
         Returns: string
+      }
+      reorder_survey_questions: {
+        Args: {
+          p_question_ids: string[]
+          p_section_id?: string | null
+          p_survey_id: string
+        }
+        Returns: undefined
       }
       update_survey_privacy_settings: {
         Args: {

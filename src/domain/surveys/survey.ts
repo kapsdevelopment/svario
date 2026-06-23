@@ -181,6 +181,12 @@ export type UpdateQuestionVisualizationInput = {
   visualizationColorMode: QuestionVisualizationColorMode;
 };
 
+export type ReorderSurveyQuestionsInput = {
+  surveyId: string;
+  sectionId: string | null;
+  questionIds: string[];
+};
+
 export type SubmitSurveyAnswerInput = {
   questionId: string;
   freeText?: string | null;

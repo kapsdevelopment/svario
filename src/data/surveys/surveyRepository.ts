@@ -9,6 +9,7 @@ import {
   type QuestionScaleVariant,
   type QuestionVisualizationType,
   type QuestionType,
+  type ReorderSurveyQuestionsInput,
   type SubmitSurveyResponseInput,
   type SurveyEditor,
   type SurveyFreeTextResult,
@@ -572,6 +573,21 @@ export async function addSurveyQuestion(
 export async function deleteSurveyQuestion(questionId: string): Promise<void> {
   const client = requireSurveyClient();
   const { error } = await client.from('questions').delete().eq('id', questionId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function reorderSurveyQuestions(
+  input: ReorderSurveyQuestionsInput,
+): Promise<void> {
+  const client = requireSurveyClient();
+  const { error } = await client.rpc('reorder_survey_questions', {
+    p_survey_id: input.surveyId,
+    p_section_id: input.sectionId,
+    p_question_ids: input.questionIds,
+  });
 
   if (error) {
     throw error;
