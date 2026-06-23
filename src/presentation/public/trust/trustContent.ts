@@ -55,21 +55,15 @@ export const trustDocuments: TrustDocument[] = [
         paragraphs: [
           'Svario leveres av Kapsdevelopment AS, org.nr. 937 284 624.',
           'For spørreskjemaer som en kunde oppretter, sender ut eller administrerer i Svario, er kunden/skjemaeieren behandlingsansvarlig for den konkrete innsamlingen.',
-          'Kunden bestemmer formål, spørsmål, respondentgruppe, rettslig grunnlag, eventuell identifisering, informasjon til respondentene og hvor lenge svarene skal lagres. Svario er databehandler for besvarelsene og behandler dem etter kundens instrukser og produktvalg.',
+          'Kunden bestemmer formål, spørsmål, respondentgruppe, rettslig grunnlag, eventuell identifisering, informasjon til respondentene og hvor lenge svarene skal lagres. Svario er databehandler for besvarelsene og behandler dem innenfor kundens produktvalg og tjenestens dokumenterte rammer.',
           'For Svario-kontoer, drift, sikkerhet, avtaleoppfølging og administrasjon er Kapsdevelopment AS behandlingsansvarlig.',
         ],
       },
       {
         title: 'Hva kan Svario behandle?',
-        bullets: [
-          'Kontoopplysninger for administratorer.',
-          'Profil- og arbeidsflateopplysninger.',
-          'Spørreskjemaer, spørsmål og svar.',
-          'Respondentnavn, e-postadresse eller lignende dersom skjemaeier velger identifisert skjema.',
-          'Fritekst som respondenter skriver inn.',
-          'Samtykke- og personvernvalg der skjemaet krever det.',
-          'Tekniske opplysninger som er nødvendige for drift, sikkerhet og feilretting.',
-          'Henvendelser sendt via kontaktskjema.',
+        paragraphs: [
+          'Svario kan behandle informasjon som opprettes, sendes inn eller administreres i tjenesten, samt tekniske opplysninger som er nødvendige for å levere, sikre og drifte løsningen.',
+          'Dette kan for eksempel omfatte konto- og arbeidsflateopplysninger, spørreskjemaer, spørsmål, svar, fritekst, respondentidentitet dersom skjemaeier velger identifiserte svar, personvernvalg og henvendelser via kontaktskjema.',
         ],
       },
       {
@@ -229,7 +223,7 @@ export const trustDocuments: TrustDocument[] = [
     updated: '21. juni 2026',
     status: 'Arbeidsutkast for juridisk gjennomgang',
     summary:
-      'Rollefordeling, instrukser, sikkerhetstiltak, underdatabehandlere, avvik, revisjon og sletting.',
+      'Rollefordeling, produktvalg, sikkerhetstiltak, underdatabehandlere, avvik, revisjon og sletting.',
     icon: FileCheck2,
     sections: [
       {
@@ -249,21 +243,18 @@ export const trustDocuments: TrustDocument[] = [
         ],
       },
       {
-        title: 'Kundens instrukser',
-        bullets: [
-          'Innstillingene kunden velger i Svario.',
-          'Databehandleravtalen.',
-          'Dokumenterte skriftlige henvendelser fra kunden.',
-          'Eventuelle supplerende avtalevilkår.',
-        ],
+        title: 'Produktvalg og tjenestens rammer',
         paragraphs: [
-          'Svario skal bare behandle personopplysninger etter dokumenterte instrukser fra kunden, med mindre lov krever noe annet.',
+          'Svario behandler personopplysninger for å levere spørreskjematjenesten innenfor funksjonene, innstillingene og vilkårene som til enhver tid tilbys i Svario.',
+          'Kunden styrer den konkrete behandlingen gjennom produktvalg i Svario, for eksempel om skjemaet er anonymt eller identifisert, hvilken respondenttekst som vises, hvilket rettslig grunnlag kunden oppgir og hvilken lagringstid som velges.',
+          'Slike produktvalg gir ikke kunden rett til å kreve særskilt utvikling, manuell behandling, spesialrutiner eller andre avvik fra tjenestens dokumenterte funksjonalitet, med mindre dette er avtalt skriftlig med Kapsdevelopment AS.',
+          'Svario kan avvise forespørsler eller valg som ligger utenfor tjenesten, er teknisk eller driftsmessig uforsvarlige, kan svekke sikkerheten eller er i strid med lov, vilkår eller personvernregelverk.',
+          'Svario tilstreber å behandle data i tråd med kundens valgte innstillinger, men tjenesten leveres med de tilgjengelighets-, endrings- og ansvarsbegrensningene som følger av vilkårene.',
         ],
       },
       {
-        title: 'Produktvalg, forslag og juridisk vurdering',
+        title: 'Forslag og juridisk vurdering',
         paragraphs: [
-          'Innstillinger kunden velger i Svario, inkludert anonym/identifisert modus, rettslig grunnlag, respondenttekst og lagringstid, regnes som kundens dokumenterte instruks for den aktuelle behandlingen.',
           'Svario kan vise standardvalg, forslag og hjelpetekster for å gjøre produktet enklere å bruke. Slike forslag er ikke juridisk rådgivning og er ikke en vurdering av om kundens konkrete innsamling, rettslige grunnlag eller lagringstid er lovlig eller nødvendig.',
         ],
       },
