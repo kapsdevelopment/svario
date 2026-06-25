@@ -260,6 +260,53 @@ h2 {
   gap: 28px;
 }
 
+.survey-group-list {
+  display: grid;
+  gap: 34px;
+}
+
+.survey-group {
+  display: grid;
+  gap: 16px;
+}
+
+.survey-group + .survey-group {
+  border-top: 1px solid rgba(217, 211, 199, 0.9);
+  padding-top: 28px;
+}
+
+.survey-group__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.survey-group__header h2 {
+  color: #17201d;
+  font-size: 1.18rem;
+  letter-spacing: 0;
+}
+
+.survey-group__header p {
+  max-width: 62ch;
+  margin-top: 5px;
+  color: #596962;
+  font-weight: 700;
+}
+
+.survey-group__count {
+  flex: 0 0 auto;
+  color: #607681;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.survey-group__items {
+  display: grid;
+  gap: 18px;
+}
+
 .scroll-anchor {
   scroll-margin-top: 24px;
 }
@@ -3195,6 +3242,22 @@ select {
 
   .stack {
     gap: 22px;
+  }
+
+  .survey-group-list {
+    gap: 28px;
+  }
+
+  .survey-group + .survey-group {
+    padding-top: 22px;
+  }
+
+  .survey-group__header {
+    display: grid;
+  }
+
+  .survey-group__count {
+    justify-self: start;
   }
 
   .page-header {
