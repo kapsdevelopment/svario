@@ -6,6 +6,7 @@ import {
   GripVertical,
   Layers2,
   ListChecks,
+  LockKeyhole,
   Plus,
   Save,
   Send,
@@ -14,6 +15,7 @@ import {
   Star,
   Trash2,
   Type,
+  UsersRound,
 } from 'lucide-react';
 import {
   type DragEvent,
@@ -37,6 +39,7 @@ import { useReorderSurveyQuestions } from '../../../application/surveys/useReord
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
 import { useUpdateSurveyBasicInfo } from '../../../application/surveys/useUpdateSurveyBasicInfo';
 import { useUpdateSurveyPrivacySettings } from '../../../application/surveys/useUpdateSurveyPrivacySettings';
+import { useUpdateSurveyVisibility } from '../../../application/surveys/useUpdateSurveyVisibility';
 import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import {
   questionScaleDefaults,
@@ -49,6 +52,7 @@ import {
   type SurveyQuestion,
   type SurveySection,
   type SurveySummary,
+  type SurveyVisibility,
 } from '../../../domain/surveys/survey';
 import type { WorkspaceWithMembership } from '../../../domain/workspaces/workspace';
 import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
@@ -260,6 +264,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const publishSurvey = usePublishSurvey(survey.id);
   const updateBasicInfo = useUpdateSurveyBasicInfo(survey.id);
   const updatePrivacySettings = useUpdateSurveyPrivacySettings(survey.id);
+  const updateVisibility = useUpdateSurveyVisibility(survey.id);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] =
     useState<SurveyQuestion | null>(null);
@@ -278,6 +283,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [basicEndsAt, setBasicEndsAt] = useState(
     toDateTimeInputValue(survey.endsAt),
   );
+  const [basicVisibility, setBasicVisibility] = useState(survey.visibility);
   const [basicValidationError, setBasicValidationError] = useState<
     string | null
   >(null);
@@ -356,13 +362,40 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     setBasicResponseMode(survey.responseMode);
     setBasicStartsAt(toDateTimeInputValue(survey.startsAt));
     setBasicEndsAt(toDateTimeInputValue(survey.endsAt));
+    setBasicVisibility(survey.visibility);
   }, [
     survey.description,
     survey.endsAt,
     survey.responseMode,
     survey.startsAt,
     survey.title,
+    survey.visibility,
   ]);
+
+  async function handleVisibilityChange(nextVisibility: SurveyVisibility) {
+    if (!survey.workspaceId || nextVisibility === basicVisibility) {
+      return;
+    }
+
+    const previousVisibility = basicVisibility;
+    setBasicValidationError(null);
+    setBasicMessage(null);
+    setBasicVisibility(nextVisibility);
+
+    try {
+      await updateVisibility.mutateAsync({
+        surveyId: survey.id,
+        visibility: nextVisibility,
+      });
+      setBasicMessage(
+        nextVisibility === 'workspace'
+          ? 'Skjemaet er synlig for alle i arbeidsflaten.'
+          : 'Skjemaet er personlig i arbeidsflaten.',
+      );
+    } catch {
+      setBasicVisibility(previousVisibility);
+    }
+  }
 
   async function handleSaveBasicInfo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -764,7 +797,19 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         <Panel title="Spørsmål" subtitle={`${survey.questions.length} totalt`} />
       </div>
 
-      <Panel title="Grunninfo" subtitle={formatSurveyWindow(survey)}>
+      <Panel
+        title="Grunninfo"
+        subtitle={formatSurveyWindow(survey)}
+        action={
+          survey.workspaceId ? (
+            <SurveyVisibilityToggle
+              visibility={basicVisibility}
+              isPending={updateVisibility.isPending}
+              onChange={handleVisibilityChange}
+            />
+          ) : null
+        }
+      >
         <form className="basic-info-form" onSubmit={handleSaveBasicInfo}>
           <div className="basic-info-form__primary">
             <label>
@@ -854,6 +899,14 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
           {updateBasicInfo.isError ? (
             <div className="form-alert form-alert--error" role="alert">
               {getErrorMessage(updateBasicInfo.error)}
+            </div>
+          ) : null}
+          {updateVisibility.isError ? (
+            <div className="form-alert form-alert--error" role="alert">
+              {getErrorMessage(
+                updateVisibility.error,
+                'Kunne ikke oppdatere synlighet.',
+              )}
             </div>
           ) : null}
           {basicMessage ? (
@@ -1337,6 +1390,43 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         onConfirm={confirmDeleteQuestion}
       />
     </>
+  );
+}
+
+type SurveyVisibilityToggleProps = {
+  visibility: SurveyVisibility;
+  isPending: boolean;
+  onChange: (visibility: SurveyVisibility) => void;
+};
+
+function SurveyVisibilityToggle({
+  visibility,
+  isPending,
+  onChange,
+}: SurveyVisibilityToggleProps) {
+  return (
+    <div className="survey-visibility-toggle" aria-label="Synlighet i arbeidsflaten">
+      <button
+        type="button"
+        aria-pressed={visibility === 'private'}
+        disabled={isPending}
+        title="Personlig: synlig for eier og admin"
+        onClick={() => onChange('private')}
+      >
+        <LockKeyhole size={15} aria-hidden="true" />
+        Personlig
+      </button>
+      <button
+        type="button"
+        aria-pressed={visibility === 'workspace'}
+        disabled={isPending}
+        title="Delt: synlig for alle i arbeidsflaten"
+        onClick={() => onChange('workspace')}
+      >
+        <UsersRound size={15} aria-hidden="true" />
+        Delt
+      </button>
+    </div>
   );
 }
 
@@ -2590,10 +2680,13 @@ function createShareUrl(slug: string) {
   return `${window.location.origin}${window.location.pathname}#${respondentPath}`;
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(
+  error: unknown,
+  fallback = 'Noe gikk galt i skjemabyggeren.',
+) {
   if (error instanceof Error) {
     return error.message;
   }
 
-  return 'Noe gikk galt i skjemabyggeren.';
+  return fallback;
 }

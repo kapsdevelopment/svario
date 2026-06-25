@@ -206,7 +206,7 @@ export function SurveyListPage() {
           {workspaceSurveys.length > 0 ? (
             <SurveyGroup
               title="Team og organisasjon"
-              subtitle="Skjemaer som ligger i arbeidsflater du har tilgang til."
+              subtitle="Skjemaer tilhørende organisasjon eller team"
               count={workspaceSurveys.length}
             >
               {workspaceSurveys.map((survey) => (

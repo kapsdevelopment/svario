@@ -69,6 +69,11 @@ export type UpdateSurveyBasicInfoInput = {
   endsAt: string | null;
 };
 
+export type UpdateSurveyVisibilityInput = {
+  surveyId: string;
+  visibility: SurveyVisibility;
+};
+
 export type SurveyPrivacySettings = {
   surveyId: string;
   enabled: boolean;

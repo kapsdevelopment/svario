@@ -25,6 +25,7 @@ import {
   type SurveySection,
   type SurveySummary,
   type UpdateSurveyBasicInfoInput,
+  type UpdateSurveyVisibilityInput,
   type UpsertSurveyPrivacySettingsInput,
   type UpdateQuestionVisualizationInput,
 } from '../../domain/surveys/survey';
@@ -289,6 +290,28 @@ export async function updateSurveyBasicInfo(
     response_mode: input.responseMode,
     starts_at: input.startsAt,
     ends_at: input.endsAt,
+  };
+
+  const { data, error } = await client
+    .from('surveys')
+    .update(payload)
+    .eq('id', input.surveyId)
+    .select(surveySummarySelect)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapSurveySummary(data);
+}
+
+export async function updateSurveyVisibility(
+  input: UpdateSurveyVisibilityInput,
+): Promise<SurveySummary> {
+  const client = requireSurveyClient();
+  const payload: TablesUpdate<'surveys'> = {
+    visibility: input.visibility,
   };
 
   const { data, error } = await client
