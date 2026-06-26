@@ -18,10 +18,10 @@ export function TrustCenterPage() {
           <span className="brand__mark">S</span>
           <span>
             <strong>Svario</strong>
-            <small>Trust Center</small>
+            <small>Sikkerhet og personvern</small>
           </span>
         </Link>
-        <nav className="security-topbar__nav" aria-label="Trust Center">
+        <nav className="security-topbar__nav" aria-label="Sikkerhet og personvern">
           <Link to={routes.privacy}>Personvern</Link>
           <Link to={routes.security}>Sikkerhet</Link>
           <Link to={routes.home}>Forside</Link>
@@ -33,14 +33,14 @@ export function TrustCenterPage() {
 
       <section className="trust-hero" aria-labelledby="trust-title">
         <div>
-          <p className="eyebrow">Svario Trust Center</p>
+          <p className="eyebrow">Sikkerhet og personvern</p>
           <h1 id="trust-title">Personvern, sikkerhet og databehandlerinformasjon samlet ett sted</h1>
           <p>
             Svario bygges for enkel innsamling av svar med tydelig
             ansvarsdeling, minst mulig persondata og praktiske
             personverninnstillinger i produktet.
           </p>
-          <div className="security-badges" aria-label="Trust Center status">
+          <div className="security-badges" aria-label="Status for sikkerhet og personvern">
             <span>Levende dokumentasjon</span>
             <span>Sist oppdatert 21. juni 2026</span>
           </div>
@@ -129,7 +129,7 @@ export function TrustCenterPage() {
       </section>
 
       <footer className="security-footer">
-        <span>Svario Trust Center</span>
+        <span>Svario sikkerhet og personvern</span>
         <Link to={routes.home}>
           Til forsiden
           <ArrowRight size={17} aria-hidden="true" />

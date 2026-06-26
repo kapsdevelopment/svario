@@ -121,7 +121,7 @@ export const trustDocuments: TrustDocument[] = [
       {
         title: 'Hva gjelder vilkårene?',
         paragraphs: [
-          'Disse vilkårene gjelder kundens tilgang til og bruk av Svario, inkludert adminflaten, respondentflater, offentlige nettsider, Trust Center og support- eller kontakttjenester.',
+          'Disse vilkårene gjelder kundens tilgang til og bruk av Svario, inkludert adminflaten, respondentflater, offentlige nettsider, Sikkerhet og personvern-sidene og support- eller kontakttjenester.',
           'Svario leveres av Kapsdevelopment AS, org.nr. 937 284 624.',
           'Ved å bruke Svario aksepterer kunden disse vilkårene. Dersom kunden ikke aksepterer vilkårene, skal tjenesten ikke brukes.',
         ],
@@ -197,7 +197,7 @@ export const trustDocuments: TrustDocument[] = [
         title: 'Tredjepartsleverandører',
         paragraphs: [
           'Svario er avhengig av leverandører for database, autentisering, hosting, deploy, drift og eventuelle kontaktskjemaer.',
-          'Disse leverandørene kan ha egne vilkår, sikkerhetstiltak og personverndokumentasjon. Relevante underdatabehandlere beskrives i Trust Center.',
+          'Disse leverandørene kan ha egne vilkår, sikkerhetstiltak og personverndokumentasjon. Relevante underdatabehandlere beskrives på Sikkerhet og personvern-sidene.',
         ],
       },
       {
@@ -221,7 +221,7 @@ export const trustDocuments: TrustDocument[] = [
       {
         title: 'Endringer og kontakt',
         paragraphs: [
-          'Kapsdevelopment AS kan oppdatere disse vilkårene når tjenesten, leverandører, sikkerhetsrutiner eller lovkrav endres. Nyeste versjon skal være tilgjengelig i Trust Center.',
+          'Kapsdevelopment AS kan oppdatere disse vilkårene når tjenesten, leverandører, sikkerhetsrutiner eller lovkrav endres. Nyeste versjon skal være tilgjengelig på Sikkerhet og personvern-sidene.',
           'Spørsmål om vilkårene kan sendes via kontaktskjemaet på kapsdevelopment.com.',
         ],
       },

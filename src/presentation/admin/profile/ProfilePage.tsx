@@ -514,6 +514,7 @@ export function ProfilePage() {
           {workspaces.data?.map((workspace) => (
             <WorkspaceCard
               accountId={auth.account?.id ?? null}
+              currentUserContact={profileContactEmail}
               invitationLink={invitationLinks[workspace.id] ?? null}
               isDeleting={deleteWorkspace.isPending}
               isInviting={createWorkspaceInvitation.isPending}
@@ -698,6 +699,7 @@ export function ProfilePage() {
 
 function WorkspaceCard({
   accountId,
+  currentUserContact,
   invitationLink,
   isDeleting,
   isInviting,
@@ -708,6 +710,7 @@ function WorkspaceCard({
   workspace,
 }: {
   accountId: string | null;
+  currentUserContact: string;
   invitationLink: string | null;
   isDeleting: boolean;
   isInviting: boolean;
@@ -815,7 +818,9 @@ function WorkspaceCard({
                   {formatWorkspaceMemberName(member, accountId)}
                 </strong>
                 <span>
-                  {memberIsCurrentUser ? 'Din bruker' : roleLabel[member.role]}
+                  {memberIsCurrentUser
+                    ? formatCurrentWorkspaceMemberContact(currentUserContact)
+                    : roleLabel[member.role]}
                 </span>
               </div>
               {canRemove ? (
@@ -854,6 +859,10 @@ function formatWorkspaceMemberName(
   return member.accountId === currentAccountId
     ? 'Du'
     : `Medlem ${member.accountId.slice(0, 8)}`;
+}
+
+function formatCurrentWorkspaceMemberContact(contact: string) {
+  return contact.trim() || 'Innlogget konto';
 }
 
 function formatWorkspaceOwnerName(owner: WorkspaceOwner) {

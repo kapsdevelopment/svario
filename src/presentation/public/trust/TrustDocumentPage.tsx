@@ -21,11 +21,11 @@ export function TrustDocumentPage() {
           <span className="brand__mark">S</span>
           <span>
             <strong>Svario</strong>
-            <small>Trust Center</small>
+            <small>Sikkerhet og personvern</small>
           </span>
         </Link>
         <nav className="security-topbar__nav" aria-label={document.title}>
-          <Link to={routes.trust}>Trust Center</Link>
+          <Link to={routes.trust}>Sikkerhet og personvern</Link>
           <Link to={routes.privacy}>Personvern</Link>
           <Link to={routes.security}>Sikkerhet</Link>
           <Link className="button button--secondary" to={routes.login}>
@@ -37,7 +37,7 @@ export function TrustDocumentPage() {
       <section className="trust-document-hero" aria-labelledby="trust-document-title">
         <Link className="trust-back-link" to={routes.trust}>
           <ArrowLeft size={17} aria-hidden="true" />
-          Trust Center
+          Sikkerhet og personvern
         </Link>
         <div className="trust-document-hero__title">
           <Icon size={30} aria-hidden="true" />
@@ -54,7 +54,7 @@ export function TrustDocumentPage() {
       </section>
 
       <section className="trust-document-layout">
-        <aside className="trust-document-nav" aria-label="Andre trust-dokumenter">
+        <aside className="trust-document-nav" aria-label="Andre dokumenter">
           <span>Dokumenter</span>
           {trustDocuments.map((item) => (
             <Link
@@ -125,7 +125,7 @@ export function TrustDocumentPage() {
       <footer className="security-footer">
         <Link to={routes.trust}>
           <ArrowLeft size={17} aria-hidden="true" />
-          Trust Center
+          Sikkerhet og personvern
         </Link>
         <Link to={routes.home}>
           Til forsiden

@@ -65,7 +65,7 @@ export function PrivacyPage() {
           </span>
         </Link>
         <nav className="marketing-topbar__nav" aria-label="Personvernside">
-          <Link to={routes.trust}>Trust Center</Link>
+          <Link to={routes.trust}>Sikkerhet og personvern</Link>
           <Link to={routes.home}>Forside</Link>
           <Link to={routes.security}>Sikkerhet</Link>
           <Link className="button button--secondary" to={routes.login}>
@@ -85,7 +85,7 @@ export function PrivacyPage() {
           </p>
           <div className="marketing-hero__actions">
             <Link className="button button--primary" to={routes.trust}>
-              Åpne Trust Center
+              Åpne sikkerhet og personvern
               <LockKeyhole size={18} aria-hidden="true" />
             </Link>
             <Link className="button button--secondary" to={routes.home}>
@@ -197,7 +197,7 @@ export function PrivacyPage() {
       <footer className="security-footer">
         <span>Svario Privacy</span>
         <Link to={routes.trust}>
-          Trust Center
+          Sikkerhet og personvern
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </footer>

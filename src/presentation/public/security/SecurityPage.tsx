@@ -95,7 +95,7 @@ export function SecurityPage() {
           <button onClick={() => scrollToSection('status')} type="button">
             Status
           </button>
-          <Link to={routes.trust}>Trust Center</Link>
+          <Link to={routes.trust}>Sikkerhet og personvern</Link>
           <Link to={routes.home}>Forside</Link>
           <Link to={routes.privacy}>Personvern</Link>
           <Link className="button button--secondary" to={routes.login}>
@@ -257,9 +257,9 @@ export function SecurityPage() {
       </section>
 
       <footer className="security-footer">
-        <span>Svario Trust</span>
+        <span>Svario sikkerhet</span>
         <Link to={routes.trust}>
-          Trust Center
+          Sikkerhet og personvern
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </footer>

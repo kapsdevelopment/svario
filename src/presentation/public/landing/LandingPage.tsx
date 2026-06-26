@@ -51,7 +51,7 @@ export function LandingPage() {
             <button onClick={() => scrollToSection('produkt')} type="button">
               Produkt
             </button>
-            <Link to={routes.trust}>Trust Center</Link>
+            <Link to={routes.trust}>Sikkerhet og personvern</Link>
             <Link to={routes.privacy}>Personvern</Link>
             <Link className="button button--secondary" to={routes.login}>
               Logg inn
@@ -115,15 +115,15 @@ export function LandingPage() {
 
       <section className="marketing-trust">
         <div>
-          <p className="eyebrow">Trust center</p>
+          <p className="eyebrow">Sikkerhet og personvern</p>
           <h2>Sikkerhetssiden gir god informasjon og oversikt over data og sikkerhet.</h2>
           <p>
             Viktig informasjon om hvordan data behandles, hvor data er lagret
-            og løsningen er godt dokumentert i Trust Center. Sjekk det ut.
+            og hvordan løsningen er bygget for personvern og sikkerhet.
           </p>
         </div>
         <Link className="button button--primary" to={routes.trust}>
-          Åpne Trust Center
+          Åpne sikkerhet og personvern
           <LockKeyhole size={18} aria-hidden="true" />
         </Link>
       </section>
