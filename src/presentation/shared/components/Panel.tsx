@@ -5,11 +5,18 @@ type PanelProps = {
   subtitle?: string;
   action?: ReactNode;
   children?: ReactNode;
+  className?: string;
 };
 
-export function Panel({ title, subtitle, action, children }: PanelProps) {
+export function Panel({
+  title,
+  subtitle,
+  action,
+  children,
+  className,
+}: PanelProps) {
   return (
-    <section className="panel">
+    <section className={className ? `panel ${className}` : 'panel'}>
       <div className="panel__header">
         <div>
           <h2>{title}</h2>

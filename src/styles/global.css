@@ -307,6 +307,76 @@ h2 {
   gap: 18px;
 }
 
+.survey-list-card {
+  position: relative;
+  border-left-width: 6px;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.survey-list-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 42px rgba(23, 32, 29, 0.1);
+}
+
+.survey-list-card__primary-link {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.survey-list-card__primary-link:focus {
+  outline: 0;
+}
+
+.survey-list-card__primary-link:focus-visible {
+  outline: 3px solid rgba(47, 111, 85, 0.34);
+  outline-offset: 3px;
+}
+
+.survey-list-card .inline-actions {
+  position: relative;
+  z-index: 2;
+}
+
+.survey-list-card--active {
+  border-left-color: #2f6f55;
+  background:
+    linear-gradient(90deg, rgba(47, 111, 85, 0.1), rgba(47, 111, 85, 0) 34%),
+    #fffdf8;
+  box-shadow: 0 18px 42px rgba(47, 111, 85, 0.11);
+}
+
+.survey-list-card--scheduled {
+  border-left-color: #3f6f7f;
+  background:
+    linear-gradient(90deg, rgba(63, 111, 127, 0.1), rgba(63, 111, 127, 0) 34%),
+    #fffdf8;
+}
+
+.survey-list-card--draft {
+  border-left-color: #b8734a;
+  background:
+    linear-gradient(90deg, rgba(184, 115, 74, 0.11), rgba(184, 115, 74, 0) 34%),
+    #fffdf8;
+}
+
+.survey-list-card--finished,
+.survey-list-card--closed {
+  border-left-color: #9aa39d;
+  background:
+    linear-gradient(90deg, rgba(96, 118, 129, 0.11), rgba(96, 118, 129, 0) 34%),
+    rgba(255, 253, 248, 0.86);
+}
+
+.survey-list-card--closed {
+  border-left-color: #744539;
+}
+
 .scroll-anchor {
   scroll-margin-top: 24px;
 }
@@ -1172,6 +1242,21 @@ select {
 .status-pill--draft {
   background: #ece5d6;
   color: #67563b;
+}
+
+.status-pill--scheduled {
+  background: #dce8ea;
+  color: #244e5b;
+}
+
+.status-pill--active {
+  background: #dce7df;
+  color: #183a34;
+}
+
+.status-pill--finished {
+  background: #e4e8e5;
+  color: #4f6259;
 }
 
 .status-pill--published {

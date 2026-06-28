@@ -292,10 +292,18 @@ function SurveyListCard({
   onRepeat,
   onDelete,
 }: SurveyListCardProps) {
+  const displayState = getSurveyDisplayState(survey);
+  const primaryRoute = getPrimarySurveyRoute(survey);
+  const primaryActionLabel =
+    survey.status === 'draft'
+      ? `Rediger ${survey.title}`
+      : `Se resultater for ${survey.title}`;
+
   return (
     <Panel
+      className={`survey-list-card survey-list-card--${displayState}`}
       title={survey.title}
-      subtitle={formatSurveyMeta(survey)}
+      subtitle={formatSurveyMeta(survey, displayState)}
       action={
         <div className="inline-actions">
           <Link
@@ -334,9 +342,14 @@ function SurveyListCard({
         </div>
       }
     >
+      <Link
+        className="survey-list-card__primary-link"
+        to={primaryRoute}
+        aria-label={primaryActionLabel}
+      />
       <div className="status-row">
-        <span className={`status-pill status-pill--${survey.status}`}>
-          {statusLabel[survey.status]}
+        <span className={`status-pill status-pill--${displayState}`}>
+          {displayStateLabel[displayState]}
         </span>
         <span>{responseModeLabel[survey.responseMode]}</span>
         <span>{formatSurveyWorkspace(survey, workspaceNameById)}</span>
@@ -354,18 +367,89 @@ function toSurveyGroupHeadingId(title: string) {
   return `survey-group-${title.toLowerCase().replaceAll(' ', '-')}`;
 }
 
+type SurveyDisplayState = 'draft' | 'scheduled' | 'active' | 'finished' | 'closed';
+
+function getPrimarySurveyRoute(survey: SurveySummary) {
+  return survey.status === 'draft'
+    ? routes.editSurvey(survey.id)
+    : routes.results(survey.id);
+}
+
 const statusLabel = {
   draft: 'Utkast',
   published: 'Publisert',
   closed: 'Lukket',
 } satisfies Record<SurveySummary['status'], string>;
 
+const displayStateLabel = {
+  draft: 'Utkast',
+  scheduled: 'Planlagt',
+  active: 'Aktiv',
+  finished: 'Ferdig',
+  closed: 'Lukket',
+} satisfies Record<SurveyDisplayState, string>;
+
 const responseModeLabel = {
   anonymous: 'Anonyme svar',
   identified: 'Identifiserte svar',
 } satisfies Record<SurveySummary['responseMode'], string>;
 
-function formatSurveyMeta(survey: SurveySummary) {
+function getSurveyDisplayState(survey: SurveySummary): SurveyDisplayState {
+  if (survey.status === 'draft') {
+    return 'draft';
+  }
+
+  if (survey.status === 'closed') {
+    return 'closed';
+  }
+
+  const now = Date.now();
+  const endsAt = survey.endsAt ? new Date(survey.endsAt).getTime() : null;
+  const startsAt = survey.startsAt ? new Date(survey.startsAt).getTime() : null;
+
+  if (endsAt !== null && endsAt <= now) {
+    return 'finished';
+  }
+
+  if (startsAt !== null && startsAt > now) {
+    return 'scheduled';
+  }
+
+  return 'active';
+}
+
+function formatSurveyMeta(
+  survey: SurveySummary,
+  displayState = getSurveyDisplayState(survey),
+) {
+  if (displayState === 'active') {
+    if (survey.endsAt) {
+      return `Aktiv · slutter ${formatDate(survey.endsAt)}`;
+    }
+
+    if (survey.startsAt) {
+      return `Aktiv · startet ${formatDate(survey.startsAt)}`;
+    }
+
+    return 'Aktiv · uten tidsavgrensning';
+  }
+
+  if (displayState === 'scheduled' && survey.startsAt) {
+    return `Planlagt · starter ${formatDate(survey.startsAt)}`;
+  }
+
+  if (displayState === 'finished' && survey.endsAt) {
+    return `Ferdig · sluttet ${formatDate(survey.endsAt)}`;
+  }
+
+  if (displayState === 'closed') {
+    if (survey.endsAt) {
+      return `Lukket · sluttet ${formatDate(survey.endsAt)}`;
+    }
+
+    return 'Lukket · ikke aktiv';
+  }
+
   if (survey.startsAt && survey.endsAt) {
     return `${statusLabel[survey.status]} · ${formatDate(survey.startsAt)}-${formatDate(
       survey.endsAt,
