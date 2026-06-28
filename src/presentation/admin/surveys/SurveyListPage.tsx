@@ -351,9 +351,15 @@ function SurveyListCard({
         <span className={`status-pill status-pill--${displayState}`}>
           {displayStateLabel[displayState]}
         </span>
-        <span>{responseModeLabel[survey.responseMode]}</span>
-        <span>{formatSurveyWorkspace(survey, workspaceNameById)}</span>
-        <span>{formatUpdatedAt(survey.updatedAt)}</span>
+        <span className="status-pill status-pill--meta">
+          {responseModeLabel[survey.responseMode]}
+        </span>
+        <span className="status-pill status-pill--meta">
+          {formatSurveyWorkspace(survey, workspaceNameById)}
+        </span>
+        <span className="status-pill status-pill--meta">
+          {formatUpdatedAt(survey.updatedAt)}
+        </span>
       </div>
     </Panel>
   );

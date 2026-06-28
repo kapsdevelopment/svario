@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import {
+  Activity,
   ArrowLeft,
   BarChart3,
   ChartPie,
@@ -9,7 +10,9 @@ import {
   FileText,
   MessageSquareText,
   Palette,
+  Pause,
   Play,
+  RefreshCw,
   X,
 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -52,7 +55,14 @@ import { Panel } from '../../shared/components/Panel';
 
 export function ResultsPage() {
   const { surveyId } = useParams();
-  const { data: results, error, isError, isLoading } = useSurveyResults(surveyId);
+  const {
+    data: results,
+    error,
+    isError,
+    isLoading,
+    live,
+  } = useSurveyResults(surveyId, { live: true });
+  const livePulse = useLiveResultPulse(results);
 
   if (!surveyId) {
     return (
@@ -71,6 +81,9 @@ export function ResultsPage() {
           <p className="eyebrow">Analyse</p>
           <h1>{results?.title ?? 'Resultater'}</h1>
           {results ? <p>{formatSurveyMeta(results)}</p> : null}
+          {results ? (
+            <LiveResultsStatus live={live} pulse={livePulse} />
+          ) : null}
         </div>
         <Link className="button button--secondary" to={routes.surveys}>
           <ArrowLeft size={18} aria-hidden="true" />
@@ -79,7 +92,7 @@ export function ResultsPage() {
       </header>
 
       {isLoading ? (
-        <Panel title="Laster resultater" subtitle="Henter svar fra Supabase." />
+        <Panel title="Laster resultater" subtitle="Henter svar." />
       ) : null}
 
       {isError ? (
@@ -88,7 +101,9 @@ export function ResultsPage() {
         </div>
       ) : null}
 
-      {results ? <ResultsContent results={results} /> : null}
+      {results ? (
+        <ResultsContent livePulse={livePulse} results={results} />
+      ) : null}
     </div>
   );
 }
@@ -179,7 +194,144 @@ function PresentationStatus({
   );
 }
 
-function ResultsContent({ results }: { results: SurveyResults }) {
+type LiveResultsState = ReturnType<typeof useSurveyResults>['live'];
+
+type LiveResultPulseState = {
+  pulseKey: number;
+  responseDelta: number;
+  updatedQuestionIds: Set<string>;
+};
+
+function LiveResultsStatus({
+  live,
+  pulse,
+}: {
+  live: LiveResultsState;
+  pulse: LiveResultPulseState;
+}) {
+  const state = live.isPaused
+    ? 'paused'
+    : live.isRefreshing
+      ? 'refreshing'
+      : 'live';
+  const statusLabel = live.isPaused
+    ? 'Live pauset'
+    : live.isRefreshing
+      ? 'Henter nye svar'
+      : 'Live';
+  const updatedLabel = live.lastUpdatedAt
+    ? `Oppdatert ${formatLiveUpdatedAt(live.lastUpdatedAt)}`
+    : `Oppdateres hvert ${formatLivePollInterval(live.pollIntervalMs)}`;
+
+  return (
+    <div className="live-results-status" data-state={state}>
+      <span className="live-results-status__signal" aria-hidden="true">
+        <Activity size={15} />
+      </span>
+      <span className="live-results-status__label">{statusLabel}</span>
+      <span className="live-results-status__time">{updatedLabel}</span>
+      {pulse.responseDelta > 0 ? (
+        <strong className="live-results-status__burst" key={pulse.pulseKey}>
+          {formatResponseDelta(pulse.responseDelta)}
+        </strong>
+      ) : null}
+      <button
+        className="icon-button live-results-status__refresh"
+        type="button"
+        aria-label="Oppdater nå"
+        title="Oppdater nå"
+        disabled={live.isRefreshing}
+        onClick={() => void live.refresh()}
+      >
+        <RefreshCw size={16} aria-hidden="true" />
+      </button>
+      <button
+        className="button button--secondary live-results-status__toggle"
+        type="button"
+        aria-pressed={live.isPaused}
+        onClick={() => live.setPaused((isPaused) => !isPaused)}
+      >
+        {live.isPaused ? (
+          <Play size={16} aria-hidden="true" />
+        ) : (
+          <Pause size={16} aria-hidden="true" />
+        )}
+        {live.isPaused ? 'Gjenoppta' : 'Pause'}
+      </button>
+    </div>
+  );
+}
+
+function useLiveResultPulse(
+  results: SurveyResults | undefined,
+): LiveResultPulseState {
+  const previousResponseCount = useRef<number | null>(null);
+  const previousQuestionCounts = useRef<Map<string, number> | null>(null);
+  const [pulse, setPulse] = useState<LiveResultPulseState>({
+    pulseKey: 0,
+    responseDelta: 0,
+    updatedQuestionIds: new Set(),
+  });
+
+  useEffect(() => {
+    if (!results) {
+      return;
+    }
+
+    const previousCount = previousResponseCount.current;
+    const previousCountsByQuestion = previousQuestionCounts.current;
+    const nextCountsByQuestion = new Map(
+      results.questionResults.map((result) => [
+        result.question.id,
+        result.answeredCount,
+      ]),
+    );
+
+    previousResponseCount.current = results.responseCount;
+    previousQuestionCounts.current = nextCountsByQuestion;
+
+    if (previousCount === null || results.responseCount <= previousCount) {
+      return;
+    }
+
+    const updatedQuestionIds = new Set<string>();
+
+    for (const result of results.questionResults) {
+      const previousQuestionCount =
+        previousCountsByQuestion?.get(result.question.id) ?? 0;
+
+      if (result.answeredCount > previousQuestionCount) {
+        updatedQuestionIds.add(result.question.id);
+      }
+    }
+
+    setPulse({
+      pulseKey: Date.now(),
+      responseDelta: results.responseCount - previousCount,
+      updatedQuestionIds,
+    });
+
+    const timeoutId = window.setTimeout(() => {
+      setPulse({
+        pulseKey: Date.now(),
+        responseDelta: 0,
+        updatedQuestionIds: new Set(),
+      });
+    }, 3600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [results]);
+
+  return pulse;
+}
+
+function ResultsContent({
+  livePulse,
+  results,
+}: {
+  livePulse: LiveResultPulseState;
+  results: SurveyResults;
+}) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportingFormat, setExportingFormat] = useState<
     'csv' | 'docx' | 'pdf' | 'pptx' | null
@@ -255,7 +407,15 @@ function ResultsContent({ results }: { results: SurveyResults }) {
   return (
     <>
       <div className="metric-grid">
-        <Panel title="Svar" subtitle={`${results.responseCount} totalt`} />
+        <Panel
+          className={
+            livePulse.responseDelta > 0
+              ? 'metric-panel metric-panel--live-pulse'
+              : 'metric-panel'
+          }
+          title="Svar"
+          subtitle={`${results.responseCount} totalt`}
+        />
         <Panel title="Spørsmål" subtitle={`${results.questionResults.length} totalt`} />
         <Panel
           title="Siste svar"
@@ -274,6 +434,9 @@ function ResultsContent({ results }: { results: SurveyResults }) {
       <div className="results-stack">
         {results.questionResults.map((questionResult) => (
           <QuestionResultCard
+            isLiveUpdated={livePulse.updatedQuestionIds.has(
+              questionResult.question.id,
+            )}
             key={questionResult.question.id}
             result={questionResult}
             responseCount={results.responseCount}
@@ -579,10 +742,12 @@ function FreeTextPresentationView({
 }
 
 function QuestionResultCard({
+  isLiveUpdated,
   responseCount,
   result,
   surveyId,
 }: {
+  isLiveUpdated: boolean;
   responseCount: number;
   result: SurveyQuestionResult;
   surveyId: string;
@@ -625,6 +790,11 @@ function QuestionResultCard({
 
   return (
     <Panel
+      className={
+        isLiveUpdated
+          ? 'result-question-card result-question-card--updated'
+          : 'result-question-card'
+      }
       title={result.question.prompt}
       subtitle={`${getQuestionResultTypeLabel(result.question)} · ${result.answeredCount}/${responseCount} besvart`}
       action={
@@ -866,7 +1036,12 @@ function BarResultChart<TData extends { count: number }>({
           <XAxis dataKey={xDataKey} />
           <YAxis allowDecimals={false} />
           <Tooltip />
-          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+          <Bar
+            animationDuration={680}
+            dataKey="count"
+            isAnimationActive
+            radius={[6, 6, 0, 0]}
+          >
             {data.map((result, index) => (
               <Cell
                 fill={getChartColor(index, colorMode, mutedColor)}
@@ -911,6 +1086,8 @@ function PieResultChart<TData extends { count: number; label: string }>({
             data={visibleData}
             dataKey="count"
             innerRadius={58}
+            isAnimationActive
+            animationDuration={720}
             nameKey="label"
             outerRadius={106}
             paddingAngle={2}
@@ -990,25 +1167,32 @@ function WordCloud({
           viewBox={`0 0 ${wordCloudWidth} ${wordCloudHeight}`}
         >
           {placedItems.map((item, index) => {
+            const itemStyle = {
+              '--word-delay': `${Math.min(index * 34, 420)}ms`,
+            } as CSSProperties;
             const wordStyle = {
               fontSize: `${item.fontSize}px`,
               ...(colorMode === 'colorful'
                 ? { color: getWordCloudColor(index, item) }
                 : {}),
-            };
+            } as CSSProperties;
 
             return (
-              <text
-                className={`word-cloud__word word-cloud__word--tone-${item.tone}`}
-                dominantBaseline="middle"
-                key={item.word}
-                style={wordStyle}
-                textAnchor="middle"
+              <g
+                key={`${item.word}-${item.count}`}
+                style={itemStyle}
                 transform={`translate(${item.x} ${item.y}) rotate(${item.rotation})`}
               >
-                <title>{`${item.word}: ${formatWordCount(item.count)}`}</title>
-                {item.word}
-              </text>
+                <text
+                  className={`word-cloud__word word-cloud__word--tone-${item.tone}`}
+                  dominantBaseline="middle"
+                  style={wordStyle}
+                  textAnchor="middle"
+                >
+                  <title>{`${item.word}: ${formatWordCount(item.count)}`}</title>
+                  {item.word}
+                </text>
+              </g>
             );
           })}
         </svg>
@@ -1293,6 +1477,23 @@ function formatDateTime(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function formatLiveUpdatedAt(value: number) {
+  return new Intl.DateTimeFormat('nb-NO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(value));
+}
+
+function formatLivePollInterval(value: number) {
+  const seconds = Math.max(1, Math.round(value / 1000));
+  return seconds === 1 ? '1 sekund' : `${seconds} sekunder`;
+}
+
+function formatResponseDelta(delta: number) {
+  return delta === 1 ? '+1 svar' : `+${delta} svar`;
 }
 
 function formatWordCount(count: number) {
