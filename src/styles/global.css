@@ -259,7 +259,9 @@ h2 {
 
 .live-results-status__toggle {
   min-height: 34px;
+  font-size: 0.82rem;
   padding: 0 11px;
+  white-space: nowrap;
 }
 
 .live-results-status[data-state="paused"] .live-results-status__signal {
@@ -1976,39 +1978,9 @@ select {
   box-shadow: 0 8px 18px rgba(24, 58, 52, 0.14);
 }
 
-.visual-switch button:disabled,
-.visual-style-toggle:disabled {
+.visual-switch button:disabled {
   cursor: wait;
   opacity: 0.62;
-}
-
-.visual-style-toggle {
-  display: inline-flex;
-  min-height: 36px;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid #d9d3c7;
-  border-radius: 999px;
-  background: #fffdf8;
-  color: #4f6c5d;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 800;
-  padding: 8px 12px;
-}
-
-.visual-style-toggle:hover {
-  border-color: #b9c8bd;
-  background: #eef4f1;
-  color: #183a34;
-}
-
-.visual-style-toggle--colorful {
-  border-color: rgba(184, 107, 59, 0.36);
-  background:
-    linear-gradient(90deg, rgba(47, 111, 115, 0.12), rgba(194, 147, 58, 0.14)),
-    #fffdf8;
-  color: #7a4e3b;
 }
 
 .result-layout {

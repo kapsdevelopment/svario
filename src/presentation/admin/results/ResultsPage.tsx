@@ -214,14 +214,13 @@ function LiveResultsStatus({
     : live.isRefreshing
       ? 'refreshing'
       : 'live';
-  const statusLabel = live.isPaused
-    ? 'Live pauset'
-    : live.isRefreshing
-      ? 'Henter nye svar'
-      : 'Live';
+  const statusLabel = live.isPaused ? 'Live av' : 'Live';
   const updatedLabel = live.lastUpdatedAt
     ? `Oppdatert ${formatLiveUpdatedAt(live.lastUpdatedAt)}`
     : `Oppdateres hvert ${formatLivePollInterval(live.pollIntervalMs)}`;
+  const toggleLabel = live.isPaused
+    ? 'Slå på live-oppdatering'
+    : 'Slå av live-oppdatering';
 
   return (
     <div className="live-results-status" data-state={state}>
@@ -248,6 +247,7 @@ function LiveResultsStatus({
       <button
         className="button button--secondary live-results-status__toggle"
         type="button"
+        aria-label={toggleLabel}
         aria-pressed={live.isPaused}
         onClick={() => live.setPaused((isPaused) => !isPaused)}
       >
@@ -256,7 +256,7 @@ function LiveResultsStatus({
         ) : (
           <Pause size={16} aria-hidden="true" />
         )}
-        {live.isPaused ? 'Gjenoppta' : 'Pause'}
+        {toggleLabel}
       </button>
     </div>
   );
@@ -759,7 +759,6 @@ function QuestionResultCard({
   const [chartType, setChartType] = useState<ResultChartType>(
     getInitialChartType(result.question.visualizationType),
   );
-  const isColorful = colorMode === 'colorful';
   const hasVisualization = result.answeredCount > 0;
   const supportsChartType = result.question.type !== 'free_text';
   const currentVisualizationType = supportsChartType
@@ -782,8 +781,7 @@ function QuestionResultCard({
     saveVisualizationPreference(nextChartType, colorMode);
   }
 
-  function handleColorModeToggle() {
-    const nextColorMode = isColorful ? 'muted' : 'colorful';
+  function handleColorModeChange(nextColorMode: ResultColorMode) {
     setColorMode(nextColorMode);
     saveVisualizationPreference(currentVisualizationType, nextColorMode);
   }
@@ -822,18 +820,26 @@ function QuestionResultCard({
                 </button>
               </div>
             ) : null}
-            <button
-              aria-pressed={isColorful}
-              className={`visual-style-toggle ${
-                isColorful ? 'visual-style-toggle--colorful' : ''
-              }`}
-              disabled={updateVisualization.isPending}
-              type="button"
-              onClick={handleColorModeToggle}
-            >
-              <Palette size={16} aria-hidden="true" />
-              {isColorful ? 'Fargerik' : 'Dempet'}
-            </button>
+            <div className="visual-switch" aria-label="Fargevalg">
+              <button
+                aria-pressed={colorMode === 'muted'}
+                disabled={updateVisualization.isPending}
+                type="button"
+                onClick={() => handleColorModeChange('muted')}
+              >
+                <Palette size={16} aria-hidden="true" />
+                Dempet
+              </button>
+              <button
+                aria-pressed={colorMode === 'colorful'}
+                disabled={updateVisualization.isPending}
+                type="button"
+                onClick={() => handleColorModeChange('colorful')}
+              >
+                <Palette size={16} aria-hidden="true" />
+                Fargerik
+              </button>
+            </div>
           </div>
         ) : null
       }
