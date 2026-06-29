@@ -325,9 +325,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [basicMessage, setBasicMessage] = useState<string | null>(null);
   const [sectionTitle, setSectionTitle] = useState('');
   const [sectionDescription, setSectionDescription] = useState('');
-  const [sectionToolsOpen, setSectionToolsOpen] = useState(
-    survey.sections.length > 0,
-  );
+  const [sectionToolsOpen, setSectionToolsOpen] = useState(false);
   const [type, setType] = useState<QuestionType>('multiple_choice');
   const [sectionId, setSectionId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -409,12 +407,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     survey.title,
     survey.visibility,
   ]);
-
-  useEffect(() => {
-    if (survey.sections.length > 0) {
-      setSectionToolsOpen(true);
-    }
-  }, [survey.sections.length]);
 
   const localDraftStorageKey = useMemo(
     () => getSurveyEditorLocalDraftStorageKey(survey.id),
@@ -1407,8 +1399,27 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               {questionGroups.map((group) => (
                 <section className="question-group" key={group.id}>
                   <div className="question-group__header">
-                    <h3>{group.title}</h3>
-                    {group.description ? <p>{group.description}</p> : null}
+                    <div>
+                      <h3>{group.title}</h3>
+                      {group.description ? <p>{group.description}</p> : null}
+                    </div>
+                    {group.section ? (
+                      <button
+                        className="icon-button"
+                        type="button"
+                        disabled={!canEditStructure || deleteSection.isPending}
+                        aria-label={`Slett seksjonen ${
+                          group.section.title ?? 'uten tittel'
+                        }`}
+                        onClick={() => {
+                          if (group.section) {
+                            handleDeleteSection(group.section);
+                          }
+                        }}
+                      >
+                        <Trash2 size={18} aria-hidden="true" />
+                      </button>
+                    ) : null}
                   </div>
                   {group.questions.map((question) => (
                     <QuestionCard
@@ -1448,106 +1459,85 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                   {reorderError}
                 </p>
               ) : null}
+              {deleteSection.isError ? (
+                <p className="form-error" role="alert">
+                  {getErrorMessage(deleteSection.error)}
+                </p>
+              ) : null}
+              <details
+                className="question-group question-group--section-create optional-section-tools"
+                open={sectionToolsOpen}
+                onToggle={(event) =>
+                  setSectionToolsOpen(event.currentTarget.open)
+                }
+              >
+                <summary>
+                  <span className="optional-section-tools__label">
+                    <Layers2 size={18} aria-hidden="true" />
+                    Legg til seksjon
+                  </span>
+                  <span>
+                    {survey.sections.length === 0
+                      ? 'Valgfritt'
+                      : `${survey.sections.length} seksjoner`}
+                  </span>
+                </summary>
+
+                <div className="optional-section-tools__content">
+                  <form className="form-stack" onSubmit={handleAddSection}>
+                    <div className="form-grid form-grid--two">
+                      <label>
+                        Tittel
+                        <input
+                          type="text"
+                          value={sectionTitle}
+                          disabled={!canEditStructure || addSection.isPending}
+                          placeholder="Om arbeidsmiljøet"
+                          onChange={(event) =>
+                            setSectionTitle(event.target.value)
+                          }
+                        />
+                      </label>
+                      <label>
+                        Beskrivelse
+                        <input
+                          type="text"
+                          value={sectionDescription}
+                          disabled={!canEditStructure || addSection.isPending}
+                          placeholder="Kort intro til denne delen"
+                          onChange={(event) =>
+                            setSectionDescription(event.target.value)
+                          }
+                        />
+                      </label>
+                    </div>
+                    {sectionValidationError ? (
+                      <div className="form-alert form-alert--error" role="alert">
+                        {sectionValidationError}
+                      </div>
+                    ) : null}
+                    {addSection.isError ? (
+                      <div className="form-alert form-alert--error" role="alert">
+                        {getErrorMessage(addSection.error)}
+                      </div>
+                    ) : null}
+                    <div className="form-actions">
+                      <button
+                        className="button button--secondary"
+                        type="submit"
+                        disabled={!canEditStructure || addSection.isPending}
+                      >
+                        <Layers2 size={18} aria-hidden="true" />
+                        {addSection.isPending
+                          ? 'Legger til...'
+                          : 'Legg til seksjon'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </details>
             </div>
-
-            <details
-              className="optional-section-tools"
-              open={sectionToolsOpen}
-              onToggle={(event) => setSectionToolsOpen(event.currentTarget.open)}
-            >
-              <summary>
-                <span className="optional-section-tools__label">
-                  <Layers2 size={18} aria-hidden="true" />
-                  Seksjoner
-                </span>
-                <span>
-                  {survey.sections.length === 0
-                    ? 'Valgfritt'
-                    : `${survey.sections.length} seksjoner`}
-                </span>
-              </summary>
-
-              <div className="optional-section-tools__content">
-                <form className="form-stack" onSubmit={handleAddSection}>
-                  <div className="form-grid form-grid--two">
-                    <label>
-                      Tittel
-                      <input
-                        type="text"
-                        value={sectionTitle}
-                        disabled={!canEditStructure || addSection.isPending}
-                        placeholder="Om arbeidsmiljøet"
-                        onChange={(event) => setSectionTitle(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Beskrivelse
-                      <input
-                        type="text"
-                        value={sectionDescription}
-                        disabled={!canEditStructure || addSection.isPending}
-                        placeholder="Kort intro til denne delen"
-                        onChange={(event) =>
-                          setSectionDescription(event.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                  {sectionValidationError ? (
-                    <div className="form-alert form-alert--error" role="alert">
-                      {sectionValidationError}
-                    </div>
-                  ) : null}
-                  {addSection.isError ? (
-                    <div className="form-alert form-alert--error" role="alert">
-                      {getErrorMessage(addSection.error)}
-                    </div>
-                  ) : null}
-                  {deleteSection.isError ? (
-                    <div className="form-alert form-alert--error" role="alert">
-                      {getErrorMessage(deleteSection.error)}
-                    </div>
-                  ) : null}
-                  <div className="form-actions">
-                    <button
-                      className="button button--secondary"
-                      type="submit"
-                      disabled={!canEditStructure || addSection.isPending}
-                    >
-                      <Layers2 size={18} aria-hidden="true" />
-                      {addSection.isPending ? 'Legger til...' : 'Legg til seksjon'}
-                    </button>
-                  </div>
-                </form>
-
-                {survey.sections.length > 0 ? (
-                  <div className="section-list">
-                    {survey.sections.map((section) => (
-                      <article className="section-card" key={section.id}>
-                        <div>
-                          <h3>{section.title ?? 'Uten tittel'}</h3>
-                          {section.description ? (
-                            <p>{section.description}</p>
-                          ) : null}
-                        </div>
-                        <button
-                          className="icon-button"
-                          type="button"
-                          disabled={!canEditStructure || deleteSection.isPending}
-                          aria-label={`Slett seksjonen ${
-                            section.title ?? 'uten tittel'
-                          }`}
-                          onClick={() => handleDeleteSection(section)}
-                        >
-                          <Trash2 size={18} aria-hidden="true" />
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </details>
-          </section>
+            </section>
         </div>
       </Panel>
 
@@ -2373,8 +2363,15 @@ function groupQuestionsBySection(
   const unsectionedQuestions = questions.filter(
     (question) => question.sectionId === null,
   );
-  const groups = sections.map((section) => ({
+  const groups: Array<{
+    id: string;
+    section: SurveySection | null;
+    title: string;
+    description: string | null;
+    questions: SurveyQuestion[];
+  }> = sections.map((section) => ({
     id: section.id,
+    section,
     title: section.title ?? 'Uten tittel',
     description: section.description,
     questions: questions.filter((question) => question.sectionId === section.id),
@@ -2383,6 +2380,7 @@ function groupQuestionsBySection(
   if (unsectionedQuestions.length > 0 || sections.length === 0) {
     groups.push({
       id: 'unsectioned',
+      section: null,
       title: 'Uten seksjon',
       description: null,
       questions: unsectionedQuestions,
