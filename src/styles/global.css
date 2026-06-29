@@ -1422,6 +1422,63 @@ select {
   font-weight: 800;
 }
 
+.optional-section-tools {
+  border-top: 1px solid #e6e0d6;
+  padding-top: 14px;
+}
+
+.optional-section-tools summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #183a34;
+  cursor: pointer;
+  font-weight: 800;
+  list-style: none;
+}
+
+.optional-section-tools summary::-webkit-details-marker {
+  display: none;
+}
+
+.optional-section-tools summary::after {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9d3c7;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #183a34;
+  content: "+";
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.optional-section-tools[open] summary::after {
+  content: "-";
+}
+
+.optional-section-tools summary > span:last-of-type {
+  margin-left: auto;
+  color: #607681;
+  font-size: 0.84rem;
+}
+
+.optional-section-tools__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.optional-section-tools__content {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
 .editor-autosave-status {
   display: flex;
   width: fit-content;

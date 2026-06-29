@@ -325,6 +325,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [basicMessage, setBasicMessage] = useState<string | null>(null);
   const [sectionTitle, setSectionTitle] = useState('');
   const [sectionDescription, setSectionDescription] = useState('');
+  const [sectionToolsOpen, setSectionToolsOpen] = useState(
+    survey.sections.length > 0,
+  );
   const [type, setType] = useState<QuestionType>('multiple_choice');
   const [sectionId, setSectionId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -406,6 +409,12 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     survey.title,
     survey.visibility,
   ]);
+
+  useEffect(() => {
+    if (survey.sections.length > 0) {
+      setSectionToolsOpen(true);
+    }
+  }, [survey.sections.length]);
 
   const localDraftStorageKey = useMemo(
     () => getSurveyEditorLocalDraftStorageKey(survey.id),
@@ -497,6 +506,12 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       setBasicVisibility(storedDraft.basic.visibility);
       setSectionTitle(storedDraft.section.title);
       setSectionDescription(storedDraft.section.description);
+      if (
+        storedDraft.section.title.trim().length > 0 ||
+        storedDraft.section.description.trim().length > 0
+      ) {
+        setSectionToolsOpen(true);
+      }
       setType(storedDraft.question.type);
       setSectionId(storedDraft.question.sectionId);
       setPrompt(storedDraft.question.prompt);
@@ -1170,7 +1185,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       ) : null}
 
       <Panel
-        title="Spørsmål og seksjoner"
+        title="Spørsmål"
         subtitle={
           survey.questions.length === 0
             ? 'Ingen spørsmål er lagt til ennå'
@@ -1180,281 +1195,202 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         <div className="survey-builder-stack">
           <section className="builder-subsection">
             <div className="builder-subsection__header">
-              <h3>Seksjoner</h3>
-              <span>
-                {survey.sections.length === 0
-                  ? 'Valgfritt'
-                  : `${survey.sections.length} seksjoner`}
-              </span>
-            </div>
-
-        <form className="form-stack" onSubmit={handleAddSection}>
-          <div className="form-grid form-grid--two">
-            <label>
-              Tittel
-              <input
-                type="text"
-                value={sectionTitle}
-                disabled={!canEditStructure || addSection.isPending}
-                placeholder="Om arbeidsmiljøet"
-                onChange={(event) => setSectionTitle(event.target.value)}
-              />
-            </label>
-            <label>
-              Beskrivelse
-              <input
-                type="text"
-                value={sectionDescription}
-                disabled={!canEditStructure || addSection.isPending}
-                placeholder="Kort intro til denne delen"
-                onChange={(event) => setSectionDescription(event.target.value)}
-              />
-            </label>
-          </div>
-          {sectionValidationError ? (
-            <div className="form-alert form-alert--error" role="alert">
-              {sectionValidationError}
-            </div>
-          ) : null}
-          {addSection.isError ? (
-            <div className="form-alert form-alert--error" role="alert">
-              {getErrorMessage(addSection.error)}
-            </div>
-          ) : null}
-          {deleteSection.isError ? (
-            <div className="form-alert form-alert--error" role="alert">
-              {getErrorMessage(deleteSection.error)}
-            </div>
-          ) : null}
-          <div className="form-actions">
-            <button
-              className="button button--secondary"
-              type="submit"
-              disabled={!canEditStructure || addSection.isPending}
-            >
-              <Layers2 size={18} aria-hidden="true" />
-              {addSection.isPending ? 'Legger til...' : 'Legg til seksjon'}
-            </button>
-          </div>
-        </form>
-
-        {survey.sections.length > 0 ? (
-          <div className="section-list">
-            {survey.sections.map((section) => (
-              <article className="section-card" key={section.id}>
-                <div>
-                  <h3>{section.title ?? 'Uten tittel'}</h3>
-                  {section.description ? <p>{section.description}</p> : null}
-                </div>
-                <button
-                  className="icon-button"
-                  type="button"
-                  disabled={!canEditStructure || deleteSection.isPending}
-                  aria-label={`Slett seksjonen ${
-                    section.title ?? 'uten tittel'
-                  }`}
-                  onClick={() => handleDeleteSection(section)}
-                >
-                  <Trash2 size={18} aria-hidden="true" />
-                </button>
-              </article>
-            ))}
-          </div>
-        ) : null}
-
-          </section>
-
-          <section className="builder-subsection">
-            <div className="builder-subsection__header">
               <h3>Legg til spørsmål</h3>
             </div>
 
-        <form className="form-stack" onSubmit={handleSubmit}>
-          <div
-            className={
-              survey.sections.length > 0
-                ? 'form-grid'
-                : 'form-grid form-grid--two'
-            }
-          >
-            <label>
-              Spørsmålstype
-              <select
-                value={type}
-                disabled={!canEditStructure || addQuestion.isPending}
-                onChange={(event) => setType(event.target.value as QuestionType)}
+            <form className="form-stack" onSubmit={handleSubmit}>
+              <div
+                className={
+                  survey.sections.length > 0
+                    ? 'form-grid'
+                    : 'form-grid form-grid--two'
+                }
               >
-                <option value="multiple_choice">Flervalg</option>
-                <option value="free_text">Fritekst</option>
-                <option value="likert_scale">Skala/rating</option>
-              </select>
-            </label>
-            {survey.sections.length > 0 ? (
-              <label>
-                Seksjon
-                <select
-                  value={selectedSectionId ?? 'none'}
-                  disabled={!canEditStructure || addQuestion.isPending}
-                  onChange={(event) =>
-                    setSectionId(
-                      event.target.value === 'none' ? null : event.target.value,
-                    )
-                  }
-                >
-                  <option value="none">Uten seksjon</option>
-                  {survey.sections.map((section) => (
-                    <option key={section.id} value={section.id}>
-                      {section.title ?? 'Uten tittel'}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <label>
-              Spørsmål
-              <input
-                type="text"
-                value={prompt}
-                disabled={!canEditStructure || addQuestion.isPending}
-                placeholder="Hva bør vi prioritere neste kvartal?"
-                onChange={(event) => setPrompt(event.target.value)}
-              />
-            </label>
-          </div>
-          <label>
-            Beskrivelse
-            <textarea
-              rows={3}
-              value={description}
-              disabled={!canEditStructure || addQuestion.isPending}
-              placeholder="Valgfri kontekst til respondenten"
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </label>
-          {type === 'multiple_choice' ? (
-            <label>
-              Alternativer
-              <textarea
-                rows={4}
-                value={optionText}
-                disabled={!canEditStructure || addQuestion.isPending}
-                onChange={(event) => setOptionText(event.target.value)}
-              />
-            </label>
-          ) : null}
-          {type === 'likert_scale' ? (
-            <div className="form-grid">
-              <label>
-                Hurtigvalg
-                <select
-                  value={
-                    selectedScalePreset
-                      ? getScalePresetValue(selectedScalePreset)
-                      : 'custom'
-                  }
-                  disabled={!canEditStructure || addQuestion.isPending}
-                  onChange={(event) =>
-                    handleScalePresetChange(event.target.value)
-                  }
-                >
-                  {scalePresets.map((preset) => (
-                    <option
-                      key={getScalePresetValue(preset)}
-                      value={getScalePresetValue(preset)}
+                <label>
+                  Spørsmålstype
+                  <select
+                    value={type}
+                    disabled={!canEditStructure || addQuestion.isPending}
+                    onChange={(event) =>
+                      setType(event.target.value as QuestionType)
+                    }
+                  >
+                    <option value="multiple_choice">Flervalg</option>
+                    <option value="free_text">Fritekst</option>
+                    <option value="likert_scale">Skala/rating</option>
+                  </select>
+                </label>
+                {survey.sections.length > 0 ? (
+                  <label>
+                    Seksjon
+                    <select
+                      value={selectedSectionId ?? 'none'}
+                      disabled={!canEditStructure || addQuestion.isPending}
+                      onChange={(event) =>
+                        setSectionId(
+                          event.target.value === 'none'
+                            ? null
+                            : event.target.value,
+                        )
+                      }
                     >
-                      {preset.label}
-                    </option>
-                  ))}
-                  <option value="custom">Egendefinert</option>
-                </select>
-              </label>
+                      <option value="none">Uten seksjon</option>
+                      {survey.sections.map((section) => (
+                        <option key={section.id} value={section.id}>
+                          {section.title ?? 'Uten tittel'}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                <label>
+                  Spørsmål
+                  <input
+                    type="text"
+                    value={prompt}
+                    disabled={!canEditStructure || addQuestion.isPending}
+                    placeholder="Hva bør vi prioritere neste kvartal?"
+                    onChange={(event) => setPrompt(event.target.value)}
+                  />
+                </label>
+              </div>
               <label>
-                Fra
-                <input
-                  type="number"
-                  min={questionScaleLimits.min}
-                  max={questionScaleLimits.max}
-                  value={scaleMin}
-                  disabled={
-                    !canEditStructure ||
-                    addQuestion.isPending ||
-                    scaleVariant !== 'buttons'
-                  }
-                  onChange={(event) => {
-                    setScaleVariant('buttons');
-                    setScaleMin(parseScaleInput(event.target.value, scaleMin));
-                  }}
-                />
-              </label>
-              <label>
-                Til
-                <input
-                  type="number"
-                  min={questionScaleLimits.min}
-                  max={questionScaleLimits.max}
-                  value={scaleMax}
-                  disabled={
-                    !canEditStructure ||
-                    addQuestion.isPending ||
-                    scaleVariant !== 'buttons'
-                  }
-                  onChange={(event) => {
-                    setScaleVariant('buttons');
-                    setScaleMax(parseScaleInput(event.target.value, scaleMax));
-                  }}
-                />
-              </label>
-            </div>
-          ) : null}
-          <div className="checkbox-row">
-            <label>
-              <input
-                type="checkbox"
-                checked={isRequired}
-                disabled={!canEditStructure || addQuestion.isPending}
-                onChange={(event) => setIsRequired(event.target.checked)}
-              />
-              Påkrevd
-            </label>
-            {type === 'multiple_choice' ? (
-              <label>
-                <input
-                  type="checkbox"
-                  checked={allowMultiple}
+                Beskrivelse
+                <textarea
+                  rows={3}
+                  value={description}
                   disabled={!canEditStructure || addQuestion.isPending}
-                  onChange={(event) => setAllowMultiple(event.target.checked)}
+                  placeholder="Valgfri kontekst til respondenten"
+                  onChange={(event) => setDescription(event.target.value)}
                 />
-                Flere valg
               </label>
-            ) : null}
-          </div>
-          {questionValidationError ? (
-            <div className="form-alert form-alert--error" role="alert">
-              {questionValidationError}
-            </div>
-          ) : null}
-          {addQuestion.isError ? (
-            <div className="form-alert form-alert--error" role="alert">
-              {getErrorMessage(addQuestion.error)}
-            </div>
-          ) : null}
-          {deleteQuestion.isError ? (
-            <div className="form-alert form-alert--error" role="alert">
-              {getErrorMessage(deleteQuestion.error)}
-            </div>
-          ) : null}
-          <div className="form-actions">
-            <button
-              className="button button--primary"
-              type="submit"
-              disabled={!canEditStructure || addQuestion.isPending}
-            >
-              <Plus size={18} aria-hidden="true" />
-              {addQuestion.isPending ? 'Legger til...' : 'Legg til spørsmål'}
-            </button>
-          </div>
-        </form>
-
+              {type === 'multiple_choice' ? (
+                <label>
+                  Alternativer
+                  <textarea
+                    rows={4}
+                    value={optionText}
+                    disabled={!canEditStructure || addQuestion.isPending}
+                    onChange={(event) => setOptionText(event.target.value)}
+                  />
+                </label>
+              ) : null}
+              {type === 'likert_scale' ? (
+                <div className="form-grid">
+                  <label>
+                    Hurtigvalg
+                    <select
+                      value={
+                        selectedScalePreset
+                          ? getScalePresetValue(selectedScalePreset)
+                          : 'custom'
+                      }
+                      disabled={!canEditStructure || addQuestion.isPending}
+                      onChange={(event) =>
+                        handleScalePresetChange(event.target.value)
+                      }
+                    >
+                      {scalePresets.map((preset) => (
+                        <option
+                          key={getScalePresetValue(preset)}
+                          value={getScalePresetValue(preset)}
+                        >
+                          {preset.label}
+                        </option>
+                      ))}
+                      <option value="custom">Egendefinert</option>
+                    </select>
+                  </label>
+                  <label>
+                    Fra
+                    <input
+                      type="number"
+                      min={questionScaleLimits.min}
+                      max={questionScaleLimits.max}
+                      value={scaleMin}
+                      disabled={
+                        !canEditStructure ||
+                        addQuestion.isPending ||
+                        scaleVariant !== 'buttons'
+                      }
+                      onChange={(event) => {
+                        setScaleVariant('buttons');
+                        setScaleMin(
+                          parseScaleInput(event.target.value, scaleMin),
+                        );
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Til
+                    <input
+                      type="number"
+                      min={questionScaleLimits.min}
+                      max={questionScaleLimits.max}
+                      value={scaleMax}
+                      disabled={
+                        !canEditStructure ||
+                        addQuestion.isPending ||
+                        scaleVariant !== 'buttons'
+                      }
+                      onChange={(event) => {
+                        setScaleVariant('buttons');
+                        setScaleMax(
+                          parseScaleInput(event.target.value, scaleMax),
+                        );
+                      }}
+                    />
+                  </label>
+                </div>
+              ) : null}
+              <div className="checkbox-row">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={isRequired}
+                    disabled={!canEditStructure || addQuestion.isPending}
+                    onChange={(event) => setIsRequired(event.target.checked)}
+                  />
+                  Påkrevd
+                </label>
+                {type === 'multiple_choice' ? (
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={allowMultiple}
+                      disabled={!canEditStructure || addQuestion.isPending}
+                      onChange={(event) => setAllowMultiple(event.target.checked)}
+                    />
+                    Flere valg
+                  </label>
+                ) : null}
+              </div>
+              {questionValidationError ? (
+                <div className="form-alert form-alert--error" role="alert">
+                  {questionValidationError}
+                </div>
+              ) : null}
+              {addQuestion.isError ? (
+                <div className="form-alert form-alert--error" role="alert">
+                  {getErrorMessage(addQuestion.error)}
+                </div>
+              ) : null}
+              {deleteQuestion.isError ? (
+                <div className="form-alert form-alert--error" role="alert">
+                  {getErrorMessage(deleteQuestion.error)}
+                </div>
+              ) : null}
+              <div className="form-actions">
+                <button
+                  className="button button--primary"
+                  type="submit"
+                  disabled={!canEditStructure || addQuestion.isPending}
+                >
+                  <Plus size={18} aria-hidden="true" />
+                  {addQuestion.isPending ? 'Legger til...' : 'Legg til spørsmål'}
+                </button>
+              </div>
+            </form>
           </section>
 
           <section className="builder-subsection">
@@ -1467,52 +1403,150 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               </span>
             </div>
 
-        <div className="question-list">
-          {questionGroups.map((group) => (
-            <section className="question-group" key={group.id}>
-              <div className="question-group__header">
-                <h3>{group.title}</h3>
-                {group.description ? <p>{group.description}</p> : null}
-              </div>
-              {group.questions.map((question) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question}
-                  disabled={
-                    !canEditStructure ||
-                    deleteQuestion.isPending ||
-                    reorderQuestions.isPending
-                  }
-                  canDrag={canReorderQuestions && group.questions.length > 1}
-                  isDragging={draggedQuestion?.questionId === question.id}
-                  isDragOver={dragOverQuestionId === question.id}
-                  onDelete={handleDelete}
-                  onDragStart={handleQuestionDragStart}
-                  onDragOver={handleQuestionDragOver}
-                  onDragLeave={handleQuestionDragLeave}
-                  onDrop={handleQuestionDrop}
-                  onDragEnd={handleQuestionDragEnd}
-                />
+            <div className="question-list">
+              {questionGroups.map((group) => (
+                <section className="question-group" key={group.id}>
+                  <div className="question-group__header">
+                    <h3>{group.title}</h3>
+                    {group.description ? <p>{group.description}</p> : null}
+                  </div>
+                  {group.questions.map((question) => (
+                    <QuestionCard
+                      key={question.id}
+                      question={question}
+                      disabled={
+                        !canEditStructure ||
+                        deleteQuestion.isPending ||
+                        reorderQuestions.isPending
+                      }
+                      canDrag={canReorderQuestions && group.questions.length > 1}
+                      isDragging={draggedQuestion?.questionId === question.id}
+                      isDragOver={dragOverQuestionId === question.id}
+                      onDelete={handleDelete}
+                      onDragStart={handleQuestionDragStart}
+                      onDragOver={handleQuestionDragOver}
+                      onDragLeave={handleQuestionDragLeave}
+                      onDrop={handleQuestionDrop}
+                      onDragEnd={handleQuestionDragEnd}
+                    />
+                  ))}
+                  {group.questions.length === 0 ? (
+                    <div className="question-group__empty">
+                      Ingen spørsmål i denne seksjonen ennå.
+                    </div>
+                  ) : null}
+                </section>
               ))}
-              {group.questions.length === 0 ? (
-                <div className="question-group__empty">
-                  Ingen spørsmål i denne seksjonen ennå.
+              {survey.questions.length === 0 && survey.sections.length === 0 ? (
+                <div className="empty-state">
+                  <ListChecks size={28} aria-hidden="true" />
+                  <p>Legg inn første spørsmål for å forme respondentflyten.</p>
                 </div>
               ) : null}
-            </section>
-          ))}
-          {survey.questions.length === 0 && survey.sections.length === 0 ? (
-            <div className="empty-state">
-              <ListChecks size={28} aria-hidden="true" />
-              <p>Legg inn første spørsmål for å forme respondentflyten.</p>
+              {reorderError ? (
+                <p className="form-error" role="alert">
+                  {reorderError}
+                </p>
+              ) : null}
             </div>
-          ) : null}
-          {reorderError ? (
-            <p className="form-error" role="alert">
-              {reorderError}
-            </p>
-          ) : null}
-            </div>
+
+            <details
+              className="optional-section-tools"
+              open={sectionToolsOpen}
+              onToggle={(event) => setSectionToolsOpen(event.currentTarget.open)}
+            >
+              <summary>
+                <span className="optional-section-tools__label">
+                  <Layers2 size={18} aria-hidden="true" />
+                  Seksjoner
+                </span>
+                <span>
+                  {survey.sections.length === 0
+                    ? 'Valgfritt'
+                    : `${survey.sections.length} seksjoner`}
+                </span>
+              </summary>
+
+              <div className="optional-section-tools__content">
+                <form className="form-stack" onSubmit={handleAddSection}>
+                  <div className="form-grid form-grid--two">
+                    <label>
+                      Tittel
+                      <input
+                        type="text"
+                        value={sectionTitle}
+                        disabled={!canEditStructure || addSection.isPending}
+                        placeholder="Om arbeidsmiljøet"
+                        onChange={(event) => setSectionTitle(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Beskrivelse
+                      <input
+                        type="text"
+                        value={sectionDescription}
+                        disabled={!canEditStructure || addSection.isPending}
+                        placeholder="Kort intro til denne delen"
+                        onChange={(event) =>
+                          setSectionDescription(event.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                  {sectionValidationError ? (
+                    <div className="form-alert form-alert--error" role="alert">
+                      {sectionValidationError}
+                    </div>
+                  ) : null}
+                  {addSection.isError ? (
+                    <div className="form-alert form-alert--error" role="alert">
+                      {getErrorMessage(addSection.error)}
+                    </div>
+                  ) : null}
+                  {deleteSection.isError ? (
+                    <div className="form-alert form-alert--error" role="alert">
+                      {getErrorMessage(deleteSection.error)}
+                    </div>
+                  ) : null}
+                  <div className="form-actions">
+                    <button
+                      className="button button--secondary"
+                      type="submit"
+                      disabled={!canEditStructure || addSection.isPending}
+                    >
+                      <Layers2 size={18} aria-hidden="true" />
+                      {addSection.isPending ? 'Legger til...' : 'Legg til seksjon'}
+                    </button>
+                  </div>
+                </form>
+
+                {survey.sections.length > 0 ? (
+                  <div className="section-list">
+                    {survey.sections.map((section) => (
+                      <article className="section-card" key={section.id}>
+                        <div>
+                          <h3>{section.title ?? 'Uten tittel'}</h3>
+                          {section.description ? (
+                            <p>{section.description}</p>
+                          ) : null}
+                        </div>
+                        <button
+                          className="icon-button"
+                          type="button"
+                          disabled={!canEditStructure || deleteSection.isPending}
+                          aria-label={`Slett seksjonen ${
+                            section.title ?? 'uten tittel'
+                          }`}
+                          onClick={() => handleDeleteSection(section)}
+                        >
+                          <Trash2 size={18} aria-hidden="true" />
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </details>
           </section>
         </div>
       </Panel>
@@ -1532,7 +1566,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             <p>
               {isPublished
                 ? getPublishedIntroText(survey.responseCount)
-                : 'Utkast er kun synlig i admin. Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
+                : 'Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
             </p>
             {publishedAt ? (
               <span>Publisert {formatDateTime(publishedAt)}</span>
@@ -2178,8 +2212,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
             <div className="privacy-summary">
               <ShieldCheck size={18} aria-hidden="true" />
               <p>
-                Svario lagrer ikke IP-adresse på besvarelser. Svar slettes
-                automatisk etter valgt lagringstid.
+                Svar slettes automatisk etter valgt lagringstid.
               </p>
             </div>
           </div>
@@ -2188,8 +2221,7 @@ function PrivacySettingsPanel({ survey }: { survey: SurveyEditor }) {
             <ShieldCheck size={18} aria-hidden="true" />
             <p>
               Anonyme skjema uten personopplysninger trenger normalt færre
-              personvernfelt. Svario lagrer fortsatt ikke IP-adresse på
-              besvarelser.
+              personvernfelt.
             </p>
           </div>
         )}
