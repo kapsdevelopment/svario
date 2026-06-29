@@ -35,6 +35,10 @@ const ResultsPage = lazyRoute(
   () => import('../presentation/admin/results/ResultsPage'),
   'ResultsPage',
 );
+const ResultsOverviewPage = lazyRoute(
+  () => import('../presentation/admin/results/ResultsPage'),
+  'ResultsOverviewPage',
+);
 const ResultsPresentationPage = lazyRoute(
   () => import('../presentation/admin/results/ResultsPage'),
   'ResultsPresentationPage',
@@ -123,6 +127,10 @@ export const router = createHashRouter([
       {
         path: routes.surveys,
         element: page(<SurveyListPage />),
+      },
+      {
+        path: routes.resultsHome,
+        element: page(<ResultsOverviewPage />),
       },
       {
         path: routes.newSurvey,

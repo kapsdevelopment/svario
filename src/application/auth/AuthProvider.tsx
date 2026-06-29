@@ -23,6 +23,7 @@ import {
   type DomainAccount,
   updatePassword as updatePasswordRequest,
 } from '../../data/auth/authRepository';
+import { getUserFacingErrorMessage } from '../errors/userFacingError';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'misconfigured';
 type BootstrapStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -123,7 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             session,
             user: session.user,
             account: null,
-            errorMessage: getErrorMessage(error),
+            errorMessage: getUserFacingErrorMessage(
+              error,
+              'Noe gikk galt med autentisering.',
+            ),
           });
         });
     },
@@ -161,7 +165,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           session: null,
           user: null,
           account: null,
-          errorMessage: getErrorMessage(error),
+          errorMessage: getUserFacingErrorMessage(
+            error,
+            'Noe gikk galt med autentisering.',
+          ),
         });
       });
 
@@ -203,12 +210,4 @@ export function useAuth() {
   }
 
   return value;
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Noe gikk galt med autentisering.';
 }

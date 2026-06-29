@@ -29,6 +29,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { getUserFacingErrorMessage as getErrorMessage } from '../../../application/errors/userFacingError';
 import { useMyProfile } from '../../../application/profiles/useMyProfile';
 import { useAddSurveyQuestion } from '../../../application/surveys/useAddSurveyQuestion';
 import { useAddSurveySection } from '../../../application/surveys/useAddSurveySection';
@@ -200,6 +201,40 @@ const durationPresets = [
   { label: '1 mnd', months: 1 },
 ] as const;
 
+const editorAutosaveDelayMs = 600;
+const editorDraftVersion = 1;
+const defaultOptionText = 'Ja\nNei';
+
+type SurveyEditorLocalDraft = {
+  version: typeof editorDraftVersion;
+  surveyId: string;
+  savedAt: number;
+  basic: {
+    title: string;
+    description: string;
+    responseMode: SurveySummary['responseMode'];
+    startsAt: string;
+    endsAt: string;
+    visibility: SurveyVisibility;
+  };
+  section: {
+    title: string;
+    description: string;
+  };
+  question: {
+    type: QuestionType;
+    sectionId: string | null;
+    prompt: string;
+    description: string;
+    isRequired: boolean;
+    allowMultiple: boolean;
+    optionText: string;
+    scaleMin: number;
+    scaleMax: number;
+    scaleVariant: QuestionScaleVariant;
+  };
+};
+
 export function SurveyEditorPage() {
   const { surveyId } = useParams();
   const location = useLocation();
@@ -296,7 +331,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [description, setDescription] = useState('');
   const [isRequired, setIsRequired] = useState(true);
   const [allowMultiple, setAllowMultiple] = useState(false);
-  const [optionText, setOptionText] = useState('Ja\nNei');
+  const [optionText, setOptionText] = useState(defaultOptionText);
   const [scaleMin, setScaleMin] = useState<number>(questionScaleDefaults.min);
   const [scaleMax, setScaleMax] = useState<number>(questionScaleDefaults.max);
   const [scaleVariant, setScaleVariant] =
@@ -370,6 +405,204 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     survey.startsAt,
     survey.title,
     survey.visibility,
+  ]);
+
+  const localDraftStorageKey = useMemo(
+    () => getSurveyEditorLocalDraftStorageKey(survey.id),
+    [survey.id],
+  );
+  const [localDraftHydratedKey, setLocalDraftHydratedKey] = useState<
+    string | null
+  >(null);
+  const [localDraftSavedAt, setLocalDraftSavedAt] = useState<number | null>(
+    null,
+  );
+  const [localDraftRestoredAt, setLocalDraftRestoredAt] = useState<
+    number | null
+  >(null);
+  const lastLocalDraftFingerprint = useRef<string | null>(null);
+  const currentLocalDraft = useMemo<SurveyEditorLocalDraft>(
+    () => ({
+      version: editorDraftVersion,
+      surveyId: survey.id,
+      savedAt: 0,
+      basic: {
+        title: basicTitle,
+        description: basicDescription,
+        responseMode: basicResponseMode,
+        startsAt: basicStartsAt,
+        endsAt: basicEndsAt,
+        visibility: basicVisibility,
+      },
+      section: {
+        title: sectionTitle,
+        description: sectionDescription,
+      },
+      question: {
+        type,
+        sectionId: selectedSectionId,
+        prompt,
+        description,
+        isRequired,
+        allowMultiple,
+        optionText,
+        scaleMin,
+        scaleMax,
+        scaleVariant,
+      },
+    }),
+    [
+      allowMultiple,
+      basicDescription,
+      basicEndsAt,
+      basicResponseMode,
+      basicStartsAt,
+      basicTitle,
+      basicVisibility,
+      description,
+      isRequired,
+      optionText,
+      prompt,
+      scaleMax,
+      scaleMin,
+      scaleVariant,
+      sectionDescription,
+      sectionTitle,
+      selectedSectionId,
+      survey.id,
+      type,
+    ],
+  );
+  const currentLocalDraftHasContent = useMemo(
+    () => isSurveyEditorLocalDraftMeaningful(currentLocalDraft, survey),
+    [currentLocalDraft, survey],
+  );
+  const currentLocalDraftFingerprint = useMemo(
+    () => getSurveyEditorLocalDraftFingerprint(currentLocalDraft),
+    [currentLocalDraft],
+  );
+
+  useEffect(() => {
+    const storedDraft = readSurveyEditorLocalDraft(
+      localDraftStorageKey,
+      survey.id,
+    );
+
+    if (storedDraft) {
+      setBasicTitle(storedDraft.basic.title);
+      setBasicDescription(storedDraft.basic.description);
+      setBasicResponseMode(storedDraft.basic.responseMode);
+      setBasicStartsAt(storedDraft.basic.startsAt);
+      setBasicEndsAt(storedDraft.basic.endsAt);
+      setBasicVisibility(storedDraft.basic.visibility);
+      setSectionTitle(storedDraft.section.title);
+      setSectionDescription(storedDraft.section.description);
+      setType(storedDraft.question.type);
+      setSectionId(storedDraft.question.sectionId);
+      setPrompt(storedDraft.question.prompt);
+      setDescription(storedDraft.question.description);
+      setIsRequired(storedDraft.question.isRequired);
+      setAllowMultiple(storedDraft.question.allowMultiple);
+      setOptionText(storedDraft.question.optionText);
+      setScaleMin(storedDraft.question.scaleMin);
+      setScaleMax(storedDraft.question.scaleMax);
+      setScaleVariant(storedDraft.question.scaleVariant);
+      setLocalDraftSavedAt(storedDraft.savedAt);
+      setLocalDraftRestoredAt(storedDraft.savedAt);
+      lastLocalDraftFingerprint.current =
+        getSurveyEditorLocalDraftFingerprint(storedDraft);
+    } else {
+      setLocalDraftSavedAt(null);
+      setLocalDraftRestoredAt(null);
+      lastLocalDraftFingerprint.current = null;
+    }
+
+    setLocalDraftHydratedKey(localDraftStorageKey);
+  }, [localDraftStorageKey, survey.id]);
+
+  useEffect(() => {
+    if (localDraftHydratedKey !== localDraftStorageKey) {
+      return;
+    }
+
+    if (!currentLocalDraftHasContent) {
+      removeSurveyEditorLocalDraft(localDraftStorageKey);
+      lastLocalDraftFingerprint.current = null;
+      setLocalDraftSavedAt(null);
+      setLocalDraftRestoredAt(null);
+      return;
+    }
+
+    if (currentLocalDraftFingerprint === lastLocalDraftFingerprint.current) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const savedAt = Date.now();
+
+      writeSurveyEditorLocalDraft(localDraftStorageKey, {
+        ...currentLocalDraft,
+        savedAt,
+      });
+      lastLocalDraftFingerprint.current = currentLocalDraftFingerprint;
+      setLocalDraftSavedAt(savedAt);
+      setLocalDraftRestoredAt(null);
+    }, editorAutosaveDelayMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    currentLocalDraft,
+    currentLocalDraftFingerprint,
+    currentLocalDraftHasContent,
+    localDraftHydratedKey,
+    localDraftStorageKey,
+  ]);
+
+  useEffect(() => {
+    if (localDraftHydratedKey !== localDraftStorageKey) {
+      return;
+    }
+
+    function persistLocalDraftNow() {
+      if (!currentLocalDraftHasContent) {
+        removeSurveyEditorLocalDraft(localDraftStorageKey);
+        return;
+      }
+
+      if (currentLocalDraftFingerprint === lastLocalDraftFingerprint.current) {
+        return;
+      }
+
+      const savedAt = Date.now();
+
+      writeSurveyEditorLocalDraft(localDraftStorageKey, {
+        ...currentLocalDraft,
+        savedAt,
+      });
+      lastLocalDraftFingerprint.current = currentLocalDraftFingerprint;
+      setLocalDraftSavedAt(savedAt);
+      setLocalDraftRestoredAt(null);
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        persistLocalDraftNow();
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', persistLocalDraftNow);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', persistLocalDraftNow);
+    };
+  }, [
+    currentLocalDraft,
+    currentLocalDraftFingerprint,
+    currentLocalDraftHasContent,
+    localDraftHydratedKey,
+    localDraftStorageKey,
   ]);
 
   async function handleVisibilityChange(nextVisibility: SurveyVisibility) {
@@ -593,7 +826,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     setPrompt('');
     setDescription('');
     setAllowMultiple(false);
-    setOptionText('Ja\nNei');
+    setOptionText(defaultOptionText);
     setScaleMin(questionScaleDefaults.min);
     setScaleMax(questionScaleDefaults.max);
     setScaleVariant('buttons');
@@ -786,17 +1019,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
   return (
     <>
-      <div className="metric-grid">
-        <Panel title="Status" subtitle={statusLabel[currentStatus]} />
-        <Panel
-          title="Besvarelser"
-          subtitle={`${survey.responseCount} innsendt · ${
-            responseModeLabel[survey.responseMode]
-          }`}
-        />
-        <Panel title="Spørsmål" subtitle={`${survey.questions.length} totalt`} />
-      </div>
-
       <Panel
         title="Grunninfo"
         subtitle={formatSurveyWindow(survey)}
@@ -940,103 +1162,32 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         </div>
       ) : null}
 
-      <PrivacySettingsPanel survey={survey} />
+      {localDraftSavedAt ? (
+        <EditorAutosaveStatus
+          restoredAt={localDraftRestoredAt}
+          savedAt={localDraftSavedAt}
+        />
+      ) : null}
 
       <Panel
-        title="Publisering"
+        title="Spørsmål og seksjoner"
         subtitle={
-          isPublished
-            ? 'Delbar lenke er aktiv'
-            : 'Publiser når skjemaet er klart'
+          survey.questions.length === 0
+            ? 'Ingen spørsmål er lagt til ennå'
+            : `${survey.questions.length} i rekkefølge`
         }
       >
-        <div className="publish-block">
-          <div className="publish-block__intro">
-            <p>
-              {isPublished
-                ? getPublishedIntroText(survey.responseCount)
-                : 'Utkast er kun synlig i admin. Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
-            </p>
-            {publishedAt ? (
-              <span>Publisert {formatDateTime(publishedAt)}</span>
-            ) : null}
-          </div>
-
-          {isPublished ? (
-            <div className="share-link-row">
-              <input
-                aria-label="Delbar respondentlenke"
-                readOnly
-                value={shareUrl}
-              />
-              <button
-                className="icon-button"
-                type="button"
-                aria-label="Kopier respondentlenke"
-                onClick={handleCopyShareUrl}
-              >
-                <Copy size={18} aria-hidden="true" />
-              </button>
-              <a
-                className="icon-button"
-                href={shareUrl}
-                rel="noreferrer"
-                target="_blank"
-                aria-label="Åpne respondentlenke"
-              >
-                <ExternalLink size={18} aria-hidden="true" />
-              </a>
+        <div className="survey-builder-stack">
+          <section className="builder-subsection">
+            <div className="builder-subsection__header">
+              <h3>Seksjoner</h3>
+              <span>
+                {survey.sections.length === 0
+                  ? 'Valgfritt'
+                  : `${survey.sections.length} seksjoner`}
+              </span>
             </div>
-          ) : (
-            <div className="form-actions">
-              <button
-                className="button button--primary"
-                type="button"
-                disabled={!canPublish || publishSurvey.isPending}
-                onClick={handlePublish}
-              >
-                <Send size={18} aria-hidden="true" />
-                {publishSurvey.isPending ? 'Publiserer...' : 'Publiser skjema'}
-              </button>
-            </div>
-          )}
-        </div>
 
-        {isDraft && survey.questions.length === 0 ? (
-          <div className="form-alert form-alert--error" role="alert">
-            Legg til minst ett spørsmål før publisering.
-          </div>
-        ) : null}
-        {isDraft && survey.questions.length > 0 && privacyIssues.length > 0 ? (
-          <div className="form-alert form-alert--error" role="alert">
-            {privacyIssues[0]}
-          </div>
-        ) : null}
-        {publishValidationError ? (
-          <div className="form-alert form-alert--error" role="alert">
-            {publishValidationError}
-          </div>
-        ) : null}
-        {publishSurvey.isError ? (
-          <div className="form-alert form-alert--error" role="alert">
-            {getErrorMessage(publishSurvey.error)}
-          </div>
-        ) : null}
-        {publishMessage ? (
-          <div className="form-alert form-alert--success" role="status">
-            {publishMessage}
-          </div>
-        ) : null}
-      </Panel>
-
-      <Panel
-        title="Seksjoner"
-        subtitle={
-          survey.sections.length === 0
-            ? 'Valgfritt, men nyttig for lengre skjemaer'
-            : `${survey.sections.length} seksjoner`
-        }
-      >
         <form className="form-stack" onSubmit={handleAddSection}>
           <div className="form-grid form-grid--two">
             <label>
@@ -1110,9 +1261,14 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             ))}
           </div>
         ) : null}
-      </Panel>
 
-      <Panel title="Legg til spørsmål">
+          </section>
+
+          <section className="builder-subsection">
+            <div className="builder-subsection__header">
+              <h3>Legg til spørsmål</h3>
+            </div>
+
         <form className="form-stack" onSubmit={handleSubmit}>
           <div
             className={
@@ -1298,16 +1454,19 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             </button>
           </div>
         </form>
-      </Panel>
 
-      <Panel
-        title="Spørsmål"
-        subtitle={
-          survey.questions.length === 0
-            ? 'Ingen spørsmål er lagt til ennå'
-            : `${survey.questions.length} i rekkefølge`
-        }
-      >
+          </section>
+
+          <section className="builder-subsection">
+            <div className="builder-subsection__header">
+              <h3>Oversikt</h3>
+              <span>
+                {survey.questions.length === 0
+                  ? 'Tomt skjema'
+                  : `${survey.questions.length} spørsmål`}
+              </span>
+            </div>
+
         <div className="question-list">
           {questionGroups.map((group) => (
             <section className="question-group" key={group.id}>
@@ -1353,7 +1512,98 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
               {reorderError}
             </p>
           ) : null}
+            </div>
+          </section>
         </div>
+      </Panel>
+
+      <PrivacySettingsPanel survey={survey} />
+
+      <Panel
+        title="Publisering"
+        subtitle={
+          isPublished
+            ? 'Delbar lenke er aktiv'
+            : 'Publiser når skjemaet er klart'
+        }
+      >
+        <div className="publish-block">
+          <div className="publish-block__intro">
+            <p>
+              {isPublished
+                ? getPublishedIntroText(survey.responseCount)
+                : 'Utkast er kun synlig i admin. Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
+            </p>
+            {publishedAt ? (
+              <span>Publisert {formatDateTime(publishedAt)}</span>
+            ) : null}
+          </div>
+
+          {isPublished ? (
+            <div className="share-link-row">
+              <input
+                aria-label="Delbar respondentlenke"
+                readOnly
+                value={shareUrl}
+              />
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Kopier respondentlenke"
+                onClick={handleCopyShareUrl}
+              >
+                <Copy size={18} aria-hidden="true" />
+              </button>
+              <a
+                className="icon-button"
+                href={shareUrl}
+                rel="noreferrer"
+                target="_blank"
+                aria-label="Åpne respondentlenke"
+              >
+                <ExternalLink size={18} aria-hidden="true" />
+              </a>
+            </div>
+          ) : (
+            <div className="form-actions">
+              <button
+                className="button button--primary"
+                type="button"
+                disabled={!canPublish || publishSurvey.isPending}
+                onClick={handlePublish}
+              >
+                <Send size={18} aria-hidden="true" />
+                {publishSurvey.isPending ? 'Publiserer...' : 'Publiser skjema'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {isDraft && survey.questions.length === 0 ? (
+          <div className="form-alert form-alert--error" role="alert">
+            Legg til minst ett spørsmål før publisering.
+          </div>
+        ) : null}
+        {isDraft && survey.questions.length > 0 && privacyIssues.length > 0 ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {privacyIssues[0]}
+          </div>
+        ) : null}
+        {publishValidationError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {publishValidationError}
+          </div>
+        ) : null}
+        {publishSurvey.isError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {getErrorMessage(publishSurvey.error)}
+          </div>
+        ) : null}
+        {publishMessage ? (
+          <div className="form-alert form-alert--success" role="status">
+            {publishMessage}
+          </div>
+        ) : null}
       </Panel>
 
       <ConfirmDialog
@@ -1426,6 +1676,25 @@ function SurveyVisibilityToggle({
         <UsersRound size={15} aria-hidden="true" />
         Delt
       </button>
+    </div>
+  );
+}
+
+function EditorAutosaveStatus({
+  restoredAt,
+  savedAt,
+}: {
+  restoredAt: number | null;
+  savedAt: number;
+}) {
+  return (
+    <div className="form-alert form-alert--info editor-autosave-status" role="status">
+      <span>
+        {restoredAt
+          ? 'Ulagrede endringer ble gjenopprettet fra denne nettleseren.'
+          : 'Ulagrede endringer er lagret i denne nettleseren.'}
+      </span>
+      <strong>{formatAutosaveTime(savedAt)}</strong>
     </div>
   );
 }
@@ -2625,6 +2894,207 @@ function addDuration(
   return endDate;
 }
 
+function getSurveyEditorLocalDraftStorageKey(surveyId: string) {
+  return `svario:survey-editor:${surveyId}:draft`;
+}
+
+function readSurveyEditorLocalDraft(key: string, surveyId: string) {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const value = window.localStorage.getItem(key);
+
+    if (!value) {
+      return null;
+    }
+
+    const parsedValue = JSON.parse(value) as unknown;
+
+    if (!isSurveyEditorLocalDraft(parsedValue, surveyId)) {
+      window.localStorage.removeItem(key);
+      return null;
+    }
+
+    return parsedValue;
+  } catch {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      return null;
+    }
+    return null;
+  }
+}
+
+function writeSurveyEditorLocalDraft(
+  key: string,
+  draft: SurveyEditorLocalDraft,
+) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(draft));
+  } catch {
+    return;
+  }
+}
+
+function removeSurveyEditorLocalDraft(key: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    return;
+  }
+}
+
+function getSurveyEditorLocalDraftFingerprint(draft: SurveyEditorLocalDraft) {
+  return JSON.stringify({
+    ...draft,
+    savedAt: 0,
+  });
+}
+
+function isSurveyEditorLocalDraftMeaningful(
+  draft: SurveyEditorLocalDraft,
+  survey: SurveyEditor,
+) {
+  const basicChanged =
+    draft.basic.title !== survey.title ||
+    draft.basic.description !== (survey.description ?? '') ||
+    draft.basic.responseMode !== survey.responseMode ||
+    draft.basic.startsAt !== toDateTimeInputValue(survey.startsAt) ||
+    draft.basic.endsAt !== toDateTimeInputValue(survey.endsAt) ||
+    draft.basic.visibility !== survey.visibility;
+
+  const sectionHasContent =
+    draft.section.title.trim().length > 0 ||
+    draft.section.description.trim().length > 0;
+
+  const questionHasContent =
+    draft.question.prompt.trim().length > 0 ||
+    draft.question.description.trim().length > 0 ||
+    draft.question.isRequired !== true ||
+    draft.question.allowMultiple !== false ||
+    draft.question.optionText !== defaultOptionText ||
+    draft.question.scaleMin !== questionScaleDefaults.min ||
+    draft.question.scaleMax !== questionScaleDefaults.max ||
+    draft.question.scaleVariant !== 'buttons' ||
+    draft.question.sectionId !== null ||
+    draft.question.type !== 'multiple_choice';
+
+  return basicChanged || sectionHasContent || questionHasContent;
+}
+
+function isSurveyEditorLocalDraft(
+  value: unknown,
+  surveyId: string,
+): value is SurveyEditorLocalDraft {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (
+    value.version !== editorDraftVersion ||
+    value.surveyId !== surveyId ||
+    typeof value.savedAt !== 'number'
+  ) {
+    return false;
+  }
+
+  return (
+    isSurveyEditorLocalDraftBasic(value.basic) &&
+    isSurveyEditorLocalDraftSection(value.section) &&
+    isSurveyEditorLocalDraftQuestion(value.question)
+  );
+}
+
+function isSurveyEditorLocalDraftBasic(
+  value: unknown,
+): value is SurveyEditorLocalDraft['basic'] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.title === 'string' &&
+    typeof value.description === 'string' &&
+    isSurveyResponseMode(value.responseMode) &&
+    typeof value.startsAt === 'string' &&
+    typeof value.endsAt === 'string' &&
+    isSurveyVisibility(value.visibility)
+  );
+}
+
+function isSurveyEditorLocalDraftSection(
+  value: unknown,
+): value is SurveyEditorLocalDraft['section'] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.title === 'string' &&
+    typeof value.description === 'string'
+  );
+}
+
+function isSurveyEditorLocalDraftQuestion(
+  value: unknown,
+): value is SurveyEditorLocalDraft['question'] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    isQuestionType(value.type) &&
+    (typeof value.sectionId === 'string' || value.sectionId === null) &&
+    typeof value.prompt === 'string' &&
+    typeof value.description === 'string' &&
+    typeof value.isRequired === 'boolean' &&
+    typeof value.allowMultiple === 'boolean' &&
+    typeof value.optionText === 'string' &&
+    typeof value.scaleMin === 'number' &&
+    typeof value.scaleMax === 'number' &&
+    isQuestionScaleVariant(value.scaleVariant)
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isSurveyResponseMode(
+  value: unknown,
+): value is SurveySummary['responseMode'] {
+  return value === 'anonymous' || value === 'identified';
+}
+
+function isSurveyVisibility(value: unknown): value is SurveyVisibility {
+  return value === 'private' || value === 'workspace';
+}
+
+function isQuestionType(value: unknown): value is QuestionType {
+  return (
+    value === 'multiple_choice' ||
+    value === 'free_text' ||
+    value === 'likert_scale'
+  );
+}
+
+function isQuestionScaleVariant(
+  value: unknown,
+): value is QuestionScaleVariant {
+  return value === 'buttons' || value === 'stars' || value === 'nps';
+}
+
 const statusLabel = {
   draft: 'Utkast',
   published: 'Publisert',
@@ -2670,6 +3140,14 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function formatAutosaveTime(value: number) {
+  return new Intl.DateTimeFormat('nb-NO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(value));
+}
+
 function createShareUrl(slug: string) {
   const respondentPath = routes.respondent(slug);
 
@@ -2678,15 +3156,4 @@ function createShareUrl(slug: string) {
   }
 
   return `${window.location.origin}${window.location.pathname}#${respondentPath}`;
-}
-
-function getErrorMessage(
-  error: unknown,
-  fallback = 'Noe gikk galt i skjemabyggeren.',
-) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
 }

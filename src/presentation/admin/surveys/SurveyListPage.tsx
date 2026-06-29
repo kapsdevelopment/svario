@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useDeleteSurvey } from '../../../application/surveys/useDeleteSurvey';
 import { useRepeatSurveyOnce } from '../../../application/surveys/useRepeatSurveyOnce';
 import { useSurveyList } from '../../../application/surveys/useSurveyList';
@@ -111,25 +112,31 @@ export function SurveyListPage() {
 
       {isError ? (
         <div className="form-alert form-alert--error" role="alert">
-          {getErrorMessage(error)}
+          {getUserFacingErrorMessage(error, 'Kunne ikke hente skjemaer.')}
         </div>
       ) : null}
 
       {deleteSurvey.isError ? (
         <div className="form-alert form-alert--error" role="alert">
-          {getErrorMessage(deleteSurvey.error)}
+          {getUserFacingErrorMessage(
+            deleteSurvey.error,
+            'Kunne ikke slette skjemaet.',
+          )}
         </div>
       ) : null}
 
       {repeatSurveyOnce.isError ? (
         <div className="form-alert form-alert--error" role="alert">
-          {getErrorMessage(repeatSurveyOnce.error)}
+          {getUserFacingErrorMessage(
+            repeatSurveyOnce.error,
+            'Kunne ikke repetere skjemaet.',
+          )}
         </div>
       ) : null}
 
       {retentionWarningsQuery.isError ? (
         <div className="form-alert form-alert--error" role="alert">
-          {getErrorMessage(
+          {getUserFacingErrorMessage(
             retentionWarningsQuery.error,
             'Kunne ikke hente varsler om automatisk sletting.',
           )}
@@ -541,15 +548,4 @@ function formatRetentionDueAt(value: string) {
   }
 
   return `om ${daysUntilDue} dager (${formattedDate})`;
-}
-
-function getErrorMessage(
-  error: unknown,
-  fallback = 'Kunne ikke hente skjemaer.',
-) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
 }

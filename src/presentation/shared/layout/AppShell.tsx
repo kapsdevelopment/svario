@@ -7,7 +7,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
@@ -32,8 +32,12 @@ const navItems = [
 
 export function AppShell() {
   const auth = useAuth();
+  const location = useLocation();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const userEmail = auth.user?.email ?? 'Innlogget admin';
+  const isResultsRoute =
+    location.pathname === routes.resultsHome ||
+    /^\/surveys\/[^/]+\/results$/.test(location.pathname);
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -104,7 +108,14 @@ export function AppShell() {
             </NavLink>
           );
         })}
-        <NavLink to={routes.results('demo')} className="bottom-nav__item">
+        <NavLink
+          to={routes.resultsHome}
+          className={({ isActive }) =>
+            isActive || isResultsRoute
+              ? 'bottom-nav__item active'
+              : 'bottom-nav__item'
+          }
+        >
           <BarChart3 size={20} aria-hidden="true" />
           <span>Resultater</span>
         </NavLink>

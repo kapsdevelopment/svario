@@ -2,6 +2,7 @@ import { CheckCircle2, UserPlus } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useAcceptWorkspaceInvitation } from '../../../application/workspaces/useAcceptWorkspaceInvitation';
 import { Panel } from '../../shared/components/Panel';
 
@@ -68,18 +69,13 @@ export function JoinWorkspacePage() {
 
         {acceptInvitation.isError ? (
           <div className="form-alert form-alert--error" role="alert">
-            {getErrorMessage(acceptInvitation.error)}
+            {getUserFacingErrorMessage(
+              acceptInvitation.error,
+              'Kunne ikke godta invitasjonen.',
+            )}
           </div>
         ) : null}
       </Panel>
     </div>
   );
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Kunne ikke godta invitasjonen.';
 }

@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { getAuthRedirectUrl } from '../../../infrastructure/config/authRedirect';
 import { Panel } from '../../shared/components/Panel';
 
@@ -80,7 +81,7 @@ export function LoginPage() {
     try {
       await action();
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(getUserFacingErrorMessage(error, 'Innlogging feilet.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -215,12 +216,4 @@ function getRedirectTarget(state: unknown) {
   }
 
   return `${from.pathname}${from.search}${from.hash}`;
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Innlogging feilet.';
 }

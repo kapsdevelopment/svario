@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { CheckCircle2, Gauge, ListChecks, Star, Type } from 'lucide-react';
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 
+import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { usePublishedSurvey } from '../../../application/surveys/usePublishedSurvey';
 import { useSubmitSurveyResponse } from '../../../application/surveys/useSubmitSurveyResponse';
 import {
@@ -39,7 +40,10 @@ export function RespondentPage() {
         {isError ? (
           <Panel title="Skjemaet er ikke tilgjengelig" subtitle={slug}>
             <div className="form-alert form-alert--error" role="alert">
-              {getRespondentErrorMessage(error)}
+              {getUserFacingErrorMessage(
+                error,
+                'Lenken finnes ikke, eller skjemaet er ikke åpent for svar.',
+              )}
             </div>
           </Panel>
         ) : null}
@@ -198,7 +202,10 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
 
         {submitResponse.isError ? (
           <div className="form-alert form-alert--error" role="alert">
-            {getSubmitErrorMessage(submitResponse.error)}
+            {getUserFacingErrorMessage(
+              submitResponse.error,
+              'Kunne ikke sende inn svaret akkurat nå.',
+            )}
           </div>
         ) : null}
 
@@ -649,20 +656,4 @@ function formatDate(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
-}
-
-function getRespondentErrorMessage(_error: unknown) {
-  if (_error instanceof Error && _error.message) {
-    return 'Lenken finnes ikke, eller skjemaet er ikke åpent for svar.';
-  }
-
-  return 'Lenken finnes ikke, eller skjemaet er ikke åpent for svar.';
-}
-
-function getSubmitErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return 'Kunne ikke sende inn svaret akkurat nå.';
 }

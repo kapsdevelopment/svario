@@ -2,6 +2,7 @@ import { BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useSurveyList } from '../../../application/surveys/useSurveyList';
 import type { SurveySummary } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
@@ -68,7 +69,7 @@ export function DashboardPage() {
 
       {isError ? (
         <div className="form-alert form-alert--error" role="alert">
-          {getErrorMessage(error)}
+          {getUserFacingErrorMessage(error, 'Kunne ikke hente dashboard-data.')}
         </div>
       ) : null}
 
@@ -129,12 +130,4 @@ function formatDate(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Kunne ikke hente dashboard-data.';
 }

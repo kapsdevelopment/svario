@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { getUserFacingErrorMessage as getErrorMessage } from '../../../application/errors/userFacingError';
 import {
   useMyProfile,
   useUpdateMyProfile,
@@ -936,11 +937,3 @@ const roleLabel = {
   member: 'Medlem',
   owner: 'Eier',
 } satisfies Record<WorkspaceWithMembership['myRole'], string>;
-
-function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-}

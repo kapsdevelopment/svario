@@ -6,12 +6,14 @@ import {
   ChartPie,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Download,
   FileText,
   MessageSquareText,
   Palette,
   Pause,
   Play,
+  Plus,
   RefreshCw,
   X,
 } from 'lucide-react';
@@ -31,6 +33,7 @@ import {
 } from 'recharts';
 
 import { routes } from '../../../app/routes';
+import { getUserFacingErrorMessage as getErrorMessage } from '../../../application/errors/userFacingError';
 import {
   buildFreeTextWordCloud,
   type FreeTextWordCloudItem,
@@ -39,6 +42,7 @@ import {
   buildSurveyResultsCsv,
   createSurveyResultsCsvFileName,
 } from '../../../application/surveys/exportSurveyResultsCsv';
+import { useSurveyList } from '../../../application/surveys/useSurveyList';
 import { useSurveyResults } from '../../../application/surveys/useSurveyResults';
 import { useUpdateQuestionVisualization } from '../../../application/surveys/useUpdateQuestionVisualization';
 import type {
@@ -48,6 +52,7 @@ import type {
   SurveyLikertResult,
   SurveyQuestionResult,
   SurveyResults,
+  SurveySummary,
 } from '../../../domain/surveys/survey';
 import { downloadBlobFile } from '../../../infrastructure/files/downloadBlobFile';
 import { downloadTextFile } from '../../../infrastructure/files/downloadTextFile';
@@ -57,7 +62,6 @@ export function ResultsPage() {
   const { surveyId } = useParams();
   const {
     data: results,
-    error,
     isError,
     isLoading,
     live,
@@ -81,7 +85,7 @@ export function ResultsPage() {
           <p className="eyebrow">Analyse</p>
           <h1>{results?.title ?? 'Resultater'}</h1>
           {results ? <p>{formatSurveyMeta(results)}</p> : null}
-          {results ? (
+          {results && results.status !== 'draft' ? (
             <LiveResultsStatus live={live} pulse={livePulse} />
           ) : null}
         </div>
@@ -95,14 +99,50 @@ export function ResultsPage() {
         <Panel title="Laster resultater" subtitle="Henter svar." />
       ) : null}
 
-      {isError ? (
-        <div className="form-alert form-alert--error" role="alert">
-          {getErrorMessage(error)}
+      {isError ? <ResultsUnavailableState /> : null}
+
+      {results?.status === 'draft' ? (
+        <DraftResultsState results={results} />
+      ) : results ? (
+        <ResultsContent livePulse={livePulse} results={results} />
+      ) : null}
+    </div>
+  );
+}
+
+export function ResultsOverviewPage() {
+  const { data: surveys = [], isError, isLoading } = useSurveyList();
+  const surveysWithPossibleResults = surveys.filter(
+    (survey) => survey.status !== 'draft',
+  );
+  const draftCount = surveys.length - surveysWithPossibleResults.length;
+
+  return (
+    <div className="page">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">Analyse</p>
+          <h1>Resultater</h1>
+          <p>Velg et publisert eller lukket skjema for å se svar og eksport.</p>
         </div>
+        <Link className="button button--secondary" to={routes.surveys}>
+          <ArrowLeft size={18} aria-hidden="true" />
+          Skjemaer
+        </Link>
+      </header>
+
+      {isLoading ? (
+        <Panel title="Laster resultater" subtitle="Finner skjemaer med resultater." />
       ) : null}
 
-      {results ? (
-        <ResultsContent livePulse={livePulse} results={results} />
+      {isError ? <ResultsUnavailableState /> : null}
+
+      {!isLoading && !isError && surveysWithPossibleResults.length > 0 ? (
+        <ResultsSurveyPicker surveys={surveysWithPossibleResults} />
+      ) : null}
+
+      {!isLoading && !isError && surveysWithPossibleResults.length === 0 ? (
+        <NoPublishedResultsState draftCount={draftCount} />
       ) : null}
     </div>
   );
@@ -135,7 +175,7 @@ export function ResultsPresentationPage() {
     return (
       <PresentationStatus
         title="Kunne ikke åpne presentasjonen"
-        subtitle={getErrorMessage(error)}
+        subtitle={getErrorMessage(error, 'Kunne ikke hente resultatene akkurat nå.')}
       />
     );
   }
@@ -191,6 +231,110 @@ function PresentationStatus({
         }
       />
     </main>
+  );
+}
+
+function ResultsSurveyPicker({ surveys }: { surveys: SurveySummary[] }) {
+  return (
+    <Panel
+      title="Velg skjema"
+      subtitle={`${surveys.length} ${surveys.length === 1 ? 'skjema kan' : 'skjemaer kan'} ha resultater`}
+    >
+      <div className="table-list">
+        {surveys.map((survey) => (
+          <div className="table-list__row" key={survey.id}>
+            <Link to={routes.results(survey.id)}>{survey.title}</Link>
+            <span>{statusLabel[survey.status]}</span>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function DraftResultsState({ results }: { results: SurveyResults }) {
+  return (
+    <Panel
+      className="results-empty-panel"
+      title="Ingen resultater ennå"
+      subtitle="Dette skjemaet er fortsatt et utkast."
+      action={
+        <Link className="button button--primary" to={routes.editSurvey(results.id)}>
+          <ClipboardList size={18} aria-hidden="true" />
+          Gå til redigering
+        </Link>
+      }
+    >
+      <div className="results-empty-panel__content">
+        <div className="results-empty-panel__icon" aria-hidden="true">
+          <BarChart3 size={28} />
+        </div>
+        <div>
+          <h3>Publiser skjemaet først</h3>
+          <p>
+            Resultater, live-oppdatering og eksport blir tilgjengelig når
+            skjemaet er publisert og kan ta imot svar.
+          </p>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+function NoPublishedResultsState({ draftCount }: { draftCount: number }) {
+  return (
+    <Panel
+      className="results-empty-panel"
+      title="Ingen resultater ennå"
+      subtitle="Resultater vises her når et skjema er publisert."
+      action={
+        <Link className="button button--primary" to={routes.newSurvey}>
+          <Plus size={18} aria-hidden="true" />
+          Nytt skjema
+        </Link>
+      }
+    >
+      <div className="results-empty-panel__content">
+        <div className="results-empty-panel__icon" aria-hidden="true">
+          <BarChart3 size={28} />
+        </div>
+        <div>
+          <h3>Publiser et skjema for å samle svar</h3>
+          <p>
+            {draftCount > 0
+              ? `${draftCount} utkast er under arbeid. Når et skjema publiseres, åpnes resultatsiden med grafer, ordsky og eksport.`
+              : 'Opprett og publiser et skjema, så åpnes resultatsiden med grafer, ordsky og eksport.'}
+          </p>
+        </div>
+        {draftCount > 0 ? (
+          <Link className="button button--secondary" to={routes.surveys}>
+            <ClipboardList size={18} aria-hidden="true" />
+            Se utkast
+          </Link>
+        ) : null}
+      </div>
+    </Panel>
+  );
+}
+
+function ResultsUnavailableState() {
+  return (
+    <Panel
+      className="results-empty-panel"
+      title="Fant ikke resultater"
+      subtitle="Velg et skjema fra listen for å åpne riktig resultatside."
+      action={
+        <Link className="button button--secondary" to={routes.surveys}>
+          <ArrowLeft size={18} aria-hidden="true" />
+          Skjemaer
+        </Link>
+      }
+    >
+      <p className="results-empty-panel__note">
+        Dette kan skje hvis lenken peker til et skjema som ikke finnes, eller
+        hvis resultatsiden ble åpnet uten å velge et skjema først.
+      </p>
+    </Panel>
   );
 }
 
@@ -1118,6 +1262,27 @@ function FreeTextResultView({
   colorMode: ResultColorMode;
   results: SurveyQuestionResult['freeTextResults'];
 }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const resultsTopRef = useRef<HTMLDivElement | null>(null);
+  const totalPages = Math.max(1, Math.ceil(results.length / freeTextPageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * freeTextPageSize;
+  const pageEndIndex = Math.min(pageStartIndex + freeTextPageSize, results.length);
+  const visibleResults = results.slice(pageStartIndex, pageEndIndex);
+  const paginationItems = getPaginationItems(safeCurrentPage, totalPages);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  function handlePageChange(nextPage: number) {
+    const boundedPage = Math.min(Math.max(nextPage, 1), totalPages);
+    setCurrentPage(boundedPage);
+    resultsTopRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+
   if (results.length === 0) {
     return (
       <div className="empty-state">
@@ -1135,16 +1300,64 @@ function FreeTextResultView({
         <WordCloud colorMode={colorMode} items={wordCloud} />
       ) : null}
 
-      <div className="free-text-results">
-        {results.map((result) => (
-          <article key={result.answerId}>
-            <p>{result.text}</p>
+      <div className="free-text-results-block" ref={resultsTopRef}>
+        <div className="free-text-results-block__header">
+          <div>
+            <strong>Fritekstsvar</strong>
             <span>
-              {result.respondentLabel ?? 'Anonymt svar'} ·{' '}
-              {formatDateTime(result.submittedAt)}
+              Nyeste først · viser {pageStartIndex + 1}-{pageEndIndex} av{' '}
+              {results.length}
             </span>
-          </article>
-        ))}
+          </div>
+          <span>{freeTextPageSize} per side</span>
+        </div>
+
+        <div className="free-text-results">
+          {visibleResults.map((result) => (
+            <article key={result.answerId}>
+              <p>{result.text}</p>
+              <span>
+                {result.respondentLabel ?? 'Anonymt svar'} ·{' '}
+                {formatDateTime(result.submittedAt)}
+              </span>
+            </article>
+          ))}
+        </div>
+
+        {totalPages > 1 ? (
+          <nav className="pagination" aria-label="Sider med fritekstsvar">
+            <button
+              type="button"
+              disabled={safeCurrentPage === 1}
+              onClick={() => handlePageChange(safeCurrentPage - 1)}
+            >
+              Forrige
+            </button>
+            {paginationItems.map((item) =>
+              typeof item === 'number' ? (
+                <button
+                  aria-current={item === safeCurrentPage ? 'page' : undefined}
+                  key={item}
+                  type="button"
+                  onClick={() => handlePageChange(item)}
+                >
+                  {item}
+                </button>
+              ) : (
+                <span aria-hidden="true" key={item}>
+                  ...
+                </span>
+              ),
+            )}
+            <button
+              type="button"
+              disabled={safeCurrentPage === totalPages}
+              onClick={() => handlePageChange(safeCurrentPage + 1)}
+            >
+              Neste
+            </button>
+          </nav>
+        ) : null}
       </div>
     </>
   );
@@ -1368,6 +1581,41 @@ function hashWord(word: string) {
   );
 }
 
+function getPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): PaginationItem[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set<number>([
+    1,
+    totalPages,
+    currentPage,
+    currentPage - 1,
+    currentPage + 1,
+  ]);
+  const visiblePages = [...pages]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((left, right) => left - right);
+  const items: PaginationItem[] = [];
+
+  for (const page of visiblePages) {
+    const previousItem = items.at(-1);
+
+    if (typeof previousItem === 'number' && page - previousItem > 1) {
+      items.push(page - previousItem === 2 ? previousItem + 1 : 'ellipsis-start');
+    }
+
+    items.push(page);
+  }
+
+  return items.map((item, index) =>
+    item === 'ellipsis-start' && index > 2 ? 'ellipsis-end' : item,
+  );
+}
+
 function ResultBarList({
   items,
 }: {
@@ -1405,6 +1653,9 @@ function ResultBarList({
 
 type ResultChartType = Extract<QuestionVisualizationType, 'bar' | 'pie'>;
 type ResultColorMode = QuestionVisualizationColorMode;
+type PaginationItem = number | 'ellipsis-start' | 'ellipsis-end';
+
+const freeTextPageSize = 20;
 
 const colorfulChartPalette = [
   '#2f6f73',
@@ -1504,12 +1755,4 @@ function formatResponseDelta(delta: number) {
 
 function formatWordCount(count: number) {
   return count === 1 ? '1 gang' : `${count} ganger`;
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Kunne ikke hente resultatene akkurat nå.';
 }

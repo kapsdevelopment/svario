@@ -577,6 +577,7 @@ textarea {
 
 input[type="datetime-local"] {
   min-height: 46px;
+  min-width: 0;
   background:
     linear-gradient(180deg, #fffdf8, #f8f4ec);
   color: #33443e;
@@ -1386,10 +1387,58 @@ select {
   text-overflow: ellipsis;
 }
 
+.survey-builder-stack {
+  display: grid;
+  gap: 22px;
+}
+
+.builder-subsection {
+  display: grid;
+  gap: 14px;
+}
+
+.builder-subsection + .builder-subsection {
+  border-top: 1px solid #e6e0d6;
+  padding-top: 20px;
+}
+
+.builder-subsection__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.builder-subsection__header h3 {
+  margin: 0;
+  color: #17201d;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.builder-subsection__header span {
+  color: #607681;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.editor-autosave-status {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.editor-autosave-status strong {
+  color: #183a34;
+}
+
 .section-list {
   display: grid;
   gap: 10px;
-  margin-top: 18px;
 }
 
 .section-card {
@@ -1930,6 +1979,43 @@ select {
   gap: 16px;
 }
 
+.results-empty-panel__content {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.results-empty-panel__icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid #cbdacf;
+  border-radius: 8px;
+  background: #dce7df;
+  color: #183a34;
+}
+
+.results-empty-panel h3 {
+  color: #17201d;
+  font-size: 1.08rem;
+  line-height: 1.25;
+  margin: 0 0 6px;
+}
+
+.results-empty-panel p {
+  color: #596962;
+  font-weight: 700;
+}
+
+.results-empty-panel__note {
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: #f8f4ec;
+  padding: 12px;
+}
+
 .result-question-card--updated {
   border-color: rgba(79, 108, 93, 0.38);
   animation: livePanelPulse 1200ms ease both;
@@ -2096,11 +2182,6 @@ select {
   transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.free-text-results {
-  display: grid;
-  gap: 10px;
-}
-
 .word-cloud-block {
   display: grid;
   gap: 12px;
@@ -2173,6 +2254,40 @@ select {
   color: #607681;
 }
 
+.free-text-results-block {
+  display: grid;
+  gap: 12px;
+  scroll-margin-top: 20px;
+}
+
+.free-text-results-block__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.free-text-results-block__header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.free-text-results-block__header strong {
+  color: #183a34;
+  font-weight: 900;
+}
+
+.free-text-results-block__header span {
+  color: #607681;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.free-text-results {
+  display: grid;
+  gap: 10px;
+}
+
 .free-text-results article {
   border: 1px solid #e6e0d6;
   border-radius: 8px;
@@ -2191,6 +2306,51 @@ select {
   color: #607681;
   font-size: 0.86rem;
   font-weight: 800;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.pagination button,
+.pagination span {
+  display: inline-flex;
+  min-width: 34px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #607681;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.pagination button {
+  border: 1px solid #d9d3c7;
+  background: #fffdf8;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.pagination button[aria-current="page"] {
+  border-color: #183a34;
+  background: #183a34;
+  color: #fffdf8;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.pagination button:not(:disabled):hover {
+  border-color: #b9c8bd;
+  background: #eef4f1;
+  color: #183a34;
 }
 
 .chart-frame {
@@ -3545,6 +3705,15 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .results-empty-panel__content {
+    grid-template-columns: 1fr;
+  }
+
+  .results-empty-panel__icon {
+    width: 48px;
+    height: 48px;
+  }
+
   .dashboard-hero {
     display: grid;
     min-height: 260px;
@@ -3613,6 +3782,12 @@ select {
     width: 100%;
   }
 
+  input[type="datetime-local"] {
+    max-width: 100%;
+    padding-inline: 10px;
+    font-size: 0.86rem;
+  }
+
   .duration-presets {
     align-items: stretch;
     display: grid;
@@ -3625,6 +3800,10 @@ select {
 
   .duration-preset-button {
     width: 100%;
+  }
+
+  .builder-subsection__header {
+    display: grid;
   }
 
   .privacy-field-grid {

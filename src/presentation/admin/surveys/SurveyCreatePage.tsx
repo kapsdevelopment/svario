@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useCreateSurveyDraft } from '../../../application/surveys/useCreateSurveyDraft';
 import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import type { SurveyResponseMode } from '../../../domain/surveys/survey';
@@ -125,13 +126,15 @@ export function SurveyCreatePage() {
           </label>
           <div className="form-grid">
             <label>
-              Arbeidsflate
+              Arbeidsflate (individuell, team eller organisasjon)
               <select
                 value={workspaceId}
                 disabled={workspaces.isLoading}
                 onChange={(event) => setWorkspaceId(event.target.value)}
               >
-                <option value={individualWorkspaceValue}>Individuell</option>
+                <option value={individualWorkspaceValue}>
+                  Individuell - personlig konto
+                </option>
                 {workspaces.data?.map((workspace) => (
                   <option key={workspace.id} value={workspace.id}>
                     {workspace.name}
@@ -191,7 +194,10 @@ export function SurveyCreatePage() {
           ) : null}
           {createSurveyDraft.isError ? (
             <div className="form-alert form-alert--error" role="alert">
-              {getErrorMessage(createSurveyDraft.error)}
+              {getUserFacingErrorMessage(
+                createSurveyDraft.error,
+                'Kunne ikke lagre skjemaet.',
+              )}
             </div>
           ) : null}
           <div className="form-actions">
@@ -245,12 +251,4 @@ function addDuration(
 
   endDate.setDate(endDate.getDate() + preset.days);
   return endDate;
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Kunne ikke lagre skjemaet.';
 }
