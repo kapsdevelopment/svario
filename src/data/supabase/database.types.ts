@@ -933,6 +933,17 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      move_survey_question: {
+        Args: {
+          p_question_id: string
+          p_source_question_ids: string[]
+          p_source_section_id: string | null
+          p_survey_id: string
+          p_target_question_ids: string[]
+          p_target_section_id: string | null
+        }
+        Returns: undefined
+      }
       remove_workspace_member: {
         Args: { p_account_id: string; p_workspace_id: string }
         Returns: undefined

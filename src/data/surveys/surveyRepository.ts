@@ -5,6 +5,7 @@ import {
   type AddSurveySectionInput,
   type AddSurveyQuestionInput,
   type CreateSurveyDraftInput,
+  type MoveSurveyQuestionInput,
   type PublishedSurvey,
   type QuestionScaleVariant,
   type QuestionVisualizationType,
@@ -610,6 +611,24 @@ export async function reorderSurveyQuestions(
     p_survey_id: input.surveyId,
     p_section_id: input.sectionId,
     p_question_ids: input.questionIds,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function moveSurveyQuestion(
+  input: MoveSurveyQuestionInput,
+): Promise<void> {
+  const client = requireSurveyClient();
+  const { error } = await client.rpc('move_survey_question', {
+    p_survey_id: input.surveyId,
+    p_question_id: input.questionId,
+    p_source_section_id: input.sourceSectionId,
+    p_target_section_id: input.targetSectionId,
+    p_source_question_ids: input.sourceQuestionIds,
+    p_target_question_ids: input.targetQuestionIds,
   });
 
   if (error) {

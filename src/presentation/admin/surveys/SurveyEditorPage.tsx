@@ -36,6 +36,7 @@ import { useAddSurveySection } from '../../../application/surveys/useAddSurveySe
 import { useDeleteSurveyQuestion } from '../../../application/surveys/useDeleteSurveyQuestion';
 import { useDeleteSurveySection } from '../../../application/surveys/useDeleteSurveySection';
 import { usePublishSurvey } from '../../../application/surveys/usePublishSurvey';
+import { useMoveSurveyQuestion } from '../../../application/surveys/useMoveSurveyQuestion';
 import { useReorderSurveyQuestions } from '../../../application/surveys/useReorderSurveyQuestions';
 import { useSurveyEditor } from '../../../application/surveys/useSurveyEditor';
 import { useUpdateSurveyBasicInfo } from '../../../application/surveys/useUpdateSurveyBasicInfo';
@@ -295,6 +296,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const addQuestion = useAddSurveyQuestion(survey.id);
   const deleteSection = useDeleteSurveySection(survey.id);
   const deleteQuestion = useDeleteSurveyQuestion(survey.id);
+  const moveQuestion = useMoveSurveyQuestion(survey.id);
   const reorderQuestions = useReorderSurveyQuestions(survey.id);
   const publishSurvey = usePublishSurvey(survey.id);
   const updateBasicInfo = useUpdateSurveyBasicInfo(survey.id);
@@ -354,6 +356,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(
     null,
   );
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
   const [reorderError, setReorderError] = useState<string | null>(null);
 
   const currentStatus = publishSurvey.data?.status ?? survey.status;
@@ -365,7 +368,8 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     survey.responseCount,
   );
   const canEditStructure = structureLockMessage === null;
-  const canReorderQuestions = canEditStructure && !reorderQuestions.isPending;
+  const canReorderQuestions =
+    canEditStructure && !moveQuestion.isPending && !reorderQuestions.isPending;
   const privacyIssues = getPrivacyCompletionIssues(survey);
   const canPublish =
     isDraft && survey.questions.length > 0 && privacyIssues.length === 0;
@@ -920,15 +924,16 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     if (
       !canReorderQuestions ||
       !draggedQuestion ||
-      draggedQuestion.questionId === question.id ||
-      draggedQuestion.sectionId !== question.sectionId
+      draggedQuestion.questionId === question.id
     ) {
       return;
     }
 
     event.preventDefault();
+    event.stopPropagation();
     event.dataTransfer.dropEffect = 'move';
     setDragOverQuestionId(question.id);
+    setDragOverGroupId(null);
   }
 
   function handleQuestionDragLeave(
@@ -949,47 +954,170 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     event: DragEvent<HTMLElement>,
   ) {
     event.preventDefault();
+    event.stopPropagation();
     const activeQuestion = draggedQuestion;
     setDraggedQuestion(null);
     setDragOverQuestionId(null);
+    setDragOverGroupId(null);
 
     if (
       !canReorderQuestions ||
       !activeQuestion ||
-      activeQuestion.questionId === question.id ||
-      activeQuestion.sectionId !== question.sectionId
+      activeQuestion.questionId === question.id
     ) {
       return;
     }
 
-    const group = questionGroups.find((currentGroup) =>
+    const targetGroup = questionGroups.find((currentGroup) =>
       currentGroup.questions.some(
         (groupQuestion) => groupQuestion.id === question.id,
       ),
     );
-    const questionIds =
-      group?.questions.map((groupQuestion) => groupQuestion.id) ?? [];
-    const fromIndex = questionIds.indexOf(activeQuestion.questionId);
-    const toIndex = questionIds.indexOf(question.id);
 
-    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+    if (!targetGroup) {
       return;
     }
 
     try {
-      await reorderQuestions.mutateAsync({
-        surveyId: survey.id,
-        sectionId: question.sectionId,
-        questionIds: moveArrayItem(questionIds, fromIndex, toIndex),
-      });
+      const targetSectionId = getQuestionGroupSectionId(targetGroup);
+
+      if (activeQuestion.sectionId === targetSectionId) {
+        const questionIds = targetGroup.questions.map(
+          (groupQuestion) => groupQuestion.id,
+        );
+        const fromIndex = questionIds.indexOf(activeQuestion.questionId);
+        const toIndex = questionIds.indexOf(question.id);
+
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+          return;
+        }
+
+        await reorderQuestions.mutateAsync({
+          surveyId: survey.id,
+          sectionId: targetSectionId,
+          questionIds: moveArrayItem(questionIds, fromIndex, toIndex),
+        });
+        return;
+      }
+
+      const targetQuestionIds = targetGroup.questions.map(
+        (groupQuestion) => groupQuestion.id,
+      );
+      const toIndex = targetQuestionIds.indexOf(question.id);
+
+      if (toIndex === -1) {
+        return;
+      }
+
+      targetQuestionIds.splice(toIndex, 0, activeQuestion.questionId);
+      await moveQuestionToGroup(activeQuestion, targetGroup, targetQuestionIds);
     } catch {
-      setReorderError('Kunne ikke endre rekkefølgen. Prøv igjen.');
+      setReorderError('Kunne ikke flytte spørsmålet. Prøv igjen.');
     }
+  }
+
+  function handleQuestionGroupDragOver(
+    group: QuestionGroup,
+    event: DragEvent<HTMLElement>,
+  ) {
+    if (!canReorderQuestions || !draggedQuestion) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragOverQuestionId(null);
+    setDragOverGroupId(group.id);
+  }
+
+  function handleQuestionGroupDragLeave(
+    group: QuestionGroup,
+    event: DragEvent<HTMLElement>,
+  ) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+
+    setDragOverGroupId((currentGroupId) =>
+      currentGroupId === group.id ? null : currentGroupId,
+    );
+  }
+
+  async function handleQuestionGroupDrop(
+    group: QuestionGroup,
+    event: DragEvent<HTMLElement>,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    const activeQuestion = draggedQuestion;
+    setDraggedQuestion(null);
+    setDragOverQuestionId(null);
+    setDragOverGroupId(null);
+
+    if (!canReorderQuestions || !activeQuestion) {
+      return;
+    }
+
+    const targetSectionId = getQuestionGroupSectionId(group);
+    const targetQuestionIds = group.questions
+      .filter((question) => question.id !== activeQuestion.questionId)
+      .map((question) => question.id);
+
+    targetQuestionIds.push(activeQuestion.questionId);
+
+    try {
+      if (activeQuestion.sectionId === targetSectionId) {
+        const questionIds = group.questions.map((question) => question.id);
+        const fromIndex = questionIds.indexOf(activeQuestion.questionId);
+        const toIndex = questionIds.length - 1;
+
+        if (fromIndex === -1 || fromIndex === toIndex) {
+          return;
+        }
+
+        await reorderQuestions.mutateAsync({
+          surveyId: survey.id,
+          sectionId: targetSectionId,
+          questionIds: moveArrayItem(questionIds, fromIndex, toIndex),
+        });
+        return;
+      }
+
+      await moveQuestionToGroup(activeQuestion, group, targetQuestionIds);
+    } catch {
+      setReorderError('Kunne ikke flytte spørsmålet. Prøv igjen.');
+    }
+  }
+
+  async function moveQuestionToGroup(
+    activeQuestion: { questionId: string; sectionId: string | null },
+    targetGroup: QuestionGroup,
+    targetQuestionIds: string[],
+  ) {
+    const sourceGroup = questionGroups.find(
+      (group) => getQuestionGroupSectionId(group) === activeQuestion.sectionId,
+    );
+
+    if (!sourceGroup) {
+      return;
+    }
+
+    await moveQuestion.mutateAsync({
+      surveyId: survey.id,
+      questionId: activeQuestion.questionId,
+      sourceSectionId: activeQuestion.sectionId,
+      targetSectionId: getQuestionGroupSectionId(targetGroup),
+      sourceQuestionIds: sourceGroup.questions
+        .filter((question) => question.id !== activeQuestion.questionId)
+        .map((question) => question.id),
+      targetQuestionIds,
+    });
   }
 
   function handleQuestionDragEnd() {
     setDraggedQuestion(null);
     setDragOverQuestionId(null);
+    setDragOverGroupId(null);
   }
 
   async function confirmDeleteQuestion() {
@@ -1397,7 +1525,22 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
             <div className="question-list">
               {questionGroups.map((group) => (
-                <section className="question-group" key={group.id}>
+                <section
+                  className={[
+                    'question-group',
+                    dragOverGroupId === group.id
+                      ? 'question-group--drop-target'
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  key={group.id}
+                  onDragOver={(event) => handleQuestionGroupDragOver(group, event)}
+                  onDragLeave={(event) =>
+                    handleQuestionGroupDragLeave(group, event)
+                  }
+                  onDrop={(event) => handleQuestionGroupDrop(group, event)}
+                >
                   <div className="question-group__header">
                     <div>
                       <h3>{group.title}</h3>
@@ -1407,7 +1550,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                       <button
                         className="icon-button"
                         type="button"
-                        disabled={!canEditStructure || deleteSection.isPending}
+                        disabled={
+                          !canEditStructure ||
+                          moveQuestion.isPending ||
+                          deleteSection.isPending
+                        }
                         aria-label={`Slett seksjonen ${
                           group.section.title ?? 'uten tittel'
                         }`}
@@ -1427,10 +1574,11 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                       question={question}
                       disabled={
                         !canEditStructure ||
+                        moveQuestion.isPending ||
                         deleteQuestion.isPending ||
                         reorderQuestions.isPending
                       }
-                      canDrag={canReorderQuestions && group.questions.length > 1}
+                      canDrag={canReorderQuestions}
                       isDragging={draggedQuestion?.questionId === question.id}
                       isDragOver={dragOverQuestionId === question.id}
                       onDelete={handleDelete}
@@ -2356,20 +2504,22 @@ function QuestionCard({
   );
 }
 
+type QuestionGroup = {
+  id: string;
+  section: SurveySection | null;
+  title: string;
+  description: string | null;
+  questions: SurveyQuestion[];
+};
+
 function groupQuestionsBySection(
   sections: SurveySection[],
   questions: SurveyQuestion[],
-) {
+): QuestionGroup[] {
   const unsectionedQuestions = questions.filter(
     (question) => question.sectionId === null,
   );
-  const groups: Array<{
-    id: string;
-    section: SurveySection | null;
-    title: string;
-    description: string | null;
-    questions: SurveyQuestion[];
-  }> = sections.map((section) => ({
+  const groups: QuestionGroup[] = sections.map((section) => ({
     id: section.id,
     section,
     title: section.title ?? 'Uten tittel',
@@ -2388,6 +2538,10 @@ function groupQuestionsBySection(
   }
 
   return groups;
+}
+
+function getQuestionGroupSectionId(group: QuestionGroup) {
+  return group.section?.id ?? null;
 }
 
 function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number) {

@@ -1520,6 +1520,11 @@ select {
   background: rgba(255, 253, 248, 0.48);
 }
 
+.question-group--drop-target {
+  background: rgba(220, 231, 223, 0.5);
+  box-shadow: inset 0 0 0 2px #4f6c5d;
+}
+
 .question-group__header {
   display: flex;
   align-items: flex-start;

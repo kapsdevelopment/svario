@@ -192,6 +192,15 @@ export type ReorderSurveyQuestionsInput = {
   questionIds: string[];
 };
 
+export type MoveSurveyQuestionInput = {
+  surveyId: string;
+  questionId: string;
+  sourceSectionId: string | null;
+  targetSectionId: string | null;
+  sourceQuestionIds: string[];
+  targetQuestionIds: string[];
+};
+
 export type SubmitSurveyAnswerInput = {
   questionId: string;
   freeText?: string | null;
