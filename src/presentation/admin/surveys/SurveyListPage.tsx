@@ -1,4 +1,11 @@
-import { BarChart3, CopyPlus, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  BarChart3,
+  CopyPlus,
+  Pencil,
+  Plus,
+  Trash2,
+  TreePine,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -323,6 +330,7 @@ function SurveyListCard({
   onDelete,
 }: SurveyListCardProps) {
   const displayState = getSurveyDisplayState(survey);
+  const isLive = displayState === 'active';
   const primaryRoute = getPrimarySurveyRoute(survey);
   const primaryActionLabel =
     survey.status === 'draft'
@@ -385,6 +393,15 @@ function SurveyListCard({
         <div className="status-row">
           <span className={`status-pill status-pill--${displayState}`}>
             {displayStateLabel[displayState]}
+            {isLive ? (
+              <span
+                className="live-pine-indicator live-pine-indicator--status"
+                aria-label="Live og pågår"
+                title="Live og pågår"
+              >
+                <TreePine size={15} aria-hidden="true" />
+              </span>
+            ) : null}
           </span>
           <span className="status-pill status-pill--meta">
             {responseModeLabel[survey.responseMode]}

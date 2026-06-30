@@ -615,6 +615,21 @@ h2 {
   stroke-width: 2.2;
 }
 
+.live-pine-indicator--status {
+  width: 24px;
+  height: 24px;
+  margin: 0 -4px 0 4px;
+  background: rgba(255, 253, 248, 0.62);
+}
+
+.live-pine-indicator--status::after {
+  inset: 4px;
+}
+
+.live-pine-indicator--status svg {
+  stroke-width: 2.35;
+}
+
 @keyframes livePineBreathe {
   0%,
   100% {
