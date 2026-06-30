@@ -1,7 +1,7 @@
 import { BarChart3, CopyPlus, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
@@ -20,8 +20,10 @@ import { Panel } from '../../shared/components/Panel';
 
 export function SurveyListPage() {
   const { account } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
+  const focusTarget = getSurveyFocusTarget(location.search);
   const surveyIds = surveys.map((survey) => survey.id);
   const retentionWarningsQuery = useSurveyRetentionWarnings(surveyIds);
   const { data: workspaces = [] } = useWorkspaces(account?.id);
@@ -52,6 +54,27 @@ export function SurveyListPage() {
         warning: SurveyRetentionWarning;
       } => item !== null,
     );
+
+  useEffect(() => {
+    if (isLoading || isError || !focusTarget) {
+      return;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(
+        `[data-survey-focus="${focusTarget}"]`,
+      );
+
+      if (!target) {
+        return;
+      }
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [focusTarget, isError, isLoading, surveys.length]);
 
   function handleDeleteSurvey(survey: SurveySummary) {
     setSurveyToDelete(survey);
@@ -307,68 +330,74 @@ function SurveyListCard({
       : `Se resultater for ${survey.title}`;
 
   return (
-    <Panel
-      className={`survey-list-card survey-list-card--${displayState}`}
-      title={survey.title}
-      subtitle={formatSurveyMeta(survey, displayState)}
-      action={
-        <div className="inline-actions">
-          <Link
-            className="icon-button"
-            to={routes.editSurvey(survey.id)}
-            aria-label={`Rediger ${survey.title}`}
-          >
-            <Pencil size={18} aria-hidden="true" />
-          </Link>
-          <Link
-            className="icon-button"
-            to={routes.results(survey.id)}
-            aria-label={`Se resultater for ${survey.title}`}
-          >
-            <BarChart3 size={20} aria-hidden="true" />
-          </Link>
-          <button
-            className="icon-button"
-            type="button"
-            disabled={isRepeatPending || isDeletePending}
-            title={`Repeter ${survey.title}`}
-            aria-label={`Repeter ${survey.title}`}
-            onClick={() => onRepeat(survey)}
-          >
-            <CopyPlus size={18} aria-hidden="true" />
-          </button>
-          <button
-            className="icon-button icon-button--danger"
-            type="button"
-            disabled={isDeletePending || isRepeatPending}
-            aria-label={`Slett ${survey.title}`}
-            onClick={() => onDelete(survey)}
-          >
-            <Trash2 size={18} aria-hidden="true" />
-          </button>
-        </div>
-      }
+    <div
+      className="survey-list-card-anchor scroll-anchor"
+      data-survey-focus={displayState}
+      tabIndex={-1}
     >
-      <Link
-        className="survey-list-card__primary-link"
-        to={primaryRoute}
-        aria-label={primaryActionLabel}
-      />
-      <div className="status-row">
-        <span className={`status-pill status-pill--${displayState}`}>
-          {displayStateLabel[displayState]}
-        </span>
-        <span className="status-pill status-pill--meta">
-          {responseModeLabel[survey.responseMode]}
-        </span>
-        <span className="status-pill status-pill--meta">
-          {formatSurveyWorkspace(survey, workspaceNameById)}
-        </span>
-        <span className="status-pill status-pill--meta">
-          {formatUpdatedAt(survey.updatedAt)}
-        </span>
-      </div>
-    </Panel>
+      <Panel
+        className={`survey-list-card survey-list-card--${displayState}`}
+        title={survey.title}
+        subtitle={formatSurveyMeta(survey, displayState)}
+        action={
+          <div className="inline-actions">
+            <Link
+              className="icon-button"
+              to={routes.editSurvey(survey.id)}
+              aria-label={`Rediger ${survey.title}`}
+            >
+              <Pencil size={18} aria-hidden="true" />
+            </Link>
+            <Link
+              className="icon-button"
+              to={routes.results(survey.id)}
+              aria-label={`Se resultater for ${survey.title}`}
+            >
+              <BarChart3 size={20} aria-hidden="true" />
+            </Link>
+            <button
+              className="icon-button"
+              type="button"
+              disabled={isRepeatPending || isDeletePending}
+              title={`Repeter ${survey.title}`}
+              aria-label={`Repeter ${survey.title}`}
+              onClick={() => onRepeat(survey)}
+            >
+              <CopyPlus size={18} aria-hidden="true" />
+            </button>
+            <button
+              className="icon-button icon-button--danger"
+              type="button"
+              disabled={isDeletePending || isRepeatPending}
+              aria-label={`Slett ${survey.title}`}
+              onClick={() => onDelete(survey)}
+            >
+              <Trash2 size={18} aria-hidden="true" />
+            </button>
+          </div>
+        }
+      >
+        <Link
+          className="survey-list-card__primary-link"
+          to={primaryRoute}
+          aria-label={primaryActionLabel}
+        />
+        <div className="status-row">
+          <span className={`status-pill status-pill--${displayState}`}>
+            {displayStateLabel[displayState]}
+          </span>
+          <span className="status-pill status-pill--meta">
+            {responseModeLabel[survey.responseMode]}
+          </span>
+          <span className="status-pill status-pill--meta">
+            {formatSurveyWorkspace(survey, workspaceNameById)}
+          </span>
+          <span className="status-pill status-pill--meta">
+            {formatUpdatedAt(survey.updatedAt)}
+          </span>
+        </div>
+      </Panel>
+    </div>
   );
 }
 
@@ -381,11 +410,18 @@ function toSurveyGroupHeadingId(title: string) {
 }
 
 type SurveyDisplayState = 'draft' | 'scheduled' | 'active' | 'finished' | 'closed';
+type SurveyFocusTarget = Extract<SurveyDisplayState, 'active' | 'draft'>;
 
 function getPrimarySurveyRoute(survey: SurveySummary) {
   return survey.status === 'draft'
     ? routes.editSurvey(survey.id)
     : routes.results(survey.id);
+}
+
+function getSurveyFocusTarget(search: string): SurveyFocusTarget | null {
+  const focus = new URLSearchParams(search).get('focus');
+
+  return focus === 'active' || focus === 'draft' ? focus : null;
 }
 
 const statusLabel = {

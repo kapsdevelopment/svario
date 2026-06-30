@@ -124,7 +124,7 @@ export function SurveyCreatePage() {
               onChange={(event) => setDescription(event.target.value)}
             />
           </label>
-          <div className="form-grid">
+          <div className="survey-create-meta-grid">
             <label>
               Arbeidsflate (individuell, team eller organisasjon)
               <select
@@ -154,6 +154,8 @@ export function SurveyCreatePage() {
                 <option value="identified">Identifiserte</option>
               </select>
             </label>
+          </div>
+          <div className="survey-create-date-grid">
             <label>
               Starter
               <input

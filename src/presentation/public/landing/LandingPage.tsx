@@ -64,7 +64,7 @@ export function LandingPage() {
           <h1 id="landing-title">Svario</h1>
           <p>
             En gratis spørreskjematjeneste for alle som trenger å samle inn
-            svar, forstå resultatene og behandle persondata med respekt.
+            svar, forstå resultatene og behandle persondata på en trygg måte.
           </p>
           <div className="marketing-hero__actions">
             <Link className="button button--primary" to={routes.login}>

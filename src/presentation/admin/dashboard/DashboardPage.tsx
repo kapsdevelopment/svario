@@ -10,7 +10,7 @@ import { Panel } from '../../shared/components/Panel';
 export function DashboardPage() {
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
   const latestSurvey = surveys[0] ?? null;
-  const publishedSurveys = surveys.filter((survey) => survey.status === 'published');
+  const activeSurveys = surveys.filter(isActiveSurvey);
   const draftSurveys = surveys.filter((survey) => survey.status === 'draft');
 
   return (
@@ -58,9 +58,21 @@ export function DashboardPage() {
       </section>
 
       <div className="metric-grid">
-        <Panel title="Skjemaer" subtitle={`${surveys.length} totalt`} />
-        <Panel title="Publisert" subtitle={`${publishedSurveys.length} aktive`} />
-        <Panel title="Utkast" subtitle={`${draftSurveys.length} under arbeid`} />
+        <DashboardMetricCard
+          title="Skjemaer"
+          subtitle={`${surveys.length} totalt`}
+          to={routes.surveys}
+        />
+        <DashboardMetricCard
+          title="Publisert"
+          subtitle={`${activeSurveys.length} aktive`}
+          to={routes.surveysFocus('active')}
+        />
+        <DashboardMetricCard
+          title="Utkast"
+          subtitle={`${draftSurveys.length} under arbeid`}
+          to={routes.surveysFocus('draft')}
+        />
       </div>
 
       {isLoading ? (
@@ -74,27 +86,58 @@ export function DashboardPage() {
       ) : null}
 
       {!isLoading && !isError ? (
-        <Panel
-          title="Siste skjemaer"
-          subtitle={`${surveys.length} skjemaer i arbeidsflaten`}
-        >
+        <section className="panel dashboard-recent-panel">
+          <Link className="dashboard-panel-header-link" to={routes.surveys}>
+            <div className="panel__header">
+              <div>
+                <h2>Siste skjemaer</h2>
+                <p>{`${surveys.length} skjemaer i arbeidsflaten`}</p>
+              </div>
+            </div>
+          </Link>
           <div className="table-list">
             {surveys.slice(0, 5).map((survey) => (
-              <div className="table-list__row" key={survey.id}>
-                <Link to={getPrimarySurveyRoute(survey)}>{survey.title}</Link>
+              <Link
+                className="table-list__row table-list__row--link"
+                key={survey.id}
+                to={getPrimarySurveyRoute(survey)}
+              >
+                <span>{survey.title}</span>
                 <span>{statusLabel[survey.status]}</span>
-              </div>
+              </Link>
             ))}
             {surveys.length === 0 ? (
-              <div className="table-list__row">
+              <Link
+                className="table-list__row table-list__row--link"
+                to={routes.newSurvey}
+              >
                 <span>Ingen skjemaer ennå</span>
-                <Link to={routes.newSurvey}>Opprett første</Link>
-              </div>
+                <span>Opprett første</span>
+              </Link>
             ) : null}
           </div>
-        </Panel>
+        </section>
       ) : null}
     </div>
+  );
+}
+
+type DashboardMetricCardProps = {
+  title: string;
+  subtitle: string;
+  to: string;
+};
+
+function DashboardMetricCard({ title, subtitle, to }: DashboardMetricCardProps) {
+  return (
+    <Link className="panel dashboard-metric-card" to={to}>
+      <div className="panel__header">
+        <div>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -122,6 +165,22 @@ function getPrimarySurveyRoute(survey: SurveySummary) {
   return survey.status === 'draft'
     ? routes.editSurvey(survey.id)
     : routes.results(survey.id);
+}
+
+function isActiveSurvey(survey: SurveySummary) {
+  if (survey.status !== 'published') {
+    return false;
+  }
+
+  const now = Date.now();
+  const startsAt = survey.startsAt ? new Date(survey.startsAt).getTime() : null;
+  const endsAt = survey.endsAt ? new Date(survey.endsAt).getTime() : null;
+
+  if (startsAt !== null && startsAt > now) {
+    return false;
+  }
+
+  return endsAt === null || endsAt > now;
 }
 
 function formatDate(value: string) {

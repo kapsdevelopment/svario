@@ -7,6 +7,7 @@ export const routes = {
   trustDocument: (slug: string) => `/trust/${slug}`,
   dashboard: '/dashboard',
   surveys: '/surveys',
+  surveysFocus: (focus: 'active' | 'draft') => `/surveys?focus=${focus}`,
   newSurvey: '/surveys/new',
   editSurvey: (surveyId: string) => `/surveys/${surveyId}/edit`,
   editSurveyPrivacy: (surveyId: string) => `/surveys/${surveyId}/edit#privacy`,
