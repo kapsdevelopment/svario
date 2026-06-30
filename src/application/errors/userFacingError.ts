@@ -181,6 +181,16 @@ const knownMessages: KnownMessage[] = [
     message: 'Organisasjonsnummeret må være 9 siffer.',
   },
   {
+    match: /^a workspace already exists for this organization number\.?$/i,
+    message:
+      'Det finnes allerede en arbeidsflate for dette organisasjonsnummeret.',
+  },
+  {
+    match: /^you already have access to a workspace with this organization number\.?$/i,
+    message:
+      'Du har allerede tilgang til en arbeidsflate med dette organisasjonsnummeret.',
+  },
+  {
     match: /^only workspace owners and admins can update organization number\.?$/i,
     message: 'Bare eiere og administratorer kan oppdatere organisasjonsnummer.',
   },

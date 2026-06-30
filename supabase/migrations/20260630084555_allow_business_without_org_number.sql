@@ -29,6 +29,7 @@ as $$
 declare
   v_account_id uuid := app_private.current_account_id();
   v_name text := nullif(btrim(p_name), '');
+  v_existing_workspace_id uuid;
   v_organization_number text;
   v_slug_base text;
   v_slug text;
@@ -56,6 +57,22 @@ begin
 
   if p_type = 'team' then
     v_organization_number := null;
+  end if;
+
+  if v_organization_number is not null then
+    select w.id
+      into v_existing_workspace_id
+    from public.workspaces w
+    where w.organization_number = v_organization_number
+    limit 1;
+
+    if v_existing_workspace_id is not null then
+      if app_private.is_workspace_member(v_existing_workspace_id) then
+        return v_existing_workspace_id;
+      end if;
+
+      raise exception 'A workspace already exists for this organization number.';
+    end if;
   end if;
 
   v_slug_base := app_private.normalize_workspace_slug(v_name);
@@ -86,6 +103,22 @@ begin
       exit;
     exception
       when unique_violation then
+        if v_organization_number is not null then
+          select w.id
+            into v_existing_workspace_id
+          from public.workspaces w
+          where w.organization_number = v_organization_number
+          limit 1;
+
+          if v_existing_workspace_id is not null then
+            if app_private.is_workspace_member(v_existing_workspace_id) then
+              return v_existing_workspace_id;
+            end if;
+
+            raise exception 'A workspace already exists for this organization number.';
+          end if;
+        end if;
+
         v_attempt := v_attempt + 1;
         if v_attempt > 8 then
           raise;
@@ -120,6 +153,7 @@ security definer
 set search_path = public, app_private
 as $$
 declare
+  v_existing_workspace_id uuid;
   v_organization_number text := nullif(
     regexp_replace(coalesce(p_organization_number, ''), '\D', '', 'g'),
     ''
@@ -163,6 +197,21 @@ begin
   if v_workspace.organization_number is not null
      and v_workspace.organization_number <> v_organization_number then
     raise exception 'Workspace already has an organization number.';
+  end if;
+
+  select w.id
+    into v_existing_workspace_id
+  from public.workspaces w
+  where w.organization_number = v_organization_number
+    and w.id <> p_workspace_id
+  limit 1;
+
+  if v_existing_workspace_id is not null then
+    if app_private.is_workspace_member(v_existing_workspace_id) then
+      raise exception 'You already have access to a workspace with this organization number.';
+    end if;
+
+    raise exception 'A workspace already exists for this organization number.';
   end if;
 
   update public.workspaces

@@ -84,7 +84,7 @@ export function ResultsPage() {
         <div>
           <p className="eyebrow">Analyse</p>
           <h1>{results?.title ?? 'Resultater'}</h1>
-          {results ? <p>{formatSurveyMeta(results)}</p> : null}
+          {results ? <ResultsMetaPills results={results} /> : null}
           {results && results.status !== 'draft' ? (
             <LiveResultsStatus live={live} pulse={livePulse} />
           ) : null}
@@ -204,6 +204,23 @@ export function ResultsPresentationPage() {
       results={results}
       onClose={() => navigate(routes.results(results.id))}
     />
+  );
+}
+
+function ResultsMetaPills({ results }: { results: SurveyResults }) {
+  return (
+    <div className="status-row results-meta-pills" aria-label="Skjemametadata">
+      <span className="status-pill status-pill--meta">
+        {responseModeLabel[results.responseMode]}
+      </span>
+      <span className={`status-pill status-pill--${results.status}`}>
+        {statusLabel[results.status]}
+      </span>
+      <span className="status-pill status-pill--meta">
+        {formatSurveyEndDate(results.endsAt)}
+      </span>
+      <span className="status-pill status-pill--meta">{results.slug}</span>
+    </div>
   );
 }
 
@@ -1714,17 +1731,28 @@ function getQuestionResultTypeLabel(question: SurveyQuestionResult['question']) 
   return questionTypeLabel.likert_scale;
 }
 
-function formatSurveyMeta(results: SurveyResults) {
-  const responseMode =
-    results.responseMode === 'anonymous' ? 'Anonyme svar' : 'Identifiserte svar';
-  return `${responseMode} · ${statusLabel[results.status]} · ${results.slug}`;
-}
-
 const statusLabel = {
   draft: 'Utkast',
   published: 'Publisert',
   closed: 'Lukket',
 } satisfies Record<SurveyResults['status'], string>;
+
+const responseModeLabel = {
+  anonymous: 'Anonyme svar',
+  identified: 'Identifiserte svar',
+} satisfies Record<SurveyResults['responseMode'], string>;
+
+function formatSurveyEndDate(value: string | null) {
+  return value ? `Slutter ${formatDate(value)}` : 'Ingen sluttdato';
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat('nb-NO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value));
+}
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat('nb-NO', {

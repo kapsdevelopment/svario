@@ -60,6 +60,7 @@ export function ProfilePage() {
   const [organizationNumber, setOrganizationNumber] = useState('');
   const [businessWithoutOrganizationNumber, setBusinessWithoutOrganizationNumber] =
     useState(false);
+  const [workspaceMessage, setWorkspaceMessage] = useState<string | null>(null);
   const [workspaceValidationError, setWorkspaceValidationError] = useState<
     string | null
   >(null);
@@ -167,6 +168,7 @@ export function ProfilePage() {
 
   async function handleCreateWorkspace(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setWorkspaceMessage(null);
     setWorkspaceValidationError(null);
 
     const name = workspaceName.trim();
@@ -202,11 +204,20 @@ export function ProfilePage() {
     }
 
     try {
-      await createWorkspace.mutateAsync({
+      const workspaceId = await createWorkspace.mutateAsync({
         name,
         type: workspaceType,
         organizationNumber: organizationNumberForWorkspace,
       });
+      const existingWorkspace = workspaces.data?.find(
+        (workspace) => workspace.id === workspaceId,
+      );
+
+      if (existingWorkspace) {
+        setWorkspaceMessage(
+          `Du har allerede tilgang til arbeidsflaten "${existingWorkspace.name}".`,
+        );
+      }
     } catch {
       return;
     }
@@ -242,12 +253,14 @@ export function ProfilePage() {
   function handleOrganizationNumberChange(value: string) {
     setOrganizationNumber(value);
     setBusinessWithoutOrganizationNumber(false);
+    setWorkspaceMessage(null);
     setWorkspaceValidationError(null);
     lookupOrganization.reset();
   }
 
   function handleBusinessWithoutOrganizationNumberChange(isChecked: boolean) {
     setBusinessWithoutOrganizationNumber(isChecked);
+    setWorkspaceMessage(null);
     setWorkspaceValidationError(null);
     lookupOrganization.reset();
 
@@ -258,6 +271,7 @@ export function ProfilePage() {
 
   function handleWorkspaceTypeChange(value: WorkspaceType) {
     setWorkspaceType(value);
+    setWorkspaceMessage(null);
     setWorkspaceValidationError(null);
 
     if (value === 'team') {
@@ -494,7 +508,10 @@ export function ProfilePage() {
                     ? 'Fjord og Furu Kaffebar'
                     : 'Mastergruppe vår 2026'
                 }
-                onChange={(event) => setWorkspaceName(event.target.value)}
+                onChange={(event) => {
+                  setWorkspaceName(event.target.value);
+                  setWorkspaceMessage(null);
+                }}
               />
             </label>
           </div>
@@ -539,6 +556,9 @@ export function ProfilePage() {
           </div>
         </form>
 
+        {workspaceMessage ? (
+          <p className="form-alert form-alert--info">{workspaceMessage}</p>
+        ) : null}
         {workspaceValidationError ? (
           <p className="form-alert form-alert--error">{workspaceValidationError}</p>
         ) : null}

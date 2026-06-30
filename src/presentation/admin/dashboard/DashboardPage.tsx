@@ -1,4 +1,4 @@
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, TreePine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
@@ -9,9 +9,9 @@ import { Panel } from '../../shared/components/Panel';
 
 export function DashboardPage() {
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
-  const latestSurvey = surveys[0] ?? null;
   const activeSurveys = surveys.filter(isActiveSurvey);
   const draftSurveys = surveys.filter((survey) => survey.status === 'draft');
+  const heroSurvey = getDashboardHeroSurvey(surveys);
 
   return (
     <div className="page">
@@ -30,28 +30,28 @@ export function DashboardPage() {
         aria-labelledby="dashboard-current-title"
       >
         <div>
-          <p className="eyebrow">Pågår nå</p>
+          <p className="eyebrow">{getDashboardHeroEyebrow(heroSurvey)}</p>
           <h2 id="dashboard-current-title">
-            {latestSurvey?.title ?? 'Bygg ditt første skjema'}
+            {heroSurvey?.title ?? 'Bygg ditt første skjema'}
           </h2>
           <p>
-            {latestSurvey
-              ? formatSurveySummary(latestSurvey)
+            {heroSurvey
+              ? formatSurveySummary(heroSurvey, activeSurveys.length)
               : 'Når du oppretter et skjema, dukker status og videre arbeid opp her.'}
           </p>
         </div>
         <Link
           className="button dashboard-hero__action"
           to={
-            latestSurvey
-              ? getPrimarySurveyRoute(latestSurvey)
+            heroSurvey
+              ? getPrimarySurveyRoute(heroSurvey)
               : routes.newSurvey
           }
         >
           <BarChart3 size={18} aria-hidden="true" />
-          {latestSurvey?.status === 'draft'
+          {heroSurvey?.status === 'draft'
             ? 'Rediger skjema'
-            : latestSurvey
+            : heroSurvey
               ? 'Se resultater'
               : 'Nytt skjema'}
         </Link>
@@ -96,16 +96,33 @@ export function DashboardPage() {
             </div>
           </Link>
           <div className="table-list">
-            {surveys.slice(0, 5).map((survey) => (
-              <Link
-                className="table-list__row table-list__row--link"
-                key={survey.id}
-                to={getPrimarySurveyRoute(survey)}
-              >
-                <span>{survey.title}</span>
-                <span>{statusLabel[survey.status]}</span>
-              </Link>
-            ))}
+            {surveys.map((survey) => {
+              const isLive = isActiveSurvey(survey);
+
+              return (
+                <Link
+                  className={`table-list__row table-list__row--link${
+                    isLive ? ' table-list__row--live' : ''
+                  }`}
+                  key={survey.id}
+                  to={getPrimarySurveyRoute(survey)}
+                >
+                  <span>{survey.title}</span>
+                  <span className="table-list__row-meta">
+                    <span>{statusLabel[survey.status]}</span>
+                    {isLive ? (
+                      <span
+                        className="live-pine-indicator"
+                        aria-label="Live og pågår"
+                        title="Live og pågår"
+                      >
+                        <TreePine size={17} aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              );
+            })}
             {surveys.length === 0 ? (
               <Link
                 className="table-list__row table-list__row--link"
@@ -147,7 +164,22 @@ const statusLabel = {
   closed: 'Lukket',
 } satisfies Record<SurveySummary['status'], string>;
 
-function formatSurveySummary(survey: SurveySummary) {
+function formatSurveySummary(survey: SurveySummary, activeSurveyCount = 0) {
+  if (isActiveSurvey(survey)) {
+    const activeCountText =
+      activeSurveyCount > 1
+        ? `${activeSurveyCount} aktive skjemaer pågår nå. `
+        : '';
+
+    if (survey.endsAt) {
+      return `${activeCountText}Dette skjemaet er åpent til ${formatDate(
+        survey.endsAt,
+      )}.`;
+    }
+
+    return `${activeCountText}Dette skjemaet er publisert uten sluttdato.`;
+  }
+
   if (survey.status === 'draft') {
     return 'Utkastet er klart for videre redigering og spørsmål.';
   }
@@ -159,6 +191,50 @@ function formatSurveySummary(survey: SurveySummary) {
   return survey.endsAt
     ? `Publisert og åpent til ${formatDate(survey.endsAt)}.`
     : 'Publisert uten sluttdato.';
+}
+
+function getDashboardHeroEyebrow(survey: SurveySummary | null) {
+  if (!survey) {
+    return 'Kom i gang';
+  }
+
+  if (isActiveSurvey(survey)) {
+    return 'Pågår nå';
+  }
+
+  if (survey.status === 'draft') {
+    return 'Fortsett utkast';
+  }
+
+  return 'Siste skjema';
+}
+
+function getDashboardHeroSurvey(surveys: SurveySummary[]) {
+  const activeSurveys = surveys.filter(isActiveSurvey);
+
+  if (activeSurveys.length > 0) {
+    return [...activeSurveys].sort(compareActiveSurveyPriority)[0] ?? null;
+  }
+
+  return surveys[0] ?? null;
+}
+
+function compareActiveSurveyPriority(
+  firstSurvey: SurveySummary,
+  secondSurvey: SurveySummary,
+) {
+  const firstEndsAt = getDateTime(firstSurvey.endsAt) ?? Number.POSITIVE_INFINITY;
+  const secondEndsAt =
+    getDateTime(secondSurvey.endsAt) ?? Number.POSITIVE_INFINITY;
+
+  if (firstEndsAt !== secondEndsAt) {
+    return firstEndsAt - secondEndsAt;
+  }
+
+  return (
+    (getDateTime(secondSurvey.updatedAt) ?? 0) -
+    (getDateTime(firstSurvey.updatedAt) ?? 0)
+  );
 }
 
 function getPrimarySurveyRoute(survey: SurveySummary) {
@@ -181,6 +257,15 @@ function isActiveSurvey(survey: SurveySummary) {
   }
 
   return endsAt === null || endsAt > now;
+}
+
+function getDateTime(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const dateTime = new Date(value).getTime();
+  return Number.isNaN(dateTime) ? null : dateTime;
 }
 
 function formatDate(value: string) {
