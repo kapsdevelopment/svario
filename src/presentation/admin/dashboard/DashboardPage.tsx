@@ -97,7 +97,8 @@ export function DashboardPage() {
           </Link>
           <div className="table-list">
             {surveys.map((survey) => {
-              const isLive = isActiveSurvey(survey);
+              const displayState = getSurveyDisplayState(survey);
+              const isLive = displayState === 'active';
 
               return (
                 <Link
@@ -109,7 +110,7 @@ export function DashboardPage() {
                 >
                   <span>{survey.title}</span>
                   <span className="table-list__row-meta">
-                    <span>{statusLabel[survey.status]}</span>
+                    <span>{displayStateLabel[displayState]}</span>
                     {isLive ? (
                       <span
                         className="live-pine-indicator"
@@ -158,14 +159,20 @@ function DashboardMetricCard({ title, subtitle, to }: DashboardMetricCardProps) 
   );
 }
 
-const statusLabel = {
+type SurveyDisplayState = 'draft' | 'scheduled' | 'active' | 'finished' | 'closed';
+
+const displayStateLabel = {
   draft: 'Utkast',
-  published: 'Publisert',
+  scheduled: 'Planlagt',
+  active: 'Aktiv',
+  finished: 'Ferdig',
   closed: 'Lukket',
-} satisfies Record<SurveySummary['status'], string>;
+} satisfies Record<SurveyDisplayState, string>;
 
 function formatSurveySummary(survey: SurveySummary, activeSurveyCount = 0) {
-  if (isActiveSurvey(survey)) {
+  const displayState = getSurveyDisplayState(survey);
+
+  if (displayState === 'active') {
     const activeCountText =
       activeSurveyCount > 1
         ? `${activeSurveyCount} aktive skjemaer pågår nå. `
@@ -180,17 +187,27 @@ function formatSurveySummary(survey: SurveySummary, activeSurveyCount = 0) {
     return `${activeCountText}Dette skjemaet er publisert uten sluttdato.`;
   }
 
-  if (survey.status === 'draft') {
+  if (displayState === 'draft') {
     return 'Utkastet er klart for videre redigering og spørsmål.';
   }
 
-  if (survey.status === 'closed') {
+  if (displayState === 'scheduled') {
+    return survey.startsAt
+      ? `Skjemaet er planlagt og starter ${formatDate(survey.startsAt)}.`
+      : 'Skjemaet er planlagt, men mangler startdato.';
+  }
+
+  if (displayState === 'finished') {
+    return survey.endsAt
+      ? `Skjemaet er ferdig. Det sluttet ${formatDate(survey.endsAt)}.`
+      : 'Skjemaet er ferdig.';
+  }
+
+  if (displayState === 'closed') {
     return 'Skjemaet er lukket for nye besvarelser.';
   }
 
-  return survey.endsAt
-    ? `Publisert og åpent til ${formatDate(survey.endsAt)}.`
-    : 'Publisert uten sluttdato.';
+  return 'Skjemaet er klart.';
 }
 
 function getDashboardHeroEyebrow(survey: SurveySummary | null) {
@@ -198,15 +215,9 @@ function getDashboardHeroEyebrow(survey: SurveySummary | null) {
     return 'Kom i gang';
   }
 
-  if (isActiveSurvey(survey)) {
-    return 'Pågår nå';
-  }
+  const displayState = getSurveyDisplayState(survey);
 
-  if (survey.status === 'draft') {
-    return 'Fortsett utkast';
-  }
-
-  return 'Siste skjema';
+  return heroEyebrowLabel[displayState];
 }
 
 function getDashboardHeroSurvey(surveys: SurveySummary[]) {
@@ -244,20 +255,40 @@ function getPrimarySurveyRoute(survey: SurveySummary) {
 }
 
 function isActiveSurvey(survey: SurveySummary) {
-  if (survey.status !== 'published') {
-    return false;
+  return getSurveyDisplayState(survey) === 'active';
+}
+
+function getSurveyDisplayState(survey: SurveySummary): SurveyDisplayState {
+  if (survey.status === 'draft') {
+    return 'draft';
+  }
+
+  if (survey.status === 'closed') {
+    return 'closed';
   }
 
   const now = Date.now();
   const startsAt = survey.startsAt ? new Date(survey.startsAt).getTime() : null;
   const endsAt = survey.endsAt ? new Date(survey.endsAt).getTime() : null;
 
-  if (startsAt !== null && startsAt > now) {
-    return false;
+  if (endsAt !== null && endsAt <= now) {
+    return 'finished';
   }
 
-  return endsAt === null || endsAt > now;
+  if (startsAt !== null && startsAt > now) {
+    return 'scheduled';
+  }
+
+  return 'active';
 }
+
+const heroEyebrowLabel = {
+  draft: 'Fortsett utkast',
+  scheduled: 'Planlagt',
+  active: 'Pågår nå',
+  finished: 'Ferdig',
+  closed: 'Lukket',
+} satisfies Record<SurveyDisplayState, string>;
 
 function getDateTime(value: string | null) {
   if (!value) {

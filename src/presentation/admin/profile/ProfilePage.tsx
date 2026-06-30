@@ -58,8 +58,6 @@ export function ProfilePage() {
   const [workspaceName, setWorkspaceName] = useState('');
   const [workspaceType, setWorkspaceType] = useState<WorkspaceType>('team');
   const [organizationNumber, setOrganizationNumber] = useState('');
-  const [businessWithoutOrganizationNumber, setBusinessWithoutOrganizationNumber] =
-    useState(false);
   const [workspaceMessage, setWorkspaceMessage] = useState<string | null>(null);
   const [workspaceValidationError, setWorkspaceValidationError] = useState<
     string | null
@@ -174,23 +172,12 @@ export function ProfilePage() {
     const name = workspaceName.trim();
     const normalizedOrganizationNumber = organizationNumber.replace(/\D/g, '');
     const organizationNumberForWorkspace =
-      workspaceType === 'business' && !businessWithoutOrganizationNumber
+      workspaceType === 'business' && normalizedOrganizationNumber
         ? normalizedOrganizationNumber
         : null;
 
     if (!name) {
       setWorkspaceValidationError('Arbeidsflaten må ha et navn.');
-      return;
-    }
-
-    if (
-      workspaceType === 'business' &&
-      !businessWithoutOrganizationNumber &&
-      !organizationNumberForWorkspace
-    ) {
-      setWorkspaceValidationError(
-        'Skriv inn organisasjonsnummer, eller velg at bedriften ikke har organisasjonsnummer ennå.',
-      );
       return;
     }
 
@@ -224,7 +211,6 @@ export function ProfilePage() {
 
     setWorkspaceName('');
     setOrganizationNumber('');
-    setBusinessWithoutOrganizationNumber(false);
     setWorkspaceType('team');
     lookupOrganization.reset();
   }
@@ -252,21 +238,9 @@ export function ProfilePage() {
 
   function handleOrganizationNumberChange(value: string) {
     setOrganizationNumber(value);
-    setBusinessWithoutOrganizationNumber(false);
     setWorkspaceMessage(null);
     setWorkspaceValidationError(null);
     lookupOrganization.reset();
-  }
-
-  function handleBusinessWithoutOrganizationNumberChange(isChecked: boolean) {
-    setBusinessWithoutOrganizationNumber(isChecked);
-    setWorkspaceMessage(null);
-    setWorkspaceValidationError(null);
-    lookupOrganization.reset();
-
-    if (isChecked) {
-      setOrganizationNumber('');
-    }
   }
 
   function handleWorkspaceTypeChange(value: WorkspaceType) {
@@ -276,7 +250,6 @@ export function ProfilePage() {
 
     if (value === 'team') {
       setOrganizationNumber('');
-      setBusinessWithoutOrganizationNumber(false);
       lookupOrganization.reset();
     }
   }
@@ -430,7 +403,7 @@ export function ProfilePage() {
         subtitle="Arbeidsflater brukes når skjemaer skal sendes ut i kontekst av en bedrift, organisasjon eller gruppe."
       >
         <form className="form-stack" onSubmit={handleCreateWorkspace}>
-          <div className="form-grid">
+          <div className="workspace-create-grid">
             <label>
               Type
               <select
@@ -454,16 +427,9 @@ export function ProfilePage() {
                     id="workspace-organization-number"
                     type="text"
                     value={organizationNumber}
-                    disabled={
-                      createWorkspace.isPending ||
-                      businessWithoutOrganizationNumber
-                    }
+                    disabled={createWorkspace.isPending}
                     inputMode="numeric"
-                    placeholder={
-                      businessWithoutOrganizationNumber
-                        ? 'Legges til senere'
-                        : '999888777'
-                    }
+                    placeholder="Valgfritt"
                     onChange={(event) =>
                       handleOrganizationNumberChange(event.target.value)
                     }
@@ -474,7 +440,7 @@ export function ProfilePage() {
                     disabled={
                       createWorkspace.isPending ||
                       lookupOrganization.isPending ||
-                      businessWithoutOrganizationNumber
+                      organizationNumber.replace(/\D/g, '').length === 0
                     }
                     onClick={handleLookupOrganization}
                   >
@@ -482,19 +448,6 @@ export function ProfilePage() {
                     {lookupOrganization.isPending ? 'Henter...' : 'Hent fra BRREG'}
                   </button>
                 </div>
-                <label className="workspace-organization-toggle">
-                  <input
-                    type="checkbox"
-                    checked={businessWithoutOrganizationNumber}
-                    disabled={createWorkspace.isPending}
-                    onChange={(event) =>
-                      handleBusinessWithoutOrganizationNumberChange(
-                        event.target.checked,
-                      )
-                    }
-                  />
-                  Har ikke organisasjonsnummer ennå
-                </label>
               </div>
             ) : null}
             <label>
@@ -516,9 +469,7 @@ export function ProfilePage() {
             </label>
           </div>
 
-          {workspaceType === 'business' &&
-          !businessWithoutOrganizationNumber &&
-          lookupOrganization.isSuccess ? (
+          {workspaceType === 'business' && lookupOrganization.isSuccess ? (
             <div className="lookup-result lookup-result--success">
               <CheckCircle2 size={20} aria-hidden="true" />
               <div>
@@ -528,9 +479,7 @@ export function ProfilePage() {
             </div>
           ) : null}
 
-          {workspaceType === 'business' &&
-          !businessWithoutOrganizationNumber &&
-          lookupOrganization.isError ? (
+          {workspaceType === 'business' && lookupOrganization.isError ? (
             <p className="form-alert form-alert--info">
               BRREG-oppslaget stoppet ikke opprettelsen:{' '}
               {getErrorMessage(
