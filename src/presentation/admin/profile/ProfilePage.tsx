@@ -429,7 +429,7 @@ export function ProfilePage() {
                     value={organizationNumber}
                     disabled={createWorkspace.isPending}
                     inputMode="numeric"
-                    placeholder="Valgfritt"
+                    placeholder="999888777"
                     onChange={(event) =>
                       handleOrganizationNumberChange(event.target.value)
                     }
@@ -458,8 +458,8 @@ export function ProfilePage() {
                 disabled={createWorkspace.isPending}
                 placeholder={
                   workspaceType === 'business'
-                    ? 'Fjord og Furu Kaffebar'
-                    : 'Mastergruppe vår 2026'
+                    ? 'Bedriftsnavn'
+                    : 'Teamnavn'
                 }
                 onChange={(event) => {
                   setWorkspaceName(event.target.value);
