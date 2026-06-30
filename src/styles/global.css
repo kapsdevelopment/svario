@@ -1216,6 +1216,27 @@ select {
   gap: 10px;
 }
 
+.workspace-organization-field {
+  display: grid;
+  gap: 8px;
+  color: #33443e;
+  font-weight: 800;
+}
+
+.workspace-organization-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #607681;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.workspace-organization-toggle input {
+  flex: 0 0 auto;
+}
+
 .lookup-result {
   display: flex;
   align-items: flex-start;
@@ -1279,6 +1300,22 @@ select {
   color: #607681;
   font-size: 0.88rem;
   font-weight: 800;
+}
+
+.workspace-organization-update {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #f0ebe2;
+  padding-top: 12px;
+}
+
+.workspace-organization-update > label {
+  color: #33443e;
+  font-weight: 800;
+}
+
+.workspace-organization-update .form-alert {
+  margin-top: 0;
 }
 
 .copy-field {
@@ -3868,6 +3905,10 @@ select {
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lookup-field {
     grid-template-columns: 1fr;
   }
 

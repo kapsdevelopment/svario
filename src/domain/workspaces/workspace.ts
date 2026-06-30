@@ -14,6 +14,7 @@ export type Workspace = {
   name: string;
   slug: string;
   organizationNumber: string | null;
+  verifiedAt: string | null;
   status: WorkspaceStatus;
   createdByAccountId: string | null;
   createdAt: string;
@@ -45,6 +46,11 @@ export type CreateWorkspaceInput = {
   name: string;
   type: WorkspaceType;
   organizationNumber: string | null;
+};
+
+export type SetWorkspaceOrganizationNumberInput = {
+  workspaceId: string;
+  organizationNumber: string;
 };
 
 export type CreateWorkspaceInvitationInput = {

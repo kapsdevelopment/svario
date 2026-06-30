@@ -177,6 +177,22 @@ const knownMessages: KnownMessage[] = [
     message: 'Bedrift må ha et gyldig organisasjonsnummer.',
   },
   {
+    match: /^organization number must be 9 digits\.?$/i,
+    message: 'Organisasjonsnummeret må være 9 siffer.',
+  },
+  {
+    match: /^only workspace owners and admins can update organization number\.?$/i,
+    message: 'Bare eiere og administratorer kan oppdatere organisasjonsnummer.',
+  },
+  {
+    match: /^only business workspaces can have an organization number\.?$/i,
+    message: 'Bare bedriftsarbeidsflater kan ha organisasjonsnummer.',
+  },
+  {
+    match: /^workspace already has an organization number\.?$/i,
+    message: 'Arbeidsflaten har allerede et organisasjonsnummer.',
+  },
+  {
     match: /^owner invitations are not supported\.?$/i,
     message: 'Eier-invitasjoner støttes ikke.',
   },

@@ -948,6 +948,10 @@ export type Database = {
         Args: { p_account_id: string; p_workspace_id: string }
         Returns: undefined
       }
+      set_workspace_organization_number: {
+        Args: { p_organization_number: string; p_workspace_id: string }
+        Returns: Database["public"]["Tables"]["workspaces"]["Row"]
+      }
       publish_survey: {
         Args: { p_survey_id: string }
         Returns: Database["public"]["Tables"]["surveys"]["Row"]

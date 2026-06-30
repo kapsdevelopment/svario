@@ -1,6 +1,7 @@
 import type {
   CreateWorkspaceInput,
   CreateWorkspaceInvitationInput,
+  SetWorkspaceOrganizationNumberInput,
   Workspace,
   WorkspaceMember,
   WorkspaceOwner,
@@ -20,6 +21,7 @@ type WorkspaceRow = Pick<
   | 'status'
   | 'type'
   | 'updated_at'
+  | 'verified_at'
 >;
 
 type WorkspaceMemberRow = Pick<
@@ -35,7 +37,7 @@ type WorkspaceOwnerRow = {
 };
 
 const workspaceSelect =
-  'id, type, name, slug, organization_number, status, created_by_account_id, created_at, updated_at';
+  'id, type, name, slug, organization_number, verified_at, status, created_by_account_id, created_at, updated_at';
 const workspaceMemberSelect =
   'workspace_id, account_id, role, status, joined_at';
 
@@ -128,6 +130,22 @@ export async function createWorkspace(
   return data;
 }
 
+export async function setWorkspaceOrganizationNumber(
+  input: SetWorkspaceOrganizationNumberInput,
+): Promise<Workspace> {
+  const client = requireWorkspaceClient();
+  const { data, error } = await client.rpc('set_workspace_organization_number', {
+    p_workspace_id: input.workspaceId,
+    p_organization_number: input.organizationNumber,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return mapWorkspace(data);
+}
+
 export async function createWorkspaceInvitation(
   input: CreateWorkspaceInvitationInput,
 ): Promise<string> {
@@ -191,6 +209,7 @@ function mapWorkspace(row: WorkspaceRow): Workspace {
     name: row.name,
     slug: row.slug,
     organizationNumber: row.organization_number,
+    verifiedAt: row.verified_at,
     status: row.status,
     createdByAccountId: row.created_by_account_id,
     createdAt: row.created_at,
