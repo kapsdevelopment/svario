@@ -292,6 +292,8 @@ export function SurveyEditorPage() {
 }
 
 function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
+  const auth = useAuth();
+  const workspaces = useWorkspaces(auth.account?.id);
   const addSection = useAddSurveySection(survey.id);
   const addQuestion = useAddSurveyQuestion(survey.id);
   const deleteSection = useDeleteSurveySection(survey.id);
@@ -367,12 +369,31 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     currentStatus,
     survey.responseCount,
   );
-  const canEditStructure = structureLockMessage === null;
+  const currentWorkspace = useMemo(
+    () =>
+      survey.workspaceId
+        ? workspaces.data?.find((workspace) => workspace.id === survey.workspaceId) ??
+          null
+        : null,
+    [survey.workspaceId, workspaces.data],
+  );
+  const accessLockMessage = getSurveyAccessLockMessage({
+    survey,
+    currentAccountId: auth.account?.id ?? null,
+    currentWorkspace,
+    isLoadingWorkspaceAccess: Boolean(survey.workspaceId) && workspaces.isLoading,
+  });
+  const structureEditLockMessage = accessLockMessage ?? structureLockMessage;
+  const canEditSurvey = accessLockMessage === null;
+  const canEditStructure = structureEditLockMessage === null;
   const canReorderQuestions =
     canEditStructure && !moveQuestion.isPending && !reorderQuestions.isPending;
   const privacyIssues = getPrivacyCompletionIssues(survey);
   const canPublish =
-    isDraft && survey.questions.length > 0 && privacyIssues.length === 0;
+    canEditSurvey &&
+    isDraft &&
+    survey.questions.length > 0 &&
+    privacyIssues.length === 0;
   const shareUrl = useMemo(() => createShareUrl(survey.slug), [survey.slug]);
   const selectedSectionId = survey.sections.some((section) => section.id === sectionId)
     ? sectionId
@@ -621,6 +642,13 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       return;
     }
 
+    if (!canEditSurvey) {
+      setBasicValidationError(
+        accessLockMessage ?? 'Du har ikke tilgang til å endre dette skjemaet.',
+      );
+      return;
+    }
+
     const previousVisibility = basicVisibility;
     setBasicValidationError(null);
     setBasicMessage(null);
@@ -645,6 +673,13 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     event.preventDefault();
     setBasicValidationError(null);
     setBasicMessage(null);
+
+    if (!canEditSurvey) {
+      setBasicValidationError(
+        accessLockMessage ?? 'Du har ikke tilgang til å endre dette skjemaet.',
+      );
+      return;
+    }
 
     const normalizedTitle = basicTitle.trim();
 
@@ -739,9 +774,16 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     event.preventDefault();
     setSectionValidationError(null);
 
+    if (!canEditSurvey) {
+      setSectionValidationError(
+        accessLockMessage ?? 'Du har ikke tilgang til å endre dette skjemaet.',
+      );
+      return;
+    }
+
     if (!canEditStructure) {
       setSectionValidationError(
-        structureLockMessage ?? 'Skjemastrukturen kan ikke endres her.',
+        structureEditLockMessage ?? 'Skjemastrukturen kan ikke endres her.',
       );
       return;
     }
@@ -790,7 +832,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
     if (!canEditStructure) {
       setQuestionValidationError(
-        structureLockMessage ?? 'Skjemastrukturen kan ikke endres her.',
+        structureEditLockMessage ?? 'Skjemastrukturen kan ikke endres her.',
       );
       return;
     }
@@ -1011,8 +1053,10 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
       targetQuestionIds.splice(toIndex, 0, activeQuestion.questionId);
       await moveQuestionToGroup(activeQuestion, targetGroup, targetQuestionIds);
-    } catch {
-      setReorderError('Kunne ikke flytte spørsmålet. Prøv igjen.');
+    } catch (error) {
+      setReorderError(
+        getErrorMessage(error, 'Kunne ikke flytte spørsmålet. Prøv igjen.'),
+      );
     }
   }
 
@@ -1084,8 +1128,10 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       }
 
       await moveQuestionToGroup(activeQuestion, group, targetQuestionIds);
-    } catch {
-      setReorderError('Kunne ikke flytte spørsmålet. Prøv igjen.');
+    } catch (error) {
+      setReorderError(
+        getErrorMessage(error, 'Kunne ikke flytte spørsmålet. Prøv igjen.'),
+      );
     }
   }
 
@@ -1161,7 +1207,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
           survey.workspaceId ? (
             <SurveyVisibilityToggle
               visibility={basicVisibility}
-              isPending={updateVisibility.isPending}
+              isPending={!canEditSurvey || updateVisibility.isPending}
               onChange={handleVisibilityChange}
             />
           ) : null
@@ -1282,7 +1328,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             <button
               className="button button--secondary"
               type="submit"
-              disabled={updateBasicInfo.isPending}
+              disabled={!canEditSurvey || updateBasicInfo.isPending}
             >
               <Save size={18} aria-hidden="true" />
               {updateBasicInfo.isPending ? 'Lagrer...' : 'Lagre grunninfo'}
@@ -1291,9 +1337,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         </form>
       </Panel>
 
-      {structureLockMessage ? (
+      {structureEditLockMessage ? (
         <div className="form-alert form-alert--info" role="status">
-          {structureLockMessage}
+          {structureEditLockMessage}
         </div>
       ) : null}
 
@@ -2644,6 +2690,35 @@ function getStructureLockMessage(
   }
 
   return null;
+}
+
+function getSurveyAccessLockMessage({
+  survey,
+  currentAccountId,
+  currentWorkspace,
+  isLoadingWorkspaceAccess,
+}: {
+  survey: SurveyEditor;
+  currentAccountId: string | null;
+  currentWorkspace: WorkspaceWithMembership | null;
+  isLoadingWorkspaceAccess: boolean;
+}) {
+  if (currentAccountId && survey.ownerAccountId === currentAccountId) {
+    return null;
+  }
+
+  if (
+    currentWorkspace &&
+    (currentWorkspace.myRole === 'owner' || currentWorkspace.myRole === 'admin')
+  ) {
+    return null;
+  }
+
+  if (isLoadingWorkspaceAccess) {
+    return 'Sjekker om du kan redigere dette skjemaet.';
+  }
+
+  return 'Du har lesetilgang til dette skjemaet, men ikke redigeringstilgang.';
 }
 
 type PrivacySuggestion = {

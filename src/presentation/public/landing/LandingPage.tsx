@@ -51,6 +51,7 @@ export function LandingPage() {
             <button onClick={() => scrollToSection('produkt')} type="button">
               Produkt
             </button>
+            <Link to={routes.demo}>Se Svario i bruk</Link>
             <Link to={routes.trust}>Sikkerhet og personvern</Link>
             <Link to={routes.privacy}>Personvern</Link>
             <Link className="button button--secondary" to={routes.login}>
@@ -70,6 +71,9 @@ export function LandingPage() {
             <Link className="button button--primary" to={routes.login}>
               Kom i gang
               <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+            <Link className="button button--secondary" to={routes.demo}>
+              Se Svario i bruk
             </Link>
             <Link className="button button--secondary" to={routes.trust}>
               Sikkerhet og personvern
@@ -111,6 +115,35 @@ export function LandingPage() {
             </article>
           );
         })}
+      </section>
+
+      <section className="marketing-live-demo" aria-labelledby="live-demo-title">
+        <div className="marketing-live-demo__copy">
+          <p className="eyebrow">Live resultater</p>
+          <h2 id="live-demo-title">Se resultatene mens svarene kommer inn</h2>
+          <p>
+            Svario oppdaterer resultatvisningen fortløpende, slik at grafer,
+            fordelinger og ordskyer tar form mens undersøkelsen besvares.
+          </p>
+          <Link className="button button--primary" to={routes.demo}>
+            Se Svario i bruk
+            <ArrowRight size={18} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="marketing-live-demo__media">
+          <video
+            aria-label="Live resultatvisning i Svario"
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster="/videos/svario-live-respons-poster.png"
+            preload="metadata"
+          >
+            <source src="/videos/svario-live-respons.mov" />
+            Nettleseren din kan ikke spille av denne videoen.
+          </video>
+        </div>
       </section>
 
       <section className="marketing-trust">

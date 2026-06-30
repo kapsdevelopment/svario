@@ -11,11 +11,13 @@ export function useReorderSurveyQuestions(surveyId: string) {
   return useMutation({
     mutationFn: (input: ReorderSurveyQuestionsInput) =>
       reorderSurveyQuestions(input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: surveyEditorQueryKey(surveyId),
-      });
-      void queryClient.invalidateQueries({ queryKey: surveyListQueryKey });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: surveyEditorQueryKey(surveyId),
+        }),
+        queryClient.invalidateQueries({ queryKey: surveyListQueryKey }),
+      ]);
     },
   });
 }

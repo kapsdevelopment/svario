@@ -141,6 +141,10 @@ const knownMessages: KnownMessage[] = [
     message: 'Fant ikke skjemaet, eller du har ikke tilgang til å endre det.',
   },
   {
+    match: /^survey not found or not accessible\.?$/i,
+    message: 'Fant ikke skjemaet, eller du har ikke tilgang til å endre det.',
+  },
+  {
     match: /^survey not found or not readable by current account\.?$/i,
     message: 'Fant ikke skjemaet, eller du har ikke tilgang til det.',
   },
@@ -167,6 +171,10 @@ const knownMessages: KnownMessage[] = [
   {
     match: /^section not found for survey\.?$/i,
     message: 'Fant ikke seksjonen i dette skjemaet.',
+  },
+  {
+    match: /^question is not in the source section\.?$/i,
+    message: 'Spørsmålet er allerede flyttet. Last inn siden på nytt og prøv igjen.',
   },
   {
     match: /^workspace name is required\.?$/i,

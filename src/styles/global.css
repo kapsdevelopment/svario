@@ -2994,6 +2994,7 @@ select {
 .marketing-hero__content,
 .marketing-intro,
 .marketing-benefits,
+.marketing-live-demo,
 .marketing-trust,
 .marketing-data-promise,
 .marketing-preview {
@@ -3088,6 +3089,52 @@ select {
 .marketing-benefit p {
   margin-top: 10px;
   color: #596962;
+}
+
+.marketing-live-demo {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 34px;
+  border-top: 1px solid #d9d3c7;
+  padding: 0 0 48px;
+}
+
+.marketing-live-demo__copy {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+
+.marketing-live-demo__copy h2 {
+  font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+}
+
+.marketing-live-demo__copy p:not(.eyebrow) {
+  color: #33443e;
+  font-size: 1.03rem;
+}
+
+.marketing-live-demo__media,
+.demo-video-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(217, 211, 199, 0.9);
+  border-radius: 8px;
+  background: #17201d;
+  box-shadow: 0 22px 55px rgba(30, 43, 37, 0.14);
+}
+
+.marketing-live-demo__media {
+  aspect-ratio: 16 / 9;
+}
+
+.marketing-live-demo__media video,
+.demo-video-frame video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .marketing-trust {
@@ -3891,6 +3938,119 @@ select {
   vertical-align: top;
 }
 
+.demo-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(244, 241, 234, 0.94), rgba(244, 241, 234, 0.99) 620px),
+    url("../assets/images/svario-coastal-background.png") top center / cover no-repeat;
+  color: #17201d;
+}
+
+.demo-hero,
+.demo-feature,
+.demo-video-grid,
+.demo-cta {
+  width: min(100% - 56px, 1120px);
+  margin: 0 auto;
+}
+
+.demo-hero {
+  padding: 74px 0 48px;
+}
+
+.demo-hero h1 {
+  font-size: clamp(2.3rem, 5vw, 4.2rem);
+}
+
+.demo-hero p:not(.eyebrow) {
+  max-width: 710px;
+  margin-top: 16px;
+  color: #33443e;
+  font-size: 1.14rem;
+}
+
+.demo-feature {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.52fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 30px;
+  border-top: 1px solid #d9d3c7;
+  padding: 42px 0 48px;
+}
+
+.demo-feature__copy,
+.demo-video-card__copy {
+  display: grid;
+  gap: 12px;
+}
+
+.demo-feature__copy svg,
+.demo-video-card__copy svg {
+  color: #4f6c5d;
+}
+
+.demo-feature__copy h2,
+.demo-video-card__copy h2,
+.demo-cta h2 {
+  font-size: 1.45rem;
+}
+
+.demo-feature__copy p:not(.eyebrow),
+.demo-video-card__copy p:not(.eyebrow) {
+  color: #596962;
+}
+
+.demo-feature .demo-video-frame {
+  aspect-ratio: 16 / 9;
+}
+
+.demo-video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding-bottom: 48px;
+}
+
+.demo-video-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 16px 38px rgba(30, 43, 37, 0.07);
+  padding: 20px;
+}
+
+.demo-video-card .demo-video-frame {
+  aspect-ratio: 16 / 9;
+  box-shadow: none;
+}
+
+.demo-cta {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(24, 58, 52, 0.94), rgba(61, 86, 78, 0.9)),
+    #183a34;
+  color: #fffdf8;
+  margin-bottom: 48px;
+  padding: 28px;
+}
+
+.demo-cta .eyebrow {
+  color: #d8a17d;
+}
+
+.demo-cta .button {
+  flex: 0 0 auto;
+  border-color: #fffdf8;
+  background: #fffdf8;
+  color: #183a34;
+}
+
 .trust-table-wrap th {
   border-top: 0;
   background: #f2eee5;
@@ -4234,9 +4394,14 @@ select {
   .marketing-hero__content,
   .marketing-intro,
   .marketing-benefits,
+  .marketing-live-demo,
   .marketing-trust,
   .marketing-data-promise,
-  .marketing-preview {
+  .marketing-preview,
+  .demo-hero,
+  .demo-feature,
+  .demo-video-grid,
+  .demo-cta {
     width: min(100% - 40px, 1120px);
   }
 
@@ -4271,6 +4436,16 @@ select {
     min-height: auto;
   }
 
+  .marketing-live-demo {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding-bottom: 38px;
+  }
+
+  .marketing-live-demo__copy .button {
+    width: 100%;
+  }
+
   .marketing-trust {
     display: grid;
   }
@@ -4282,6 +4457,45 @@ select {
 
   .marketing-trust .button,
   .marketing-data-promise .button {
+    width: 100%;
+  }
+
+  .demo-hero {
+    padding: 54px 0 38px;
+  }
+
+  .demo-hero h1 {
+    font-size: 2.65rem;
+  }
+
+  .demo-hero p:not(.eyebrow) {
+    font-size: 1rem;
+  }
+
+  .demo-feature,
+  .demo-video-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-feature {
+    gap: 22px;
+    padding: 34px 0 38px;
+  }
+
+  .demo-video-grid {
+    padding-bottom: 38px;
+  }
+
+  .demo-video-card {
+    padding: 16px;
+  }
+
+  .demo-cta {
+    display: grid;
+    gap: 18px;
+  }
+
+  .demo-cta .button {
     width: 100%;
   }
 

@@ -1,5 +1,6 @@
 export const routes = {
   home: '/',
+  demo: '/demo',
   login: '/login',
   privacy: '/privacy',
   security: '/security',
