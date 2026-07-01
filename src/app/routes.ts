@@ -11,6 +11,8 @@ export const routes = {
   surveysFocus: (focus: 'active' | 'draft') => `/surveys?focus=${focus}`,
   newSurvey: '/surveys/new',
   editSurvey: (surveyId: string) => `/surveys/${surveyId}/edit`,
+  editSurveyQuestions: (surveyId: string) =>
+    `/surveys/${surveyId}/edit#questions`,
   editSurveyPrivacy: (surveyId: string) => `/surveys/${surveyId}/edit#privacy`,
   profile: '/profile',
   resultsHome: '/results',

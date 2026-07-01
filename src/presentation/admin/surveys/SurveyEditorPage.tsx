@@ -293,6 +293,7 @@ export function SurveyEditorPage() {
 
 function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const auth = useAuth();
+  const location = useLocation();
   const workspaces = useWorkspaces(auth.account?.id);
   const addSection = useAddSurveySection(survey.id);
   const addQuestion = useAddSurveyQuestion(survey.id);
@@ -360,6 +361,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   );
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
   const [reorderError, setReorderError] = useState<string | null>(null);
+  const questionPromptInputRef = useRef<HTMLInputElement | null>(null);
 
   const currentStatus = publishSurvey.data?.status ?? survey.status;
   const publishedAt = publishSurvey.data?.publishedAt ?? survey.publishedAt;
@@ -432,6 +434,24 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     survey.title,
     survey.visibility,
   ]);
+
+  useEffect(() => {
+    if (location.hash !== '#questions') {
+      return;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      document.getElementById('questions')?.scrollIntoView({
+        block: 'start',
+      });
+
+      if (canEditStructure) {
+        questionPromptInputRef.current?.focus({ preventScroll: true });
+      }
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [canEditStructure, location.hash, survey.id]);
 
   const localDraftStorageKey = useMemo(
     () => getSurveyEditorLocalDraftStorageKey(survey.id),
@@ -1350,14 +1370,15 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         />
       ) : null}
 
-      <Panel
-        title="Spørsmål"
-        subtitle={
-          survey.questions.length === 0
-            ? 'Ingen spørsmål er lagt til ennå'
-            : `${survey.questions.length} i rekkefølge`
-        }
-      >
+      <div id="questions" className="scroll-anchor">
+        <Panel
+          title="Spørsmål"
+          subtitle={
+            survey.questions.length === 0
+              ? 'Ingen spørsmål er lagt til ennå'
+              : `${survey.questions.length} i rekkefølge`
+          }
+        >
         <div className="survey-builder-stack">
           <section className="builder-subsection">
             <div className="builder-subsection__header">
@@ -1412,6 +1433,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 <label>
                   Spørsmål
                   <input
+                    ref={questionPromptInputRef}
                     type="text"
                     value={prompt}
                     disabled={!canEditStructure || addQuestion.isPending}
@@ -1553,7 +1575,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                   disabled={!canEditStructure || addQuestion.isPending}
                 >
                   <Plus size={18} aria-hidden="true" />
-                  {addQuestion.isPending ? 'Legger til...' : 'Legg til spørsmål'}
+                  {addQuestion.isPending ? 'Lagrer...' : 'Lagre spørsmål'}
                 </button>
               </div>
             </form>
@@ -1733,7 +1755,8 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             </div>
             </section>
         </div>
-      </Panel>
+        </Panel>
+      </div>
 
       <PrivacySettingsPanel survey={survey} />
 
@@ -2681,8 +2704,12 @@ function getStructureLockMessage(
   status: SurveySummary['status'],
   responseCount: number,
 ) {
+  if (status === 'published' && responseCount > 0) {
+    return 'Skjemastrukturen er låst fordi skjemaet er aktivt og svar samles inn.';
+  }
+
   if (responseCount > 0) {
-    return `Skjemastrukturen er låst fordi ${responseCount} svar er sendt inn. Opprett et nytt skjema eller en ny versjon hvis spørsmål, seksjoner eller alternativer skal endres.`;
+    return 'Skjemastrukturen er låst fordi skjemaet har innsendte svar.';
   }
 
   if (status === 'closed') {

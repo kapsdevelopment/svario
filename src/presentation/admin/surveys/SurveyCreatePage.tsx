@@ -89,7 +89,7 @@ export function SurveyCreatePage() {
       return;
     }
 
-    navigate(routes.editSurvey(createdSurveyId));
+    navigate(routes.editSurveyQuestions(createdSurveyId));
   }
 
   return (
