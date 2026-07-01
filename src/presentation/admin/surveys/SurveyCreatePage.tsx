@@ -6,11 +6,10 @@ import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useCreateSurveyDraft } from '../../../application/surveys/useCreateSurveyDraft';
-import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
+import { useWorkspaceScope } from '../../../application/workspaces/WorkspaceScopeProvider';
 import type { SurveyResponseMode } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
-const individualWorkspaceValue = 'individual';
 const durationPresets = [
   { label: '24 timer', days: 1 },
   { label: '1 uke', days: 7 },
@@ -21,20 +20,19 @@ const durationPresets = [
 
 export function SurveyCreatePage() {
   const { account } = useAuth();
+  const workspaceScope = useWorkspaceScope();
   const createSurveyDraft = useCreateSurveyDraft();
-  const workspaces = useWorkspaces(account?.id);
   const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [responseMode, setResponseMode] =
     useState<SurveyResponseMode>('anonymous');
-  const [workspaceId, setWorkspaceId] = useState(individualWorkspaceValue);
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isSaving = createSurveyDraft.isPending;
+  const isSaving = createSurveyDraft.isPending || workspaceScope.isLoading;
 
   function handleDurationPreset(preset: (typeof durationPresets)[number]) {
     setValidationError(null);
@@ -77,10 +75,9 @@ export function SurveyCreatePage() {
 
     try {
       const createdSurvey = await createSurveyDraft.mutateAsync({
-        workspaceId:
-          workspaceId === individualWorkspaceValue ? null : workspaceId,
+        workspaceId: workspaceScope.workspaceId,
         visibility:
-          workspaceId === individualWorkspaceValue ? 'private' : 'workspace',
+          workspaceScope.scope.type === 'personal' ? 'private' : 'workspace',
         title: normalizedTitle,
         description,
         responseMode,
@@ -104,7 +101,10 @@ export function SurveyCreatePage() {
         </div>
       </header>
 
-      <Panel title="Grunninfo">
+      <Panel
+        title="Grunninfo"
+        subtitle={getCreatePanelSubtitle(workspaceScope)}
+      >
         <form className="form-stack" onSubmit={handleSubmit}>
           <label>
             Tittel
@@ -125,23 +125,6 @@ export function SurveyCreatePage() {
             />
           </label>
           <div className="survey-create-meta-grid">
-            <label>
-              Arbeidsflate (individuell, team eller organisasjon)
-              <select
-                value={workspaceId}
-                disabled={workspaces.isLoading}
-                onChange={(event) => setWorkspaceId(event.target.value)}
-              >
-                <option value={individualWorkspaceValue}>
-                  Individuell - personlig konto
-                </option>
-                {workspaces.data?.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name}
-                  </option>
-                ))}
-              </select>
-            </label>
             <label>
               Besvarelser
               <select
@@ -216,6 +199,23 @@ export function SurveyCreatePage() {
       </Panel>
     </div>
   );
+}
+
+function getWorkspaceScopeDescription({
+  scope,
+  workspaceLabel,
+}: ReturnType<typeof useWorkspaceScope>) {
+  return scope.type === 'personal'
+    ? 'på din personlige konto'
+    : `i ${workspaceLabel}`;
+}
+
+function getCreatePanelSubtitle(workspaceScope: ReturnType<typeof useWorkspaceScope>) {
+  if (!workspaceScope.hasWorkspaceChoices) {
+    return undefined;
+  }
+
+  return `Opprettes ${getWorkspaceScopeDescription(workspaceScope)}.`;
 }
 
 function toIsoDateTime(value: string) {

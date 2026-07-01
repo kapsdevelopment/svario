@@ -11,13 +11,12 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
-import { useAuth } from '../../../application/auth/AuthProvider';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useDeleteSurvey } from '../../../application/surveys/useDeleteSurvey';
 import { useRepeatSurveyOnce } from '../../../application/surveys/useRepeatSurveyOnce';
 import { useSurveyList } from '../../../application/surveys/useSurveyList';
 import { useSurveyRetentionWarnings } from '../../../application/surveys/useSurveyRetentionWarnings';
-import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
+import { useWorkspaceScope } from '../../../application/workspaces/WorkspaceScopeProvider';
 import type {
   SurveyRetentionWarning,
   SurveySummary,
@@ -26,14 +25,13 @@ import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 
 export function SurveyListPage() {
-  const { account } = useAuth();
+  const workspaceScope = useWorkspaceScope();
   const location = useLocation();
   const navigate = useNavigate();
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
   const focusTarget = getSurveyFocusTarget(location.search);
   const surveyIds = surveys.map((survey) => survey.id);
   const retentionWarningsQuery = useSurveyRetentionWarnings(surveyIds);
-  const { data: workspaces = [] } = useWorkspaces(account?.id);
   const deleteSurvey = useDeleteSurvey();
   const repeatSurveyOnce = useRepeatSurveyOnce();
   const [surveyToDelete, setSurveyToDelete] = useState<SurveySummary | null>(
@@ -43,10 +41,8 @@ export function SurveyListPage() {
     null,
   );
   const workspaceNameById = new Map(
-    workspaces.map((workspace) => [workspace.id, workspace.name]),
+    workspaceScope.workspaces.map((workspace) => [workspace.id, workspace.name]),
   );
-  const individualSurveys = surveys.filter((survey) => !survey.workspaceId);
-  const workspaceSurveys = surveys.filter((survey) => survey.workspaceId);
   const surveyById = new Map(surveys.map((survey) => [survey.id, survey]));
   const retentionWarningItems = (retentionWarningsQuery.data ?? [])
     .map((warning) => {
@@ -176,7 +172,7 @@ export function SurveyListPage() {
       {!isLoading && !isError && surveys.length === 0 ? (
         <Panel
           title="Ingen skjemaer ennå"
-          subtitle="Opprett det første utkastet og bygg videre derfra."
+          subtitle={getEmptySurveyListSubtitle(workspaceScope)}
           action={
             <Link className="button button--primary" to={routes.newSurvey}>
               <Plus size={18} aria-hidden="true" />
@@ -220,45 +216,23 @@ export function SurveyListPage() {
 
       {!isLoading && !isError && surveys.length > 0 ? (
         <div className="survey-group-list">
-          {individualSurveys.length > 0 ? (
-            <SurveyGroup
-              title="Mine individuelle skjemaer"
-              subtitle="Skjemaer som ligger på din personlige konto."
-              count={individualSurveys.length}
-            >
-              {individualSurveys.map((survey) => (
-                <SurveyListCard
-                  key={survey.id}
-                  survey={survey}
-                  workspaceNameById={workspaceNameById}
-                  isRepeatPending={repeatSurveyOnce.isPending}
-                  isDeletePending={deleteSurvey.isPending}
-                  onRepeat={handleRepeatSurvey}
-                  onDelete={handleDeleteSurvey}
-                />
-              ))}
-            </SurveyGroup>
-          ) : null}
-
-          {workspaceSurveys.length > 0 ? (
-            <SurveyGroup
-              title="Team og organisasjon"
-              subtitle="Skjemaer tilhørende organisasjon eller team"
-              count={workspaceSurveys.length}
-            >
-              {workspaceSurveys.map((survey) => (
-                <SurveyListCard
-                  key={survey.id}
-                  survey={survey}
-                  workspaceNameById={workspaceNameById}
-                  isRepeatPending={repeatSurveyOnce.isPending}
-                  isDeletePending={deleteSurvey.isPending}
-                  onRepeat={handleRepeatSurvey}
-                  onDelete={handleDeleteSurvey}
-                />
-              ))}
-            </SurveyGroup>
-          ) : null}
+          <SurveyGroup
+            title={getSurveyScopeTitle(workspaceScope)}
+            subtitle={getSurveyScopeSubtitle(workspaceScope)}
+            count={surveys.length}
+          >
+            {surveys.map((survey) => (
+              <SurveyListCard
+                key={survey.id}
+                survey={survey}
+                workspaceNameById={workspaceNameById}
+                isRepeatPending={repeatSurveyOnce.isPending}
+                isDeletePending={deleteSurvey.isPending}
+                onRepeat={handleRepeatSurvey}
+                onDelete={handleDeleteSurvey}
+              />
+            ))}
+          </SurveyGroup>
         </div>
       ) : null}
 
@@ -420,6 +394,52 @@ function SurveyListCard({
 
 function formatSurveyCount(count: number) {
   return `${count} ${count === 1 ? 'skjema' : 'skjemaer'}`;
+}
+
+function getSurveyScopeTitle({
+  hasWorkspaceChoices,
+  scope,
+  workspaceLabel,
+}: ReturnType<typeof useWorkspaceScope>) {
+  if (!hasWorkspaceChoices) {
+    return 'Mine skjemaer';
+  }
+
+  return scope.type === 'personal'
+    ? 'Mine personlige skjemaer'
+    : workspaceLabel;
+}
+
+function getSurveyScopeSubtitle(workspaceScope: ReturnType<typeof useWorkspaceScope>) {
+  const scopeDescription = getWorkspaceScopeDescription(workspaceScope);
+
+  return scopeDescription
+    ? `Skjemaer ${scopeDescription}.`
+    : 'Dine skjemaer og utkast.';
+}
+
+function getEmptySurveyListSubtitle(
+  workspaceScope: ReturnType<typeof useWorkspaceScope>,
+) {
+  const scopeDescription = getWorkspaceScopeDescription(workspaceScope);
+
+  return scopeDescription
+    ? `Opprett det første utkastet ${scopeDescription}.`
+    : 'Opprett det første utkastet og bygg videre derfra.';
+}
+
+function getWorkspaceScopeDescription({
+  hasWorkspaceChoices,
+  scope,
+  workspaceLabel,
+}: ReturnType<typeof useWorkspaceScope>) {
+  if (!hasWorkspaceChoices) {
+    return '';
+  }
+
+  return scope.type === 'personal'
+    ? 'på din personlige konto'
+    : `i ${workspaceLabel}`;
 }
 
 function toSurveyGroupHeadingId(title: string) {

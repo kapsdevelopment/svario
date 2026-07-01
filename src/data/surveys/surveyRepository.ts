@@ -113,6 +113,10 @@ type SurveyResponseRetentionRow = Pick<
   'survey_id' | 'retention_due_at'
 >;
 
+type ListMySurveysInput = {
+  workspaceId: string | null;
+};
+
 type AnswerRow = Pick<
   Tables<'answers'>,
   'id' | 'response_id' | 'question_id' | 'free_text' | 'likert_value'
@@ -136,12 +140,23 @@ const surveyResponseSelect =
 const answerSelect = 'id, response_id, question_id, free_text, likert_value';
 const answerOptionSelect = 'answer_id, option_id';
 
-export async function listMySurveys(): Promise<SurveySummary[]> {
+export async function listMySurveys(
+  input?: ListMySurveysInput,
+): Promise<SurveySummary[]> {
   const client = requireSurveyClient();
-  const { data, error } = await client
+  let query = client
     .from('surveys')
     .select(surveySummarySelect)
     .order('updated_at', { ascending: false });
+
+  if (input) {
+    query =
+      input.workspaceId === null
+        ? query.is('workspace_id', null)
+        : query.eq('workspace_id', input.workspaceId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw error;

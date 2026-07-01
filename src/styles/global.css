@@ -117,6 +117,50 @@ h2 {
   font-size: 0.86rem;
 }
 
+.workspace-switcher {
+  display: grid;
+  gap: 7px;
+}
+
+.workspace-switcher > span:first-child {
+  color: #607681;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workspace-switcher__control {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #cbdacf;
+  border-radius: 8px;
+  background: #f8fbf6;
+  color: #183a34;
+  padding: 10px 12px;
+}
+
+.workspace-switcher__control select {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  appearance: none;
+  background: transparent;
+  color: #183a34;
+  cursor: pointer;
+  font-weight: 800;
+  outline: 0;
+  padding: 0 18px 0 0;
+}
+
+.workspace-switcher__control select:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .sidebar__nav {
   display: grid;
   gap: 8px;
@@ -156,22 +200,22 @@ h2 {
   padding-top: 18px;
 }
 
-.sidebar-account span {
-  display: block;
+.sidebar-profile-link {
+  display: inline-flex;
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
   color: #607681;
-  font-size: 0.76rem;
   font-weight: 800;
-  text-transform: uppercase;
+  padding: 10px 12px;
 }
 
-.sidebar-account strong {
-  display: block;
-  max-width: 170px;
-  overflow: hidden;
-  color: #17201d;
-  font-size: 0.9rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.sidebar-profile-link.active {
+  background: #dce7df;
+  color: #183a34;
 }
 
 .app-main {

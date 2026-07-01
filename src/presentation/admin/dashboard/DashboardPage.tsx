@@ -4,14 +4,17 @@ import { Link } from 'react-router-dom';
 import { routes } from '../../../app/routes';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useSurveyList } from '../../../application/surveys/useSurveyList';
+import { useWorkspaceScope } from '../../../application/workspaces/WorkspaceScopeProvider';
 import type { SurveySummary } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
 
 export function DashboardPage() {
+  const workspaceScope = useWorkspaceScope();
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
   const activeSurveys = surveys.filter(isActiveSurvey);
   const draftSurveys = surveys.filter((survey) => survey.status === 'draft');
   const heroSurvey = getDashboardHeroSurvey(surveys);
+  const scopedSurveyCount = formatScopedSurveyCount(surveys.length, workspaceScope);
 
   return (
     <div className="page">
@@ -91,7 +94,7 @@ export function DashboardPage() {
             <div className="panel__header">
               <div>
                 <h2>Siste skjemaer</h2>
-                <p>{`${surveys.length} skjemaer i arbeidsflaten`}</p>
+                <p>{scopedSurveyCount}</p>
               </div>
             </div>
           </Link>
@@ -252,6 +255,34 @@ function getPrimarySurveyRoute(survey: SurveySummary) {
   return survey.status === 'draft'
     ? routes.editSurvey(survey.id)
     : routes.results(survey.id);
+}
+
+function formatScopedSurveyCount(
+  count: number,
+  workspaceScope: ReturnType<typeof useWorkspaceScope>,
+) {
+  const scopeDescription = getWorkspaceScopeDescription(workspaceScope);
+  const surveyCount = formatSurveyCount(count);
+
+  return scopeDescription ? `${surveyCount} ${scopeDescription}` : surveyCount;
+}
+
+function formatSurveyCount(count: number) {
+  return `${count} ${count === 1 ? 'skjema' : 'skjemaer'}`;
+}
+
+function getWorkspaceScopeDescription({
+  scope,
+  workspaceLabel,
+  hasWorkspaceChoices,
+}: ReturnType<typeof useWorkspaceScope>) {
+  if (!hasWorkspaceChoices) {
+    return '';
+  }
+
+  return scope.type === 'personal'
+    ? 'på din personlige konto'
+    : `i ${workspaceLabel}`;
 }
 
 function isActiveSurvey(survey: SurveySummary) {
