@@ -19,6 +19,7 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { WebsiteFooter } from '../shared/WebsiteFooter';
 
 const purposeItems = [
   {
@@ -258,7 +259,7 @@ export function AboutPage() {
         </div>
         <span className="about-band__icon" aria-hidden="true">
           <Building2 size={42} />
-          <ExternalLink size={18} />
+          <ExternalLink className="about-band__link-icon" size={18} />
         </span>
       </a>
 
@@ -390,13 +391,13 @@ export function AboutPage() {
         </div>
       </section>
 
-      <footer className="security-footer">
+      <WebsiteFooter>
         <span>Svario</span>
         <Link to={routes.trust}>
           Sikkerhet og personvern
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
-      </footer>
+      </WebsiteFooter>
     </main>
   );
 }

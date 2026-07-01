@@ -10,6 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { WebsiteFooter } from '../shared/WebsiteFooter';
 
 const benefits = [
   {
@@ -194,6 +195,8 @@ export function LandingPage() {
           </Link>
         </div>
       </section>
+
+      <WebsiteFooter />
     </main>
   );
 }

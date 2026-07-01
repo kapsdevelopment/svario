@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { WebsiteFooter } from '../shared/WebsiteFooter';
 import { trustDocuments, trustHighlights, trustReferences } from './trustContent';
 
 export function TrustCenterPage() {
@@ -128,13 +129,13 @@ export function TrustCenterPage() {
         </div>
       </section>
 
-      <footer className="security-footer">
+      <WebsiteFooter>
         <span>Svario sikkerhet og personvern</span>
         <Link to={routes.home}>
           Til forsiden
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
-      </footer>
+      </WebsiteFooter>
     </main>
   );
 }

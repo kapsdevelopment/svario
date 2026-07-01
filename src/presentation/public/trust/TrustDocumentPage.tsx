@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, ExternalLink, FileText } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { WebsiteFooter } from '../shared/WebsiteFooter';
 import { getTrustDocument, trustDocuments, trustReferences } from './trustContent';
 
 export function TrustDocumentPage() {
@@ -122,7 +123,7 @@ export function TrustDocumentPage() {
         </div>
       </section>
 
-      <footer className="security-footer">
+      <WebsiteFooter>
         <Link to={routes.trust}>
           <ArrowLeft size={17} aria-hidden="true" />
           Sikkerhet og personvern
@@ -131,7 +132,7 @@ export function TrustDocumentPage() {
           Til forsiden
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
-      </footer>
+      </WebsiteFooter>
     </main>
   );
 }

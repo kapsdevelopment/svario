@@ -3466,7 +3466,8 @@ select {
 .security-band,
 .trust-band,
 .privacy-band,
-.security-footer {
+.security-footer,
+.website-footer {
   width: min(100% - 56px, 1120px);
   margin: 0 auto;
 }
@@ -3953,6 +3954,7 @@ select {
 }
 
 .about-band {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3964,7 +3966,7 @@ select {
     #183a34;
   color: #fffdf8;
   margin-bottom: 48px;
-  padding: 28px;
+  padding: 28px 70px 28px 28px;
   transition:
     box-shadow 150ms ease,
     transform 150ms ease;
@@ -4027,8 +4029,13 @@ select {
 .about-band__icon {
   display: grid;
   flex: 0 0 auto;
-  justify-items: end;
-  gap: 10px;
+  place-items: center;
+}
+
+.about-band__link-icon {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
 }
 
 .security-status-list div {
@@ -4191,12 +4198,43 @@ select {
   padding: 28px 0 40px;
 }
 
-.security-footer a {
+.website-footer {
+  display: grid;
+  gap: 18px;
+  border-top: 1px solid #d9d3c7;
+  color: #607681;
+  padding: 28px 0 40px;
+}
+
+.website-footer__links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.security-footer a,
+.website-footer__links a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: #183a34;
   font-weight: 800;
+}
+
+.website-footer__links span {
+  color: #607681;
+  font-weight: 800;
+}
+
+.website-footer__copyright {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  color: #607681;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .trust-document-hero {
@@ -4945,7 +4983,8 @@ select {
   .security-band,
   .trust-band,
   .privacy-band,
-  .security-footer {
+  .security-footer,
+  .website-footer {
     width: min(100% - 40px, 1120px);
   }
 
@@ -5055,6 +5094,7 @@ select {
 
   .about-band {
     display: grid;
+    padding: 24px 58px 56px 24px;
   }
 
   .about-contact__grid {
@@ -5067,5 +5107,10 @@ select {
 
   .security-footer {
     display: grid;
+  }
+
+  .website-footer__links {
+    display: grid;
+    gap: 12px;
   }
 }

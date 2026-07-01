@@ -2,6 +2,7 @@ import { ArrowRight, BarChart3, ClipboardList, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { WebsiteFooter } from '../shared/WebsiteFooter';
 
 const demoVideos = [
   {
@@ -120,6 +121,8 @@ export function DemoPage() {
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
       </section>
+
+      <WebsiteFooter />
     </main>
   );
 }

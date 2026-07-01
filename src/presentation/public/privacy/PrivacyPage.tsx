@@ -14,6 +14,7 @@ import {
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
+import { WebsiteFooter } from '../shared/WebsiteFooter';
 
 const promises = [
   {
@@ -192,13 +193,13 @@ export function PrivacyPage() {
         </div>
       </section>
 
-      <footer className="security-footer">
+      <WebsiteFooter>
         <span>Svario Privacy</span>
         <Link to={routes.trust}>
           Sikkerhet og personvern
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
-      </footer>
+      </WebsiteFooter>
     </main>
   );
 }
