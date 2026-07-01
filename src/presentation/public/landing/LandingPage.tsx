@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   FileText,
   LockKeyhole,
+  MessageSquare,
   ShieldCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -51,6 +52,7 @@ export function LandingPage() {
             <button onClick={() => scrollToSection('produkt')} type="button">
               Produkt
             </button>
+            <Link to={routes.about}>Om Svario</Link>
             <Link to={routes.demo}>Se Svario i bruk</Link>
             <Link to={routes.trust}>Sikkerhet og personvern</Link>
             <Link to={routes.privacy}>Personvern</Link>
@@ -173,6 +175,24 @@ export function LandingPage() {
         <Link className="button button--secondary" to={routes.privacy}>
           Personvern
         </Link>
+      </section>
+
+      <section className="marketing-preview">
+        <div className="marketing-preview__panel">
+          <div>
+            <MessageSquare size={18} aria-hidden="true" />
+            <span>Kontakt og tilbakemeldinger</span>
+          </div>
+          <h2>Har du et funksjonsønske eller en feil å melde?</h2>
+          <p>
+            På Om Svario-siden finner du kontaktskjemaet for produktspørsmål,
+            ønsker og feilrapporter.
+          </p>
+          <Link className="button button--secondary" to={`${routes.about}#contact`}>
+            Åpne Om Svario
+            <ArrowRight size={18} aria-hidden="true" />
+          </Link>
+        </div>
       </section>
     </main>
   );

@@ -95,6 +95,7 @@ export function SecurityPage() {
           <button onClick={() => scrollToSection('status')} type="button">
             Status
           </button>
+          <Link to={routes.about}>Om Svario</Link>
           <Link to={routes.trust}>Sikkerhet og personvern</Link>
           <Link to={routes.home}>Forside</Link>
           <Link to={routes.privacy}>Personvern</Link>
@@ -246,10 +247,7 @@ export function SecurityPage() {
           <div>
             <MessageSquare size={20} aria-hidden="true" />
             <span>
-              Bruk kontaktskjemaet på{' '}
-              <a href="https://kapsdevelopment.com/" rel="noreferrer" target="_blank">
-                kapsdevelopment.com
-              </a>{' '}
+              Bruk kontaktskjemaet på <Link to={`${routes.about}#contact`}>Om Svario</Link>{' '}
               for spørsmål om sikkerhet, personvern eller databehandleravtale.
             </span>
           </div>

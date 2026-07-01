@@ -23,6 +23,10 @@ const DemoPage = lazyRoute(
   () => import('../presentation/public/demo/DemoPage'),
   'DemoPage',
 );
+const AboutPage = lazyRoute(
+  () => import('../presentation/public/about/AboutPage'),
+  'AboutPage',
+);
 const PrivacyPage = lazyRoute(
   () => import('../presentation/public/privacy/PrivacyPage'),
   'PrivacyPage',
@@ -90,6 +94,11 @@ export const router = createHashRouter([
   {
     path: routes.demo,
     element: page(<DemoPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.about,
+    element: page(<AboutPage />),
     errorElement: <RouteErrorPage />,
   },
   {

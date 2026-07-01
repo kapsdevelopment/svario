@@ -22,6 +22,7 @@ export function TrustCenterPage() {
           </span>
         </Link>
         <nav className="security-topbar__nav" aria-label="Sikkerhet og personvern">
+          <Link to={routes.about}>Om Svario</Link>
           <Link to={routes.privacy}>Personvern</Link>
           <Link to={routes.security}>Sikkerhet</Link>
           <Link to={routes.home}>Forside</Link>
@@ -95,8 +96,7 @@ export function TrustCenterPage() {
           <h2>Kontakt</h2>
           <p>
             Personvern- og sikkerhetshenvendelser, eller generelle
-            henvendelser, kan sendes via kontaktskjemaet på Kapsdevelopment sin
-            nettside.
+            henvendelser, kan sendes via kontaktskjemaet på Om Svario-siden.
           </p>
         </div>
         <div className="trust-contact-list">
@@ -104,11 +104,11 @@ export function TrustCenterPage() {
             <Building2 size={20} aria-hidden="true" />
             <span>Kapsdevelopment AS, org.nr. 937 284 624</span>
           </div>
-          <a href="https://kapsdevelopment.com/" rel="noreferrer" target="_blank">
+          <Link to={`${routes.about}#contact`}>
             <MessageSquare size={20} aria-hidden="true" />
-            <span>Kontaktskjema på kapsdevelopment.com</span>
-            <ExternalLink size={17} aria-hidden="true" />
-          </a>
+            <span>Kontaktskjema på Om Svario</span>
+            <ArrowRight size={17} aria-hidden="true" />
+          </Link>
         </div>
       </section>
 

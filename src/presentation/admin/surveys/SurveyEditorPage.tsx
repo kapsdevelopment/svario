@@ -460,12 +460,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [localDraftHydratedKey, setLocalDraftHydratedKey] = useState<
     string | null
   >(null);
-  const [localDraftSavedAt, setLocalDraftSavedAt] = useState<number | null>(
-    null,
-  );
-  const [localDraftRestoredAt, setLocalDraftRestoredAt] = useState<
-    number | null
-  >(null);
   const lastLocalDraftFingerprint = useRef<string | null>(null);
   const currentLocalDraft = useMemo<SurveyEditorLocalDraft>(
     () => ({
@@ -559,13 +553,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       setScaleMin(storedDraft.question.scaleMin);
       setScaleMax(storedDraft.question.scaleMax);
       setScaleVariant(storedDraft.question.scaleVariant);
-      setLocalDraftSavedAt(storedDraft.savedAt);
-      setLocalDraftRestoredAt(storedDraft.savedAt);
       lastLocalDraftFingerprint.current =
         getSurveyEditorLocalDraftFingerprint(storedDraft);
     } else {
-      setLocalDraftSavedAt(null);
-      setLocalDraftRestoredAt(null);
       lastLocalDraftFingerprint.current = null;
     }
 
@@ -580,8 +570,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     if (!currentLocalDraftHasContent) {
       removeSurveyEditorLocalDraft(localDraftStorageKey);
       lastLocalDraftFingerprint.current = null;
-      setLocalDraftSavedAt(null);
-      setLocalDraftRestoredAt(null);
       return;
     }
 
@@ -597,8 +585,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         savedAt,
       });
       lastLocalDraftFingerprint.current = currentLocalDraftFingerprint;
-      setLocalDraftSavedAt(savedAt);
-      setLocalDraftRestoredAt(null);
     }, editorAutosaveDelayMs);
 
     return () => window.clearTimeout(timeoutId);
@@ -632,8 +618,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         savedAt,
       });
       lastLocalDraftFingerprint.current = currentLocalDraftFingerprint;
-      setLocalDraftSavedAt(savedAt);
-      setLocalDraftRestoredAt(null);
     }
 
     function handleVisibilityChange() {
@@ -1363,13 +1347,6 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         </div>
       ) : null}
 
-      {localDraftSavedAt ? (
-        <EditorAutosaveStatus
-          restoredAt={localDraftRestoredAt}
-          savedAt={localDraftSavedAt}
-        />
-      ) : null}
-
       <div id="questions" className="scroll-anchor">
         <Panel
           title="Spørsmål"
@@ -1917,25 +1894,6 @@ function SurveyVisibilityToggle({
         <UsersRound size={15} aria-hidden="true" />
         Delt
       </button>
-    </div>
-  );
-}
-
-function EditorAutosaveStatus({
-  restoredAt,
-  savedAt,
-}: {
-  restoredAt: number | null;
-  savedAt: number;
-}) {
-  return (
-    <div className="form-alert form-alert--info editor-autosave-status" role="status">
-      <span>
-        {restoredAt
-          ? 'Ulagrede endringer ble gjenopprettet fra denne nettleseren.'
-          : 'Ulagrede endringer er lagret i denne nettleseren.'}
-      </span>
-      <strong>{formatAutosaveTime(savedAt)}</strong>
     </div>
   );
 }
@@ -3423,14 +3381,6 @@ function formatDateTime(value: string) {
     minute: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(value));
-}
-
-function formatAutosaveTime(value: number) {
-  return new Intl.DateTimeFormat('nb-NO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
   }).format(new Date(value));
 }
 

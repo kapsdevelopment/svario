@@ -101,7 +101,7 @@ export const trustDocuments: TrustDocument[] = [
         paragraphs: [
           'Registrerte kan ha rett til innsyn, retting, sletting, begrensning, dataportabilitet og protest etter GDPR.',
           'For svar i et kundestyrt skjema skal henvendelser normalt rettes til skjemaeieren, fordi skjemaeieren bestemmer formål, innhold, rettslig grunnlag og lagringstid. Svario kan bistå skjemaeieren som databehandler ved behov.',
-          'Hvis henvendelsen gjelder Svario-konto, drift, sikkerhet eller Kapsdevelopment AS sin egen behandling, kan kontaktskjemaet på kapsdevelopment.com brukes.',
+          'Hvis henvendelsen gjelder Svario-konto, drift, sikkerhet eller Kapsdevelopment AS sin egen behandling, kan kontaktskjemaet på Om Svario-siden brukes.',
           'Du kan også klage til Datatilsynet dersom du mener personopplysninger behandles i strid med regelverket.',
         ],
       },
@@ -222,7 +222,7 @@ export const trustDocuments: TrustDocument[] = [
         title: 'Endringer og kontakt',
         paragraphs: [
           'Kapsdevelopment AS kan oppdatere disse vilkårene når tjenesten, leverandører, sikkerhetsrutiner eller lovkrav endres. Nyeste versjon skal være tilgjengelig på Sikkerhet og personvern-sidene.',
-          'Spørsmål om vilkårene kan sendes via kontaktskjemaet på kapsdevelopment.com.',
+          'Spørsmål om vilkårene kan sendes via kontaktskjemaet på Om Svario-siden.',
         ],
       },
     ],
@@ -243,7 +243,7 @@ export const trustDocuments: TrustDocument[] = [
         paragraphs: [
           'Behandlingsansvarlig er kunden som oppretter, sender ut og administrerer spørreskjema i Svario.',
           'Databehandler er Kapsdevelopment AS, org.nr. 937 284 624, som leverer Svario.',
-          'Kontaktpunkt for personvern og sikkerhet er kontaktskjemaet på kapsdevelopment.com.',
+          'Kontaktpunkt for personvern og sikkerhet er kontaktskjemaet på Om Svario-siden.',
         ],
       },
       {

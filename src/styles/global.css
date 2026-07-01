@@ -1857,20 +1857,6 @@ select {
   margin-top: 14px;
 }
 
-.editor-autosave-status {
-  display: flex;
-  width: fit-content;
-  max-width: 100%;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 0;
-}
-
-.editor-autosave-status strong {
-  color: #183a34;
-}
-
 .question-group__header h3 {
   margin: 0;
   color: #17201d;
@@ -3378,6 +3364,23 @@ select {
   text-transform: uppercase;
 }
 
+.marketing-preview__panel p {
+  max-width: 680px;
+  color: #33443e;
+}
+
+.marketing-preview__panel .button {
+  justify-self: start;
+}
+
+.about-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(244, 241, 234, 0.9), rgba(244, 241, 234, 0.98) 540px),
+    url("../assets/images/svario-landscape-background.png") top center / cover no-repeat;
+  color: #17201d;
+}
+
 .security-page {
   min-height: 100vh;
   background:
@@ -3446,11 +3449,15 @@ select {
 }
 
 .security-hero,
+.about-hero,
 .privacy-hero,
+.about-section,
 .security-section,
 .privacy-section,
+.about-value-grid,
 .security-control-grid,
 .privacy-promise-grid,
+.about-band,
 .trust-hero,
 .trust-highlight-grid,
 .trust-section,
@@ -3478,6 +3485,25 @@ select {
   min-height: 430px;
   align-items: end;
   padding: 82px 0 52px;
+}
+
+.about-hero {
+  display: grid;
+  min-height: 430px;
+  align-items: end;
+  padding: 82px 0 52px;
+}
+
+.about-hero h1 {
+  max-width: 840px;
+  font-size: 3.35rem;
+}
+
+.about-hero p:not(.eyebrow) {
+  max-width: 720px;
+  margin-top: 18px;
+  color: #33443e;
+  font-size: 1.12rem;
 }
 
 .privacy-hero h1 {
@@ -3585,12 +3611,24 @@ select {
   padding: 48px 0;
 }
 
+.about-section {
+  scroll-margin-top: 24px;
+  border-top: 1px solid #d9d3c7;
+  padding: 48px 0;
+}
+
 .trust-section {
   border-top: 1px solid #d9d3c7;
   padding: 48px 0;
 }
 
 .security-section--split {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.68fr) minmax(0, 1fr);
+  gap: 48px;
+}
+
+.about-section--split {
   display: grid;
   grid-template-columns: minmax(220px, 0.68fr) minmax(0, 1fr);
   gap: 48px;
@@ -3605,6 +3643,9 @@ select {
 .security-section h2,
 .security-band h2,
 .security-control h2,
+.about-section h2,
+.about-band h2,
+.about-value h2,
 .trust-section h2,
 .trust-band h2,
 .trust-highlight h2 {
@@ -3627,6 +3668,12 @@ select {
   color: #33443e;
 }
 
+.about-copy {
+  display: grid;
+  gap: 16px;
+  color: #33443e;
+}
+
 .security-control-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3637,6 +3684,13 @@ select {
 .privacy-promise-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 0 48px;
+}
+
+.about-value-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   padding: 0 0 48px;
 }
@@ -3666,6 +3720,15 @@ select {
   padding: 20px;
 }
 
+.about-value {
+  min-height: 222px;
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.92);
+  box-shadow: 0 16px 38px rgba(30, 43, 37, 0.07);
+  padding: 20px;
+}
+
 .trust-highlight {
   min-height: 222px;
   border: 1px solid #d9d3c7;
@@ -3687,7 +3750,15 @@ select {
   color: #4f6c5d;
 }
 
+.about-value svg {
+  color: #4f6c5d;
+}
+
 .security-control h2 {
+  margin-top: 18px;
+}
+
+.about-value h2 {
   margin-top: 18px;
 }
 
@@ -3711,6 +3782,11 @@ select {
 }
 
 .trust-highlight p {
+  margin-top: 10px;
+  color: #596962;
+}
+
+.about-value p {
   margin-top: 10px;
   color: #596962;
 }
@@ -3876,7 +3952,35 @@ select {
   padding: 28px;
 }
 
+.about-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  border: 1px solid #cbd8d1;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(24, 58, 52, 0.96), rgba(55, 92, 104, 0.9)),
+    #183a34;
+  color: #fffdf8;
+  margin-bottom: 48px;
+  padding: 28px;
+  transition:
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.about-band:hover,
+.about-band:focus-visible {
+  box-shadow: 0 18px 44px rgba(30, 43, 37, 0.16);
+  transform: translateY(-1px);
+}
+
 .security-band .eyebrow {
+  color: #d8a17d;
+}
+
+.about-band .eyebrow {
   color: #d8a17d;
 }
 
@@ -3904,14 +4008,136 @@ select {
   color: rgba(255, 253, 248, 0.78);
 }
 
+.about-band p {
+  max-width: 760px;
+  margin-top: 12px;
+  color: rgba(255, 253, 248, 0.78);
+}
+
 .privacy-band svg {
   flex: 0 0 auto;
   color: #d8a17d;
 }
 
+.about-band svg {
+  flex: 0 0 auto;
+  color: #d8a17d;
+}
+
+.about-band__icon {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 10px;
+}
+
 .security-status-list div {
   border-color: rgba(255, 253, 248, 0.18);
   color: rgba(255, 253, 248, 0.86);
+}
+
+.about-contact-reasons {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.about-contact-reasons div {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  border-top: 1px solid #e6e0d6;
+  color: #33443e;
+  padding-top: 12px;
+}
+
+.about-contact-reasons div:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.about-contact-reasons svg {
+  color: #4f6c5d;
+}
+
+.about-contact-reasons strong {
+  display: block;
+  color: #17201d;
+}
+
+.about-contact {
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: 0 16px 38px rgba(30, 43, 37, 0.07);
+  padding: 20px;
+}
+
+.about-contact form {
+  display: grid;
+  gap: 14px;
+}
+
+.about-contact label {
+  display: grid;
+  gap: 6px;
+  color: #33443e;
+  font-weight: 800;
+}
+
+.about-contact textarea {
+  resize: vertical;
+}
+
+.about-contact__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.about-contact__status {
+  display: none;
+  border: 1px solid #d9d3c7;
+  border-radius: 8px;
+  color: #17201d;
+  font-weight: 800;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+}
+
+.about-contact__status.is-pending,
+.about-contact__status.is-success,
+.about-contact__status.is-error {
+  display: block;
+}
+
+.about-contact__status.is-pending {
+  border-color: #c8d5dc;
+  background: #eef4f5;
+}
+
+.about-contact__status.is-success {
+  border-color: #b8cdb8;
+  background: #eef6ea;
+}
+
+.about-contact__status.is-error {
+  border-color: #d9b3aa;
+  background: #fff1ee;
+}
+
+.about-contact__iframe,
+.about-contact__honeypot {
+  display: none;
+}
+
+.about-contact__hint {
+  color: #607681;
+  font-size: 0.9rem;
+}
+
+.about-contact .button {
+  justify-self: start;
 }
 
 .security-status-list svg {
@@ -4657,7 +4883,8 @@ select {
   }
 
   .marketing-trust .button,
-  .marketing-data-promise .button {
+  .marketing-data-promise .button,
+  .marketing-preview__panel .button {
     width: 100%;
   }
 
@@ -4701,11 +4928,15 @@ select {
   }
 
   .security-hero,
+  .about-hero,
   .privacy-hero,
+  .about-section,
   .security-section,
   .privacy-section,
+  .about-value-grid,
   .security-control-grid,
   .privacy-promise-grid,
+  .about-band,
   .trust-hero,
   .trust-highlight-grid,
   .trust-section,
@@ -4722,6 +4953,19 @@ select {
     min-height: auto;
     grid-template-columns: 1fr;
     padding: 52px 0 38px;
+  }
+
+  .about-hero {
+    min-height: auto;
+    padding: 52px 0 38px;
+  }
+
+  .about-hero h1 {
+    font-size: 2.25rem;
+  }
+
+  .about-hero p:not(.eyebrow) {
+    font-size: 1rem;
   }
 
   .security-hero__content h1 {
@@ -4761,10 +5005,12 @@ select {
   }
 
   .security-section--split,
+  .about-section--split,
   .privacy-section--split,
   .trust-section--split,
   .trust-document-layout,
-  .security-band {
+  .security-band,
+  .about-band {
     grid-template-columns: 1fr;
     gap: 22px;
   }
@@ -4775,6 +5021,7 @@ select {
   }
 
   .security-control-grid,
+  .about-value-grid,
   .privacy-promise-grid,
   .trust-highlight-grid,
   .trust-document-grid {
@@ -4782,6 +5029,7 @@ select {
   }
 
   .security-control,
+  .about-value,
   .privacy-promise,
   .trust-highlight,
   .trust-document-card {
@@ -4803,6 +5051,18 @@ select {
 
   .privacy-band {
     display: grid;
+  }
+
+  .about-band {
+    display: grid;
+  }
+
+  .about-contact__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-contact .button {
+    width: 100%;
   }
 
   .security-footer {

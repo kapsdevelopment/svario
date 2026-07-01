@@ -46,6 +46,7 @@ export function DemoPage() {
         </Link>
         <nav className="marketing-topbar__nav" aria-label="Demoside">
           <Link to={routes.home}>Forside</Link>
+          <Link to={routes.about}>Om Svario</Link>
           <Link to={routes.trust}>Sikkerhet og personvern</Link>
           <Link to={routes.privacy}>Personvern</Link>
           <Link className="button button--secondary" to={routes.login}>
@@ -69,6 +70,9 @@ export function DemoPage() {
             </Link>
             <Link className="button button--secondary" to={routes.home}>
               Til forsiden
+            </Link>
+            <Link className="button button--secondary" to={routes.about}>
+              Om Svario
             </Link>
           </div>
         </div>

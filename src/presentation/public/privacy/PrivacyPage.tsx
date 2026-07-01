@@ -65,6 +65,7 @@ export function PrivacyPage() {
           </span>
         </Link>
         <nav className="marketing-topbar__nav" aria-label="Personvernside">
+          <Link to={routes.about}>Om Svario</Link>
           <Link to={routes.trust}>Sikkerhet og personvern</Link>
           <Link to={routes.home}>Forside</Link>
           <Link to={routes.security}>Sikkerhet</Link>
@@ -184,10 +185,7 @@ export function PrivacyPage() {
             <MessageSquare size={20} aria-hidden="true" />
             <span>
               Personvern- og sikkerhetshenvendelser kan sendes via
-              kontaktskjemaet på{' '}
-              <a href="https://kapsdevelopment.com/" rel="noreferrer" target="_blank">
-                kapsdevelopment.com
-              </a>
+              kontaktskjemaet på <Link to={`${routes.about}#contact`}>Om Svario</Link>
               .
             </span>
           </div>
