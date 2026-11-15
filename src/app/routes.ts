@@ -22,4 +22,6 @@ export const routes = {
     `/surveys/${surveyId}/results/present`,
   joinWorkspace: (token: string) => `/join/${token}`,
   respondent: (slug: string) => `/s/${slug}`,
+  liveSurveyHost: (sessionId: string) => `/live/${sessionId}/host`,
+  liveSurveyParticipant: (sessionId: string) => `/live/${sessionId}`,
 };

@@ -75,3 +75,30 @@ In Supabase Auth URL Configuration, set Site URL to `https://svario.no` and add:
 https://svario.no
 https://svario.no/**
 ```
+
+## Live survey pilot
+
+Open a published survey with anonymous, single-select questions and choose
+**Start liveøkt**. Share the QR code from the lobby. Use **Vis første spørsmål**
+and **Neste spørsmål** to control the mobile screens. Finished sessions are
+under **Tidligere liveøkter** on the survey editor. The QR code stays the same
+throughout the session. Live responses are summarized separately. A room
+closes after eight hours or when the survey ends, whichever comes first.
+Session data is kept for up to 30 days, or less if the survey specifies a
+shorter retention period.
+
+To simulate a room, start a local Supabase instance with the migrations applied
+and email confirmations disabled (the repository's local default). Use the
+local publishable or anon key from `supabase status`:
+
+```bash
+SVARIO_LIVE_TEST_KEY='<local public key>' npm run test:live
+```
+
+Set `SVARIO_LIVE_TEST_URL` if the local API uses a different port. The test
+creates temporary users and a survey, runs 50 clients against the same room
+and checks the results, retry behavior, host permissions and the race between
+closing a question and submitting answers. It reports local request timings.
+For a manual rehearsal, put the host on a large screen and join from five
+phones on shared Wi-Fi. Include a late join, a phone that temporarily loses
+its connection and a scan of the QR code from the back of the room.

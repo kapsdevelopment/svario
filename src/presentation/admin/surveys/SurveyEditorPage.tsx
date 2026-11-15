@@ -59,6 +59,7 @@ import {
 import type { WorkspaceWithMembership } from '../../../domain/workspaces/workspace';
 import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
+import { LiveSurveyPanel } from '../live/LiveSurveyPanel';
 
 const questionTypeLabels = {
   multiple_choice: 'Flervalg',
@@ -1823,6 +1824,10 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
           </div>
         ) : null}
       </Panel>
+
+      {canEditSurvey && !isDraft ? (
+        <LiveSurveyPanel survey={{ ...survey, status: currentStatus }} />
+      ) : null}
 
       <ConfirmDialog
         open={publishDialogOpen}

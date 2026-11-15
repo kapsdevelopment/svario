@@ -11,6 +11,14 @@ const DashboardPage = lazyRoute(
   () => import('../presentation/admin/dashboard/DashboardPage'),
   'DashboardPage',
 );
+const LiveSurveyHostPage = lazyRoute(
+  () => import('../presentation/admin/live/LiveSurveyHostPage'),
+  'LiveSurveyHostPage',
+);
+const LiveSurveyParticipantPage = lazyRoute(
+  () => import('../presentation/public/live/LiveSurveyParticipantPage'),
+  'LiveSurveyParticipantPage',
+);
 const LoginPage = lazyRoute(
   () => import('../presentation/admin/auth/LoginPage'),
   'LoginPage',
@@ -119,6 +127,16 @@ export const router = createHashRouter([
   {
     path: '/trust/:documentSlug',
     element: page(<TrustDocumentPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/live/:sessionId/host',
+    element: <RequireAuth>{page(<LiveSurveyHostPage />)}</RequireAuth>,
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/live/:sessionId',
+    element: page(<LiveSurveyParticipantPage />),
     errorElement: <RouteErrorPage />,
   },
   {

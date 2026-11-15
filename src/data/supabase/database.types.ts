@@ -1009,6 +1009,49 @@ export type Database = {
         }
         Returns: string
       }
+      advance_live_survey: {
+        Args: {
+          p_finish: boolean
+          p_session_id: string
+          p_step: number
+        }
+        Returns: Json
+      }
+      get_live_survey_host: {
+        Args: {
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      get_live_survey_status: {
+        Args: {
+          p_session_id: string
+          p_voter_key: string
+        }
+        Returns: Json
+      }
+      list_live_survey_sessions: {
+        Args: {
+          p_survey_id: string
+        }
+        Returns: Json
+      }
+      start_live_survey: {
+        Args: {
+          p_survey_id: string
+        }
+        Returns: string
+      }
+      submit_live_survey_vote: {
+        Args: {
+          p_option_id: string
+          p_question_id: string
+          p_session_id: string
+          p_step: number
+          p_voter_key: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_status: "active" | "blocked" | "pending_delete" | "deleted"

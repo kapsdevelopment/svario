@@ -1043,7 +1043,7 @@ function QuestionResultCard({
   );
 }
 
-function ChoiceResultView({
+export function ChoiceResultView({
   chartType,
   colorMode,
   results,
