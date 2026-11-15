@@ -436,16 +436,17 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   ]);
 
   useEffect(() => {
-    if (location.hash !== '#questions') {
+    const target = location.hash.slice(1);
+    if (target !== 'questions' && target !== 'duration') {
       return;
     }
 
     const animationFrame = window.requestAnimationFrame(() => {
-      document.getElementById('questions')?.scrollIntoView({
+      document.getElementById(target)?.scrollIntoView({
         block: 'start',
       });
 
-      if (canEditStructure) {
+      if (target === 'questions' && canEditStructure) {
         questionPromptInputRef.current?.focus({ preventScroll: true });
       }
     });
@@ -1255,7 +1256,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
             </label>
           </div>
 
-          <div className="basic-info-form__secondary">
+          <div id="duration" className="basic-info-form__secondary scroll-anchor">
             <label>
               Besvarelser
               <select

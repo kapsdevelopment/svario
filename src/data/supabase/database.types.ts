@@ -968,6 +968,10 @@ export type Database = {
         Args: { p_survey_id: string; p_action: string }
         Returns: Database["public"]["Tables"]["surveys"]["Row"]
       }
+      reopen_survey: {
+        Args: { p_survey_id: string }
+        Returns: Database["public"]["Tables"]["surveys"]["Row"]
+      }
       repeat_survey_once: {
         Args: { p_survey_id: string }
         Returns: string

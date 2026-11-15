@@ -73,6 +73,9 @@ export function ResultsPage() {
     results ? [results] : [],
     (id) => navigate(routes.editSurvey(id)),
   );
+  const publicationAction = results
+    ? publication.renderButton(results, 'live-results-status__toggle')
+    : null;
 
   if (!surveyId) {
     return (
@@ -95,8 +98,10 @@ export function ResultsPage() {
             <LiveResultsStatus
               live={live}
               pulse={livePulse}
-              publicationAction={publication.renderButton(results, 'live-results-status__toggle')}
+              publicationAction={publicationAction}
             />
+          ) : publicationAction ? (
+            <div className="results-publication-action">{publicationAction}</div>
           ) : null}
         </div>
         <Link className="button button--secondary" to={routes.surveys}>

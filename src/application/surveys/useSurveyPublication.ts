@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { listSurveyPublicationActions, stopSurveyPublication } from '../../data/surveys/surveyRepository';
+import { changeSurveyPublication, listSurveyPublicationActions } from '../../data/surveys/surveyRepository';
 import type { SurveyPublicationAction, SurveySummary } from '../../domain/surveys/survey';
 import { useAuth } from '../auth/AuthProvider';
 import { publishedSurveyQueryKey } from './usePublishedSurvey';
@@ -24,12 +24,12 @@ export function useSurveyPublicationActions(surveyIds: string[]) {
   });
 }
 
-export function useStopSurveyPublication() {
+export function useChangeSurveyPublication() {
   const client = useQueryClient();
 
   return useMutation({
     mutationFn: ({ survey, action }: { survey: PublicationSurvey; action: SurveyPublicationAction }) =>
-      stopSurveyPublication(survey.id, action),
+      changeSurveyPublication(survey.id, action),
     onSettled: async (_data, error, { survey }) => {
       const refresh = [client.invalidateQueries({ queryKey: surveyPublicationQueryKey })];
       if (!error) {

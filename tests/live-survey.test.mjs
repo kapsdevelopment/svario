@@ -205,6 +205,52 @@ test('a first response racing with withdrawal can never be saved for a draft', a
   }
 });
 
+test('a manager can reopen a closed survey on the same link with the original answers', async (t) => {
+  const owner = await signUp();
+  const outsider = await signUp();
+  const anonymous = client();
+  const startsAt = new Date(Date.now() - 86_400_000).toISOString();
+  const endsAt = new Date(Date.now() + 86_400_000).toISOString();
+  const survey = await createSurvey(owner, { p_starts_at: startsAt, p_ends_at: endsAt });
+  t.after(() => read(owner.rpc('delete_survey', { p_survey_id: survey.id })));
+  const reopen = (actor) => actor.rpc('reopen_survey', { p_survey_id: survey.id });
+  const setSchedule = (changes) => read(owner.from('surveys').update(changes).eq('id', survey.id));
+  const listResponses = () => read(owner.from('survey_responses').select('id').eq('survey_id', survey.id));
+  const publicLink = () => read(anonymous.from('surveys').select('slug').eq('slug', survey.slug));
+
+  assert.ok((await reopen(owner)).error);
+  const published = await read(owner.rpc('publish_survey', { p_survey_id: survey.id }));
+  const originalResponse = await read(submitOrdinaryResponse(anonymous, survey));
+  await read(stopPublication(owner, survey.id, 'close'));
+  assert.deepEqual(await publicLink(), []);
+  assert.deepEqual(await read(publicationActions(owner, survey.id)), [{ survey_id: survey.id, action: 'reopen' }]);
+  assert.deepEqual(await read(publicationActions(outsider, survey.id)), []);
+  assert.ok((await reopen(outsider)).error);
+  assert.ok((await reopen(anonymous)).error);
+
+  await setSchedule({ ends_at: new Date(Date.now() - 3600_000).toISOString() });
+  assert.match((await reopen(owner)).error?.message ?? '', /Sluttdatoen har passert/);
+  await setSchedule({ starts_at: new Date(Date.now() + 3600_000).toISOString(), ends_at: endsAt });
+  assert.match((await reopen(owner)).error?.message ?? '', /Startdatoen ligger frem i tid/);
+  assert.deepEqual(await publicLink(), []);
+  await setSchedule({ starts_at: startsAt });
+
+  const reopened = await read(reopen(owner));
+  assert.equal(reopened.status, 'published');
+  assert.equal(reopened.closed_at, null);
+  assert.equal(reopened.slug, survey.slug);
+  assert.equal(reopened.published_at, published.published_at);
+  assert.equal(reopened.starts_at, published.starts_at);
+  assert.equal(reopened.ends_at, published.ends_at);
+  assert.deepEqual(await listResponses(), [{ id: originalResponse }]);
+  assert.equal((await read(owner.from('answers').select('id').eq('response_id', originalResponse))).length, 2);
+  assert.deepEqual(await publicLink(), [{ slug: survey.slug }]);
+  const newResponse = await read(submitOrdinaryResponse(anonymous, survey));
+  assert.deepEqual(new Set((await listResponses()).map(({ id }) => id)), new Set([originalResponse, newResponse]));
+  assert.deepEqual(await read(publicationActions(owner, survey.id)), [{ survey_id: survey.id, action: 'close' }]);
+  assert.ok((await reopen(owner)).error);
+});
+
 test('active live rooms must be finished first and their votes count as answers', async (t) => {
   const owner = await signUp();
   const anonymous = client();
@@ -232,6 +278,8 @@ test('active live rooms must be finished first and their votes count as answers'
   const summaryBeforeClose = await sessionSummary();
   assert.equal((await read(stopPublication(owner, survey.id, 'close'))).status, 'closed');
   assert.deepEqual(await sessionSummary(), summaryBeforeClose);
+  assert.deepEqual(await read(publicationActions(owner, survey.id)), []);
+  assert.match((await owner.rpc('reopen_survey', { p_survey_id: survey.id })).error?.message ?? '', /liveøkt/);
 });
 
 function timed(task) {

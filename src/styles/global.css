@@ -434,6 +434,10 @@ h2 {
   white-space: nowrap;
 }
 
+.results-publication-action {
+  margin-top: 14px;
+}
+
 .live-results-status[data-state="paused"] .live-results-status__signal {
   background: #f8f4ec;
   color: #7a5b45;

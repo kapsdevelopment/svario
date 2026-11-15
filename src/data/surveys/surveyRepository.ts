@@ -304,18 +304,18 @@ export async function listSurveyPublicationActions(
 
   const actions: Partial<Record<string, SurveyPublicationAction>> = {};
   for (const row of data) {
-    if (row.action === 'unpublish' || row.action === 'close') {
+    if (row.action === 'unpublish' || row.action === 'close' || row.action === 'reopen') {
       actions[row.survey_id] = row.action;
     }
   }
   return actions;
 }
 
-export async function stopSurveyPublication(surveyId: string, action: SurveyPublicationAction) {
-  const { error } = await requireSurveyClient().rpc('stop_survey_publication', {
-    p_survey_id: surveyId,
-    p_action: action,
-  });
+export async function changeSurveyPublication(surveyId: string, action: SurveyPublicationAction) {
+  const client = requireSurveyClient();
+  const { error } = action === 'reopen'
+    ? await client.rpc('reopen_survey', { p_survey_id: surveyId })
+    : await client.rpc('stop_survey_publication', { p_survey_id: surveyId, p_action: action });
 
   if (error) throw new Error(error.message);
 }
