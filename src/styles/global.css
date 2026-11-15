@@ -4026,12 +4026,6 @@ select {
   color: #d8a17d;
 }
 
-.about-band__icon {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-}
-
 .about-band__link-icon {
   position: absolute;
   right: 28px;
@@ -5114,7 +5108,6 @@ select {
     gap: 12px;
   }
 }
-
 
 .live-survey-host {
   height: auto;

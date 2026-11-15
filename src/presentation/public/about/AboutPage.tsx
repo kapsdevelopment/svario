@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   Bug,
-  Building2,
   CheckCircle2,
   ExternalLink,
   HeartHandshake,
@@ -257,10 +256,11 @@ export function AboutPage() {
             behov, feil og praktiske arbeidsflyter spesielt verdifulle.
           </p>
         </div>
-        <span className="about-band__icon" aria-hidden="true">
-          <Building2 size={42} />
-          <ExternalLink className="about-band__link-icon" size={18} />
-        </span>
+        <ExternalLink
+          className="about-band__link-icon"
+          size={18}
+          aria-hidden="true"
+        />
       </a>
 
       <section className="about-section about-section--split" id="contact">
