@@ -13,13 +13,21 @@ const sessionDateFormat = new Intl.DateTimeFormat('nb-NO', {
   timeStyle: 'short',
 });
 
-export function LiveSurveyPanel({ survey }: { survey: SurveyEditor }) {
+export function LiveSurveyPanel({
+  issue,
+  prepare,
+  survey,
+}: {
+  issue?: string;
+  prepare?: () => Promise<void>;
+  survey: SurveyEditor;
+}) {
   const navigate = useNavigate();
   const sessions = useLiveSurveySessions(survey.id);
-  const start = useStartLiveSurvey(survey.id);
+  const start = useStartLiveSurvey(survey.id, prepare);
   const active = sessions.data?.find(({ status }) => status !== 'closed');
   const history = sessions.data?.filter(({ status }) => status === 'closed') ?? [];
-  const issue = getLiveSurveyEligibilityIssue(survey);
+  const eligibilityIssue = getLiveSurveyEligibilityIssue(survey) ?? issue;
 
   return (
     <Panel
@@ -34,7 +42,7 @@ export function LiveSurveyPanel({ survey }: { survey: SurveyEditor }) {
         ) : (
           <button
             className="button button--primary"
-            disabled={Boolean(issue) || start.isPending || sessions.isPending}
+            disabled={Boolean(eligibilityIssue) || start.isPending || sessions.isPending}
             onClick={() => start.mutate(undefined, {
               onSuccess: (id) => navigate(routes.liveSurveyHost(id)),
             })}
@@ -49,7 +57,7 @@ export function LiveSurveyPanel({ survey }: { survey: SurveyEditor }) {
       <p>
         {active
           ? 'Det pågår en liveøkt for dette skjemaet.'
-          : issue ?? 'Deltakerne blir med via QR-kode. Svarene lagres i en egen oppsummering for økten.'}
+          : eligibilityIssue ?? 'Deltakerne blir med via QR-kode. Svarene lagres i en egen oppsummering for økten.'}
       </p>
       {start.isError || sessions.isError ? (
         <div className="form-alert form-alert--error" role="alert">

@@ -60,6 +60,7 @@ import type { WorkspaceWithMembership } from '../../../domain/workspaces/workspa
 import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 import { LiveSurveyPanel } from '../live/LiveSurveyPanel';
+import { SurveyDurationPresets, type SurveyDurationPreset } from './SurveyDurationPresets';
 
 const questionTypeLabels = {
   multiple_choice: 'Flervalg',
@@ -195,14 +196,6 @@ const retentionPresetOptions = [
   { label: '12 måneder', value: 365 },
   { label: '24 måneder', value: 730 },
 ] as const;
-const durationPresets = [
-  { label: '24 timer', days: 1 },
-  { label: '1 uke', days: 7 },
-  { label: '2 uker', days: 14 },
-  { label: '3 uker', days: 21 },
-  { label: '1 mnd', months: 1 },
-] as const;
-
 const editorAutosaveDelayMs = 600;
 const editorDraftVersion = 1;
 const defaultOptionText = 'Ja\nNei';
@@ -215,6 +208,7 @@ type SurveyEditorLocalDraft = {
     title: string;
     description: string;
     responseMode: SurveySummary['responseMode'];
+    liveOnly?: boolean;
     startsAt: string;
     endsAt: string;
     visibility: SurveyVisibility;
@@ -318,6 +312,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   );
   const [basicResponseMode, setBasicResponseMode] =
     useState(survey.responseMode);
+  const [basicLiveOnly, setBasicLiveOnly] = useState(survey.liveOnly);
   const [basicStartsAt, setBasicStartsAt] = useState(
     toDateTimeInputValue(survey.startsAt),
   );
@@ -424,12 +419,14 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     setBasicTitle(survey.title);
     setBasicDescription(survey.description ?? '');
     setBasicResponseMode(survey.responseMode);
+    setBasicLiveOnly(survey.liveOnly);
     setBasicStartsAt(toDateTimeInputValue(survey.startsAt));
     setBasicEndsAt(toDateTimeInputValue(survey.endsAt));
     setBasicVisibility(survey.visibility);
   }, [
     survey.description,
     survey.endsAt,
+    survey.liveOnly,
     survey.responseMode,
     survey.startsAt,
     survey.title,
@@ -471,6 +468,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         title: basicTitle,
         description: basicDescription,
         responseMode: basicResponseMode,
+        liveOnly: basicLiveOnly,
         startsAt: basicStartsAt,
         endsAt: basicEndsAt,
         visibility: basicVisibility,
@@ -496,6 +494,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       allowMultiple,
       basicDescription,
       basicEndsAt,
+      basicLiveOnly,
       basicResponseMode,
       basicStartsAt,
       basicTitle,
@@ -533,6 +532,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       setBasicTitle(storedDraft.basic.title);
       setBasicDescription(storedDraft.basic.description);
       setBasicResponseMode(storedDraft.basic.responseMode);
+      setBasicLiveOnly((current) => storedDraft.basic.liveOnly ?? current);
       setBasicStartsAt(storedDraft.basic.startsAt);
       setBasicEndsAt(storedDraft.basic.endsAt);
       setBasicVisibility(storedDraft.basic.visibility);
@@ -676,6 +676,10 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
   async function handleSaveBasicInfo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await saveBasicInfo();
+  }
+
+  async function saveBasicInfo() {
     setBasicValidationError(null);
     setBasicMessage(null);
 
@@ -683,14 +687,14 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       setBasicValidationError(
         accessLockMessage ?? 'Du har ikke tilgang til å endre dette skjemaet.',
       );
-      return;
+      return false;
     }
 
     const normalizedTitle = basicTitle.trim();
 
     if (!normalizedTitle) {
       setBasicValidationError('Skjemaet må ha en tittel.');
-      return;
+      return false;
     }
 
     if (
@@ -700,11 +704,16 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       setBasicValidationError(
         'Svarmodus kan ikke endres etter at skjemaet har fått svar.',
       );
-      return;
+      return false;
     }
 
-    const normalizedStartsAt = toIsoDateTime(basicStartsAt);
-    const normalizedEndsAt = toIsoDateTime(basicEndsAt);
+    if (basicLiveOnly && basicResponseMode !== 'anonymous') {
+      setBasicValidationError('Liveøkter krever at svarmodus er satt til anonym.');
+      return false;
+    }
+
+    const normalizedStartsAt = basicLiveOnly ? null : toIsoDateTime(basicStartsAt);
+    const normalizedEndsAt = basicLiveOnly ? null : toIsoDateTime(basicEndsAt);
     const shouldResetPrivacyToAnonymous =
       survey.responseMode === 'identified' &&
       basicResponseMode === 'anonymous' &&
@@ -716,7 +725,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
       new Date(normalizedEndsAt) <= new Date(normalizedStartsAt)
     ) {
       setBasicValidationError('Slutttidspunkt må være etter starttidspunkt.');
-      return;
+      return false;
     }
 
     try {
@@ -725,6 +734,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         title: normalizedTitle,
         description: basicDescription,
         responseMode: basicResponseMode,
+        liveOnly: basicLiveOnly,
         startsAt: normalizedStartsAt,
         endsAt: normalizedEndsAt,
       });
@@ -758,16 +768,19 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
           'Grunninfo kan være lagret, men personvernmodus kunne ikke settes til anonym. Prøv å lagre personvern manuelt.',
         );
       }
-      return;
+      return false;
     }
+
+    return true;
   }
 
   function handleBasicDurationPreset(
-    preset: (typeof durationPresets)[number],
+    preset: SurveyDurationPreset,
   ) {
     setBasicValidationError(null);
     setBasicMessage(null);
 
+    setBasicLiveOnly(false);
     const startDate = parseDateTimeInputValue(basicStartsAt) ?? new Date();
     const endDate = addDuration(startDate, preset);
 
@@ -1207,7 +1220,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
     <>
       <Panel
         title="Grunninfo"
-        subtitle={formatSurveyWindow(survey)}
+        subtitle={basicLiveOnly ? 'Liveøkt' : formatSurveyWindow(survey)}
         action={
           survey.workspaceId ? (
             <SurveyVisibilityToggle
@@ -1256,42 +1269,40 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 <option value="identified">Identifiserte</option>
               </select>
             </label>
-            <label>
-              Starter
-              <input
-                type="datetime-local"
-                value={basicStartsAt}
-                disabled={updateBasicInfo.isPending}
-                onChange={(event) => setBasicStartsAt(event.target.value)}
-              />
-            </label>
-            <label>
-              Slutter
-              <input
-                type="datetime-local"
-                value={basicEndsAt}
-                disabled={updateBasicInfo.isPending}
-                onChange={(event) => setBasicEndsAt(event.target.value)}
-              />
-            </label>
+            {!basicLiveOnly ? (
+              <>
+                <label>
+                  Starter
+                  <input
+                    type="datetime-local"
+                    value={basicStartsAt}
+                    disabled={updateBasicInfo.isPending}
+                    onChange={(event) => setBasicStartsAt(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Slutter
+                  <input
+                    type="datetime-local"
+                    value={basicEndsAt}
+                    disabled={updateBasicInfo.isPending}
+                    onChange={(event) => setBasicEndsAt(event.target.value)}
+                  />
+                </label>
+              </>
+            ) : null}
           </div>
 
-          <div className="duration-presets" aria-label="Hurtigvalg for varighet">
-            <span>Varighet</span>
-            <div>
-              {durationPresets.map((preset) => (
-                <button
-                  className="duration-preset-button"
-                  type="button"
-                  disabled={updateBasicInfo.isPending}
-                  key={preset.label}
-                  onClick={() => handleBasicDurationPreset(preset)}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SurveyDurationPresets
+            disabled={!canEditSurvey || updateBasicInfo.isPending}
+            liveOnly={basicLiveOnly}
+            onDurationPreset={handleBasicDurationPreset}
+            onLiveOnlyChange={(selected) => {
+              setBasicLiveOnly(selected);
+              setBasicValidationError(null);
+              setBasicMessage(null);
+            }}
+          />
 
           {survey.responseCount > 0 ? (
             <div className="form-alert form-alert--info" role="status">
@@ -1738,96 +1749,126 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
       <PrivacySettingsPanel survey={survey} />
 
-      <Panel
-        title="Publisering"
-        subtitle={
-          isPublished
-            ? 'Delbar lenke er aktiv'
-            : 'Publiser når skjemaet er klart'
-        }
-      >
-        <div className="publish-block">
-          <div className="publish-block__intro">
-            <p>
-              {isPublished
-                ? getPublishedIntroText(survey.responseCount)
-                : 'Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
-            </p>
-            {publishedAt ? (
-              <span>Publisert {formatDateTime(publishedAt)}</span>
+      {basicLiveOnly ? (
+        canEditSurvey ? (
+          <LiveSurveyPanel
+            issue={isDraft ? privacyIssues[0] : undefined}
+            prepare={async () => {
+              if (
+                (!survey.liveOnly || basicTitle !== survey.title ||
+                  basicDescription !== (survey.description ?? '') ||
+                  basicResponseMode !== survey.responseMode) &&
+                !(await saveBasicInfo())
+              ) {
+                throw new Error('Kunne ikke lagre grunninfo. Sjekk feltene og prøv igjen.');
+              }
+            }}
+            survey={{
+              ...survey,
+              status: currentStatus,
+              responseMode: basicResponseMode,
+              liveOnly: true,
+              startsAt: null,
+              endsAt: null,
+            }}
+          />
+        ) : null
+      ) : survey.liveOnly ? (
+        <Panel title="Publisering" subtitle="Lagre grunninfo for å bruke en vanlig respondentlenke." />
+      ) : (
+        <>
+          <Panel
+            title="Publisering"
+            subtitle={
+              isPublished
+                ? 'Delbar lenke er aktiv'
+                : 'Publiser når skjemaet er klart'
+            }
+          >
+            <div className="publish-block">
+              <div className="publish-block__intro">
+                <p>
+                  {isPublished
+                    ? getPublishedIntroText(survey.responseCount)
+                    : 'Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
+                </p>
+                {publishedAt ? (
+                  <span>Publisert {formatDateTime(publishedAt)}</span>
+                ) : null}
+              </div>
+
+              {isPublished ? (
+                <div className="share-link-row">
+                  <input
+                    aria-label="Delbar respondentlenke"
+                    readOnly
+                    value={shareUrl}
+                  />
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label="Kopier respondentlenke"
+                    onClick={handleCopyShareUrl}
+                  >
+                    <Copy size={18} aria-hidden="true" />
+                  </button>
+                  <a
+                    className="icon-button"
+                    href={shareUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                    aria-label="Åpne respondentlenke"
+                  >
+                    <ExternalLink size={18} aria-hidden="true" />
+                  </a>
+                </div>
+              ) : (
+                <div className="form-actions">
+                  <button
+                    className="button button--primary"
+                    type="button"
+                    disabled={!canPublish || publishSurvey.isPending}
+                    onClick={handlePublish}
+                  >
+                    <Send size={18} aria-hidden="true" />
+                    {publishSurvey.isPending ? 'Publiserer...' : 'Publiser skjema'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isDraft && survey.questions.length === 0 ? (
+              <div className="form-alert form-alert--error" role="alert">
+                Legg til minst ett spørsmål før publisering.
+              </div>
             ) : null}
-          </div>
+            {isDraft && survey.questions.length > 0 && privacyIssues.length > 0 ? (
+              <div className="form-alert form-alert--error" role="alert">
+                {privacyIssues[0]}
+              </div>
+            ) : null}
+            {publishValidationError ? (
+              <div className="form-alert form-alert--error" role="alert">
+                {publishValidationError}
+              </div>
+            ) : null}
+            {publishSurvey.isError ? (
+              <div className="form-alert form-alert--error" role="alert">
+                {getErrorMessage(publishSurvey.error)}
+              </div>
+            ) : null}
+            {publishMessage ? (
+              <div className="form-alert form-alert--success" role="status">
+                {publishMessage}
+              </div>
+            ) : null}
+          </Panel>
 
-          {isPublished ? (
-            <div className="share-link-row">
-              <input
-                aria-label="Delbar respondentlenke"
-                readOnly
-                value={shareUrl}
-              />
-              <button
-                className="icon-button"
-                type="button"
-                aria-label="Kopier respondentlenke"
-                onClick={handleCopyShareUrl}
-              >
-                <Copy size={18} aria-hidden="true" />
-              </button>
-              <a
-                className="icon-button"
-                href={shareUrl}
-                rel="noreferrer"
-                target="_blank"
-                aria-label="Åpne respondentlenke"
-              >
-                <ExternalLink size={18} aria-hidden="true" />
-              </a>
-            </div>
-          ) : (
-            <div className="form-actions">
-              <button
-                className="button button--primary"
-                type="button"
-                disabled={!canPublish || publishSurvey.isPending}
-                onClick={handlePublish}
-              >
-                <Send size={18} aria-hidden="true" />
-                {publishSurvey.isPending ? 'Publiserer...' : 'Publiser skjema'}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {isDraft && survey.questions.length === 0 ? (
-          <div className="form-alert form-alert--error" role="alert">
-            Legg til minst ett spørsmål før publisering.
-          </div>
-        ) : null}
-        {isDraft && survey.questions.length > 0 && privacyIssues.length > 0 ? (
-          <div className="form-alert form-alert--error" role="alert">
-            {privacyIssues[0]}
-          </div>
-        ) : null}
-        {publishValidationError ? (
-          <div className="form-alert form-alert--error" role="alert">
-            {publishValidationError}
-          </div>
-        ) : null}
-        {publishSurvey.isError ? (
-          <div className="form-alert form-alert--error" role="alert">
-            {getErrorMessage(publishSurvey.error)}
-          </div>
-        ) : null}
-        {publishMessage ? (
-          <div className="form-alert form-alert--success" role="status">
-            {publishMessage}
-          </div>
-        ) : null}
-      </Panel>
-
-      {canEditSurvey && !isDraft ? (
-        <LiveSurveyPanel survey={{ ...survey, status: currentStatus }} />
-      ) : null}
+          {canEditSurvey && !isDraft ? (
+            <LiveSurveyPanel survey={{ ...survey, status: currentStatus }} />
+          ) : null}
+        </>
+      )}
 
       <ConfirmDialog
         open={publishDialogOpen}
@@ -3130,7 +3171,7 @@ function formatDateTimeInputValue(date: Date) {
 
 function addDuration(
   startDate: Date,
-  preset: (typeof durationPresets)[number],
+  preset: SurveyDurationPreset,
 ) {
   const endDate = new Date(startDate);
 
@@ -3219,6 +3260,7 @@ function isSurveyEditorLocalDraftMeaningful(
     draft.basic.title !== survey.title ||
     draft.basic.description !== (survey.description ?? '') ||
     draft.basic.responseMode !== survey.responseMode ||
+    (draft.basic.liveOnly ?? survey.liveOnly) !== survey.liveOnly ||
     draft.basic.startsAt !== toDateTimeInputValue(survey.startsAt) ||
     draft.basic.endsAt !== toDateTimeInputValue(survey.endsAt) ||
     draft.basic.visibility !== survey.visibility;
@@ -3276,6 +3318,7 @@ function isSurveyEditorLocalDraftBasic(
     typeof value.title === 'string' &&
     typeof value.description === 'string' &&
     isSurveyResponseMode(value.responseMode) &&
+    (value.liveOnly === undefined || typeof value.liveOnly === 'boolean') &&
     typeof value.startsAt === 'string' &&
     typeof value.endsAt === 'string' &&
     isSurveyVisibility(value.visibility)

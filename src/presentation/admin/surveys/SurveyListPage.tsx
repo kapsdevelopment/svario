@@ -304,10 +304,10 @@ function SurveyListCard({
   onDelete,
 }: SurveyListCardProps) {
   const displayState = getSurveyDisplayState(survey);
-  const isLive = displayState === 'active';
+  const isLive = displayState === 'active' && !survey.liveOnly;
   const primaryRoute = getPrimarySurveyRoute(survey);
   const primaryActionLabel =
-    survey.status === 'draft'
+    survey.status === 'draft' || survey.liveOnly
       ? `Rediger ${survey.title}`
       : `Se resultater for ${survey.title}`;
 
@@ -366,7 +366,7 @@ function SurveyListCard({
         />
         <div className="status-row">
           <span className={`status-pill status-pill--${displayState}`}>
-            {displayStateLabel[displayState]}
+            {survey.liveOnly && displayState === 'active' ? 'Liveøkt' : displayStateLabel[displayState]}
             {isLive ? (
               <span
                 className="live-pine-indicator live-pine-indicator--status"
@@ -450,7 +450,7 @@ type SurveyDisplayState = 'draft' | 'scheduled' | 'active' | 'finished' | 'close
 type SurveyFocusTarget = Extract<SurveyDisplayState, 'active' | 'draft'>;
 
 function getPrimarySurveyRoute(survey: SurveySummary) {
-  return survey.status === 'draft'
+  return survey.status === 'draft' || survey.liveOnly
     ? routes.editSurvey(survey.id)
     : routes.results(survey.id);
 }
@@ -508,6 +508,10 @@ function formatSurveyMeta(
   survey: SurveySummary,
   displayState = getSurveyDisplayState(survey),
 ) {
+  if (survey.liveOnly) {
+    return displayState === 'active' ? 'Styres av verten' : `${displayStateLabel[displayState]} · Liveøkt`;
+  }
+
   if (displayState === 'active') {
     if (survey.endsAt) {
       return `Aktiv · slutter ${formatDate(survey.endsAt)}`;

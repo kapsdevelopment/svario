@@ -9,6 +9,8 @@ import {
   submitLiveSurveyVote,
 } from '../../data/live/liveSurveyRepository';
 import { useAuth } from '../auth/AuthProvider';
+import { surveyEditorQueryKey } from '../surveys/useSurveyEditor';
+import { surveyListQueryKey } from '../surveys/useSurveyList';
 
 const pollInterval = 2000;
 const hostKey = (sessionId: string, accountId: string | undefined) =>
@@ -26,12 +28,19 @@ export function useLiveSurveySessions(surveyId: string) {
   });
 }
 
-export function useStartLiveSurvey(surveyId: string) {
+export function useStartLiveSurvey(surveyId: string, prepare?: () => Promise<void>) {
   const { account } = useAuth();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () => startLiveSurvey(surveyId),
-    onSuccess: () => { void client.invalidateQueries({ queryKey: sessionsKey(surveyId, account?.id) }); },
+    mutationFn: async () => {
+      await prepare?.();
+      return startLiveSurvey(surveyId);
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: sessionsKey(surveyId, account?.id) });
+      void client.invalidateQueries({ queryKey: surveyEditorQueryKey(surveyId) });
+      void client.invalidateQueries({ queryKey: surveyListQueryKey });
+    },
   });
 }
 

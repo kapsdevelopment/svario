@@ -78,10 +78,11 @@ https://svario.no/**
 
 ## Live survey pilot
 
-Open a published survey with anonymous, single-select questions and choose
-**Start liveøkt**. Share the QR code from the lobby. Use **Vis første spørsmål**
-and **Neste spørsmål** to control the mobile screens. Finished sessions are
-under **Tidligere liveøkter** on the survey editor. The QR code stays the same
+Choose **Liveøkt** under **Varighet** and add anonymous single-select or scale
+questions. **Start liveøkt** opens the QR lobby directly from the editor.
+You can also start a live session from a published survey with ordinary duration.
+Use **Vis første spørsmål** and **Neste spørsmål** to control the mobile screens.
+Finished sessions are under **Tidligere liveøkter** on the survey editor. The QR code stays the same
 throughout the session. Live responses are summarized separately. A room
 closes after eight hours or when the survey ends, whichever comes first.
 Session data is kept for up to 30 days, or less if the survey specifies a

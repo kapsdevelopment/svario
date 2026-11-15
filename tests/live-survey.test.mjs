@@ -33,25 +33,80 @@ async function signUp() {
   return user;
 }
 
-async function createSurvey(owner) {
+async function createSurvey(owner, draftOptions = {}) {
   const survey = await read(owner.rpc('create_survey_draft', {
     p_title: 'Liveøkt – automatisert test',
     p_slug: `live-test-${randomUUID()}`,
     p_response_mode: 'anonymous',
+    ...draftOptions,
   }));
-  const questions = await read(owner.from('questions').insert([
-    { survey_id: survey.id, type: 'multiple_choice', prompt: 'Kaffe eller te?', sort_order: 1 },
-    { survey_id: survey.id, type: 'multiple_choice', prompt: 'Fjell eller fjord?', sort_order: 0 },
-  ]).select('id, prompt, sort_order').order('sort_order'));
-  const options = await read(owner.from('question_options').insert(questions.flatMap(({ id }) => [
-    { question_id: id, label: 'Alternativ A', sort_order: 0 },
-    { question_id: id, label: 'Alternativ B', sort_order: 1 },
-  ])).select('id, question_id, sort_order').order('sort_order'));
-  for (const question of questions) {
-    question.options = options.filter((option) => option.question_id === question.id);
-  }
-  return { ...survey, questions };
+  const [choice, scale] = await read(owner.from('questions').insert([
+    { survey_id: survey.id, type: 'multiple_choice', prompt: 'Vil du bli med?', sort_order: 0 },
+    {
+      survey_id: survey.id, type: 'likert_scale', prompt: 'Hvordan gikk det?', sort_order: 1,
+      scale_min: 1, scale_max: 5, scale_variant: 'buttons',
+    },
+  ]).select('id, sort_order').order('sort_order'));
+  choice.options = await read(owner.from('question_options').insert([
+    { question_id: choice.id, label: 'Ja', sort_order: 0 },
+    { question_id: choice.id, label: 'Nei', sort_order: 1 },
+  ]).select('id, sort_order').order('sort_order'));
+  return { ...survey, questions: [choice, scale] };
 }
+
+test('a live-only draft starts directly in the lobby and stays closed to ordinary responses', async (t) => {
+  const owner = await signUp();
+  const outsider = await signUp();
+  const anonymous = client();
+  const survey = await createSurvey(owner, { p_live_only: true });
+  t.after(() => read(owner.rpc('delete_survey', { p_survey_id: survey.id })));
+
+  assert.equal(survey.status, 'draft');
+  assert.equal(survey.live_only, true);
+  assert.equal(survey.starts_at, null);
+  assert.equal(survey.ends_at, null);
+
+  const start = (actor) => actor.rpc('start_live_survey', { p_survey_id: survey.id });
+  assert.ok((await start(outsider)).error);
+  assert.ok((await start(anonymous)).error);
+
+  const invalidDuration = await owner.from('surveys').update({ ends_at: new Date().toISOString() }).eq('id', survey.id);
+  assert.equal(invalidDuration.error?.code, '23514');
+
+  const sessionId = await read(start(owner));
+  assert.equal(await read(start(owner)), sessionId);
+  const ownerState = await read(owner.from('surveys').select('live_only,status').eq('id', survey.id).single());
+  assert.deepEqual(ownerState, { live_only: true, status: 'published' });
+  const ordinaryForm = () => read(anonymous.from('surveys').select('id').eq('id', survey.id));
+  assert.deepEqual(await ordinaryForm(), []);
+  assert.deepEqual(await read(anonymous.from('questions').select('id').eq('survey_id', survey.id)), []);
+  const ordinaryAnswer = await anonymous.rpc('submit_survey_response', {
+    p_survey_slug: survey.slug,
+    p_answers: [
+      { questionId: survey.questions[0].id, optionIds: [survey.questions[0].options[0].id] },
+      { questionId: survey.questions[1].id, likertValue: 3 },
+    ],
+  });
+  assert.match(ordinaryAnswer.error?.message ?? '', /not available|not found|ikke åpent/i);
+
+  const voterKey = randomUUID();
+  const participant = () => read(anonymous.rpc('get_live_survey_status', {
+    p_session_id: sessionId, p_voter_key: voterKey,
+  }));
+  assert.equal((await participant()).status, 'lobby');
+  await read(owner.rpc('advance_live_survey', { p_session_id: sessionId, p_step: -1, p_finish: false }));
+  assert.equal((await participant()).status, 'question');
+  await read(owner.rpc('advance_live_survey', { p_session_id: sessionId, p_step: 0, p_finish: true }));
+  assert.equal((await participant()).status, 'closed');
+  assert.deepEqual(await ordinaryForm(), []);
+
+  const copyId = await read(owner.rpc('repeat_survey_once', { p_survey_id: survey.id }));
+  t.after(() => read(owner.rpc('delete_survey', { p_survey_id: copyId })));
+  assert.deepEqual(
+    await read(owner.from('surveys').select('live_only,status').eq('id', copyId).single()),
+    { live_only: true, status: 'draft' },
+  );
+});
 
 function timed(task) {
   const start = performance.now();
@@ -63,7 +118,7 @@ function percentile95(times) {
   return Math.round(sorted[Math.ceil(sorted.length * 0.95) - 1]);
 }
 
-test('50 anonymous browsers follow the host and submit to the correct live question', { timeout: 60_000 }, async (t) => {
+test('50 anonymous browsers vote in a live survey with single-choice and Likert questions', { timeout: 60_000 }, async (t) => {
   const owner = await signUp();
   const outsider = await signUp();
   const survey = await createSurvey(owner);
@@ -130,7 +185,7 @@ test('50 anonymous browsers follow the host and submit to the correct live quest
     if (round < 2) await delay(2_000);
   }
 
-  assert.ok((await vote(voter, 0, first, second.options[0])).error);
+  assert.ok((await vote(voter, 0, first, { id: randomUUID() })).error);
   const votes = await Promise.all(voters.map((participant, index) =>
     timed(read(vote(participant, 0, first, index < 30 ? optionA : optionB))),
   ));
@@ -143,21 +198,38 @@ test('50 anonymous browsers follow the host and submit to the correct live quest
   assert.deepEqual((await read(host())).results[0].counts, { [optionA.id]: 30, [optionB.id]: 20 });
 
   const next = await read(advance(0));
-  assert.equal(next.results[0].question.id, second.id);
+  const scale = next.results[0].question;
+  assert.equal(scale.id, second.id);
+  assert.equal(scale.scaleVariant, 'buttons');
+  assert.deepEqual(scale.options.map(({ value, label }) => [value, label]), [
+    [1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5'],
+  ]);
+  const lowest = scale.options[0];
+  const highest = scale.options[4];
   assert.ok((await vote({ actor: client(), key: randomUUID() }, 0, first, optionA)).error);
   assert.equal(await read(vote(voter, 0, first, optionA)), optionA.id);
   const followUps = await Promise.all(voters.map(state));
-  assert.ok(followUps.every((data) => data.question.id === second.id && data.selectedOptionId === null));
+  for (const data of followUps) {
+    assert.deepEqual(data.question, scale);
+    assert.equal(data.selectedOptionId, null);
+  }
+
+  assert.ok((await vote(voter, 1, scale, optionA)).error);
+  assert.equal(await read(vote(voter, 1, scale, highest)), highest.id);
+  assert.equal(await read(vote(voter, 1, scale, lowest)), highest.id);
+  assert.deepEqual((await read(host())).results[0].counts, { [highest.id]: 1 });
+  assert.equal((await state({ ...voter, actor: client() })).selectedOptionId, highest.id);
 
   const [finish, ...racingVotes] = await Promise.all([
     read(advance(1, true)),
-    ...voters.map((participant) => vote(participant, 1, second, second.options[0])),
+    ...voters.slice(1).map((participant) => vote(participant, 1, scale, lowest)),
   ]);
   const accepted = racingVotes.filter(({ error }) => !error).length;
   assert.ok(racingVotes.every(({ error }) => !error || /stengt/.test(error.message)));
   assert.equal(finish.status, 'closed');
-  assert.equal(finish.results[1].counts[second.options[0].id] ?? 0, accepted);
-  assert.ok((await vote({ actor: client(), key: randomUUID() }, 1, second, second.options[0])).error);
+  assert.equal(finish.results[1].counts[lowest.id] ?? 0, accepted);
+  assert.equal(finish.results[1].counts[highest.id], 1);
+  assert.ok((await vote({ actor: client(), key: randomUUID() }, 1, scale, lowest)).error);
   assert.equal((await state(voter)).status, 'closed');
   assert.equal((await read(list()))[0].status, 'closed');
 

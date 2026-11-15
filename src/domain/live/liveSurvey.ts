@@ -1,5 +1,6 @@
 import type {
   QuestionVisualizationColorMode,
+  QuestionScaleVariant,
   SurveyChoiceResult,
   SurveyEditor,
   SurveyPrivacySettings,
@@ -7,14 +8,18 @@ import type {
 
 export type LiveSurveyStatus = 'lobby' | 'question' | 'closed';
 
+type LiveSurveyOption = { id: string; label: string };
+
 export type LiveSurveyQuestion = {
   id: string;
   prompt: string;
   description: string | null;
   chartType: 'bar' | 'pie';
   colorMode: QuestionVisualizationColorMode;
-  options: Array<{ id: string; label: string }>;
-};
+} & (
+  | { scaleVariant?: null; options: LiveSurveyOption[] }
+  | { scaleVariant: QuestionScaleVariant; options: Array<LiveSurveyOption & { value: number }> }
+);
 
 export type LiveSurveyResult = {
   step: number;
@@ -51,7 +56,7 @@ export type LiveSurveySummary = {
 };
 
 export function getLiveSurveyEligibilityIssue(survey: SurveyEditor) {
-  if (survey.status !== 'published') {
+  if (survey.status !== 'published' && !(survey.liveOnly && survey.status === 'draft')) {
     return 'Publiser skjemaet for å kunne holde en liveøkt.';
   }
   if (survey.responseMode !== 'anonymous') {
@@ -61,14 +66,14 @@ export function getLiveSurveyEligibilityIssue(survey: SurveyEditor) {
   if (privacy?.enabled && (privacy.personalDataExpected || privacy.legalBasis === 'consent')) {
     return 'Liveøkter støtter skjema uten personopplysninger eller krav om samtykke.';
   }
-  if (
-    survey.questions.length === 0 ||
-    survey.questions.length > 250 ||
-    survey.questions.some((question) =>
-      question.type !== 'multiple_choice' || question.allowMultiple || question.options.length < 2,
-    )
-  ) {
-    return 'Bruk 1–250 flervalgsspørsmål med ett mulig svar per spørsmål.';
+  if (survey.questions.length === 0 || survey.questions.length > 250) {
+    return 'Liveøkter krever mellom 1 og 250 spørsmål.';
+  }
+  if (survey.questions.some((question) =>
+    question.type !== 'likert_scale' &&
+    (question.type !== 'multiple_choice' || question.allowMultiple || question.options.length < 2),
+  )) {
+    return 'Bruk skala eller flervalg med minst to svaralternativer og «Flere valg» avslått.';
   }
   const now = Date.now();
   if (
@@ -80,7 +85,7 @@ export function getLiveSurveyEligibilityIssue(survey: SurveyEditor) {
   return null;
 }
 
-export function getLiveSurveyChoiceResults({ question, counts }: LiveSurveyResult) {
+export function getLiveSurveyResults({ question, counts }: LiveSurveyResult) {
   const total = question.options.reduce((sum, option) => sum + (counts[option.id] ?? 0), 0);
   const results: SurveyChoiceResult[] = question.options.map((option) => {
     const count = counts[option.id] ?? 0;
@@ -91,7 +96,25 @@ export function getLiveSurveyChoiceResults({ question, counts }: LiveSurveyResul
       percentage: total === 0 ? 0 : Math.round((count / total) * 100),
     };
   });
-  return { total, results };
+  if (!question.scaleVariant) {
+    return { total, results, scale: null };
+  }
+
+  const scaleResults = question.options.map(({ value }, index) => ({
+    value,
+    count: results[index].count,
+    percentage: results[index].percentage,
+  }));
+  const sum = scaleResults.reduce((sum, { count, value }) => sum + count * value, 0);
+  return {
+    total,
+    results,
+    scale: {
+      variant: question.scaleVariant,
+      results: scaleResults,
+      average: total === 0 ? null : Number((sum / total).toFixed(1)),
+    },
+  };
 }
 
 export function isLiveSurveyId(value: string | undefined): value is string {

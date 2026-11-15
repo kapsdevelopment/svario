@@ -1,4 +1,4 @@
-import { BarChart3, TreePine } from 'lucide-react';
+import { BarChart3, Radio, TreePine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
@@ -51,8 +51,10 @@ export function DashboardPage() {
               : routes.newSurvey
           }
         >
-          <BarChart3 size={18} aria-hidden="true" />
-          {heroSurvey?.status === 'draft'
+          {heroSurvey?.liveOnly
+            ? <Radio size={18} aria-hidden="true" />
+            : <BarChart3 size={18} aria-hidden="true" />}
+          {heroSurvey?.status === 'draft' || heroSurvey?.liveOnly
             ? 'Rediger skjema'
             : heroSurvey
               ? 'Se resultater'
@@ -101,7 +103,7 @@ export function DashboardPage() {
           <div className="table-list">
             {surveys.map((survey) => {
               const displayState = getSurveyDisplayState(survey);
-              const isLive = displayState === 'active';
+              const isLive = displayState === 'active' && !survey.liveOnly;
 
               return (
                 <Link
@@ -113,7 +115,7 @@ export function DashboardPage() {
                 >
                   <span>{survey.title}</span>
                   <span className="table-list__row-meta">
-                    <span>{displayStateLabel[displayState]}</span>
+                    <span>{survey.liveOnly && displayState === 'active' ? 'Liveøkt' : displayStateLabel[displayState]}</span>
                     {isLive ? (
                       <span
                         className="live-pine-indicator"
@@ -176,6 +178,10 @@ function formatSurveySummary(survey: SurveySummary, activeSurveyCount = 0) {
   const displayState = getSurveyDisplayState(survey);
 
   if (displayState === 'active') {
+    if (survey.liveOnly) {
+      return 'Start eller åpne liveøkten fra skjemaredigeringen.';
+    }
+
     const activeCountText =
       activeSurveyCount > 1
         ? `${activeSurveyCount} aktive skjemaer pågår nå. `
@@ -220,6 +226,10 @@ function getDashboardHeroEyebrow(survey: SurveySummary | null) {
 
   const displayState = getSurveyDisplayState(survey);
 
+  if (survey.liveOnly && displayState === 'active') {
+    return 'Liveøkt';
+  }
+
   return heroEyebrowLabel[displayState];
 }
 
@@ -252,7 +262,7 @@ function compareActiveSurveyPriority(
 }
 
 function getPrimarySurveyRoute(survey: SurveySummary) {
-  return survey.status === 'draft'
+  return survey.status === 'draft' || survey.liveOnly
     ? routes.editSurvey(survey.id)
     : routes.results(survey.id);
 }

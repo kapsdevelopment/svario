@@ -1089,7 +1089,7 @@ export function ChoiceResultView({
   );
 }
 
-function LikertResultView({
+export function LikertResultView({
   average,
   chartType,
   colorMode,

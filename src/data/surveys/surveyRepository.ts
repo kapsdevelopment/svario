@@ -45,6 +45,7 @@ type SurveyRow = Pick<
   | 'slug'
   | 'status'
   | 'response_mode'
+  | 'live_only'
   | 'starts_at'
   | 'ends_at'
   | 'published_at'
@@ -128,7 +129,7 @@ type AnswerOptionRow = Pick<
 >;
 
 const surveySummarySelect =
-  'id, owner_account_id, workspace_id, visibility, repeated_from_survey_id, title, description, slug, status, response_mode, starts_at, ends_at, published_at, created_at, updated_at';
+  'id, owner_account_id, workspace_id, visibility, repeated_from_survey_id, title, description, slug, status, response_mode, live_only, starts_at, ends_at, published_at, created_at, updated_at';
 const surveyPrivacySettingsSelect =
   'survey_id, enabled, personal_data_expected, controller_name, controller_contact, purpose, legal_basis, legal_basis_note, consent_text, retention_days, retention_action, respondent_notice, created_at, updated_at';
 const sectionSelect = 'id, survey_id, title, description, sort_order';
@@ -209,6 +210,7 @@ export async function createSurveyDraft(
     p_description: normalizeOptionalText(input.description),
     p_slug: createSurveySlug(title),
     p_response_mode: input.responseMode,
+    p_live_only: input.liveOnly,
     p_starts_at: input.startsAt,
     p_ends_at: input.endsAt,
   });
@@ -304,6 +306,7 @@ export async function updateSurveyBasicInfo(
     title,
     description: normalizeOptionalText(input.description),
     response_mode: input.responseMode,
+    live_only: input.liveOnly,
     starts_at: input.startsAt,
     ends_at: input.endsAt,
   };
@@ -701,6 +704,7 @@ function mapSurveySummary(row: SurveyRow): SurveySummary {
     slug: row.slug,
     status: row.status,
     responseMode: row.response_mode,
+    liveOnly: row.live_only,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     publishedAt: row.published_at,

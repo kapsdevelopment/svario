@@ -555,6 +555,7 @@ export type Database = {
           description: string | null
           ends_at: string | null
           id: string
+          live_only: boolean
           owner_account_id: string | null
           published_at: string | null
           repeated_from_survey_id: string | null
@@ -573,6 +574,7 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           id?: string
+          live_only?: boolean
           owner_account_id?: string | null
           published_at?: string | null
           repeated_from_survey_id?: string | null
@@ -591,6 +593,7 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           id?: string
+          live_only?: boolean
           owner_account_id?: string
           published_at?: string | null
           repeated_from_survey_id?: string | null
@@ -900,6 +903,7 @@ export type Database = {
         Args: {
           p_description?: string | null
           p_ends_at?: string | null
+          p_live_only?: boolean
           p_response_mode?: Database["public"]["Enums"]["survey_response_mode"]
           p_slug?: string | null
           p_starts_at?: string | null

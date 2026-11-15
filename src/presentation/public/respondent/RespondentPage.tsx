@@ -15,6 +15,7 @@ import {
 import { Panel } from '../../shared/components/Panel';
 import { RespondentPrivacyNotice } from './RespondentPrivacyNotice';
 import { SurveyChoiceList } from './SurveyChoiceList';
+import { SurveyScaleInput } from './SurveyScaleInput';
 
 export function RespondentPage() {
   const { slug } = useParams();
@@ -269,99 +270,23 @@ function RespondentQuestion({
   }
 
   if (question.type === 'likert_scale') {
-    const scaleValues = getQuestionScaleValues(question);
-
-    if (question.scaleVariant === 'stars') {
-      return (
-        <article className="respondent-question">
-          <QuestionHeader question={question} icon={<Star size={20} />} />
-          <fieldset className="star-rating">
-            <legend className="sr-only">{question.prompt}</legend>
-            <div className="star-rating__options">
-              {scaleValues.map((value) => (
-                <label
-                  className={
-                    answer.likertValue !== null && value <= answer.likertValue
-                      ? 'is-selected'
-                      : ''
-                  }
-                  key={value}
-                >
-                  <input
-                    type="radio"
-                    name={question.id}
-                    value={value}
-                    checked={answer.likertValue === value}
-                    disabled={disabled}
-                    required={question.isRequired}
-                    onChange={() => onChange({ ...answer, likertValue: value })}
-                  />
-                  <span aria-hidden="true">★</span>
-                  <span className="sr-only">{value} av 5 stjerner</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </article>
-      );
-    }
-
-    if (question.scaleVariant === 'nps') {
-      return (
-        <article className="respondent-question">
-          <QuestionHeader question={question} icon={<Gauge size={20} />} />
-          <fieldset className="nps-scale">
-            <legend className="sr-only">{question.prompt}</legend>
-            <div className="nps-scale__options">
-              {scaleValues.map((value) => (
-                <label
-                  className={answer.likertValue === value ? 'is-selected' : ''}
-                  key={value}
-                >
-                  <input
-                    type="radio"
-                    name={question.id}
-                    value={value}
-                    checked={answer.likertValue === value}
-                    disabled={disabled}
-                    required={question.isRequired}
-                    onChange={() => onChange({ ...answer, likertValue: value })}
-                  />
-                  <span>{value}</span>
-                </label>
-              ))}
-            </div>
-            <div className="nps-scale__legend" aria-hidden="true">
-              <span>Lite sannsynlig</span>
-              <span>Svært sannsynlig</span>
-            </div>
-          </fieldset>
-        </article>
-      );
-    }
+    const ScaleIcon = question.scaleVariant === 'stars'
+      ? Star
+      : question.scaleVariant === 'nps' ? Gauge : CheckCircle2;
 
     return (
       <article className="respondent-question">
-        <QuestionHeader question={question} icon={<CheckCircle2 size={20} />} />
-        <fieldset className="likert">
-          <legend className="sr-only">{question.prompt}</legend>
-          <div className="likert__options">
-            {scaleValues.map((value) => (
-              <label key={value}>
-                <input
-                  type="radio"
-                  name={question.id}
-                  value={value}
-                  checked={answer.likertValue === value}
-                  disabled={disabled}
-                  required={question.isRequired}
-                  onChange={() => onChange({ ...answer, likertValue: value })}
-                />
-                <span>{value}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <QuestionHeader question={question} icon={<ScaleIcon size={20} />} />
+        <SurveyScaleInput
+          disabled={disabled}
+          name={question.id}
+          onChange={(likertValue) => onChange({ ...answer, likertValue })}
+          prompt={question.prompt}
+          required={question.isRequired}
+          selectedValue={answer.likertValue}
+          values={getQuestionScaleValues(question)}
+          variant={question.scaleVariant}
+        />
       </article>
     );
   }

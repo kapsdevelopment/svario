@@ -1,4 +1,4 @@
-import { CheckCircle2, ListChecks } from 'lucide-react';
+import { CheckCircle2, Gauge, ListChecks } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -9,6 +9,7 @@ import { getLiveSurveyVoterKey } from '../../../infrastructure/config/liveSurvey
 import { Panel } from '../../shared/components/Panel';
 import { RespondentPrivacyNotice } from '../respondent/RespondentPrivacyNotice';
 import { SurveyChoiceList } from '../respondent/SurveyChoiceList';
+import { SurveyScaleInput } from '../respondent/SurveyScaleInput';
 
 export function LiveSurveyParticipantPage() {
   const { sessionId } = useParams();
@@ -109,6 +110,8 @@ function LiveVoteForm({
   const vote = useSubmitLiveSurveyVote(sessionId, voterKey, step, question.id);
   const confirmedOption = vote.data ?? savedOptionId;
   const selected = confirmedOption ?? optionId;
+  const disabled = Boolean(confirmedOption) || vote.isPending;
+  const QuestionIcon = question.scaleVariant ? Gauge : ListChecks;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -122,21 +125,33 @@ function LiveVoteForm({
       <p className="eyebrow">Spørsmål {step + 1} av {questionCount}</p>
       <div className="respondent-question">
         <div className="respondent-question__header">
-          <div className="question-card__icon" aria-hidden="true"><ListChecks size={20} /></div>
+          <div className="question-card__icon" aria-hidden="true"><QuestionIcon size={20} /></div>
           <div>
             <h2 id="live-question-prompt">{question.prompt}</h2>
             {question.description ? <p>{question.description}</p> : null}
           </div>
         </div>
-        <div role="group" aria-labelledby="live-question-prompt">
-          <SurveyChoiceList
-            disabled={Boolean(confirmedOption) || vote.isPending}
+        {question.scaleVariant ? (
+          <SurveyScaleInput
+            disabled={disabled}
             name={question.id}
-            onChange={(ids) => setOptionId(ids[0] ?? '')}
-            options={question.options}
-            selectedIds={selected ? [selected] : []}
+            onChange={(value) => setOptionId(question.options.find((option) => option.value === value)?.id ?? '')}
+            prompt={question.prompt}
+            selectedValue={question.options.find((option) => option.id === selected)?.value ?? null}
+            values={question.options.map((option) => option.value)}
+            variant={question.scaleVariant}
           />
-        </div>
+        ) : (
+          <div role="group" aria-labelledby="live-question-prompt">
+            <SurveyChoiceList
+              disabled={disabled}
+              name={question.id}
+              onChange={(ids) => setOptionId(ids[0] ?? '')}
+              options={question.options}
+              selectedIds={selected ? [selected] : []}
+            />
+          </div>
+        )}
       </div>
       {confirmedOption ? (
         <div className="receipt-state" role="status">

@@ -9,14 +9,7 @@ import { useCreateSurveyDraft } from '../../../application/surveys/useCreateSurv
 import { useWorkspaceScope } from '../../../application/workspaces/WorkspaceScopeProvider';
 import type { SurveyResponseMode } from '../../../domain/surveys/survey';
 import { Panel } from '../../shared/components/Panel';
-
-const durationPresets = [
-  { label: '24 timer', days: 1 },
-  { label: '1 uke', days: 7 },
-  { label: '2 uker', days: 14 },
-  { label: '3 uker', days: 21 },
-  { label: '1 mnd', months: 1 },
-] as const;
+import { SurveyDurationPresets, type SurveyDurationPreset } from './SurveyDurationPresets';
 
 export function SurveyCreatePage() {
   const { account } = useAuth();
@@ -28,14 +21,16 @@ export function SurveyCreatePage() {
   const [description, setDescription] = useState('');
   const [responseMode, setResponseMode] =
     useState<SurveyResponseMode>('anonymous');
+  const [liveOnly, setLiveOnly] = useState(false);
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isSaving = createSurveyDraft.isPending || workspaceScope.isLoading;
 
-  function handleDurationPreset(preset: (typeof durationPresets)[number]) {
+  function handleDurationPreset(preset: SurveyDurationPreset) {
     setValidationError(null);
+    setLiveOnly(false);
 
     const startDate = parseDateTimeInputValue(startsAt) ?? new Date();
     const endDate = addDuration(startDate, preset);
@@ -59,8 +54,13 @@ export function SurveyCreatePage() {
       return;
     }
 
-    const normalizedStartsAt = toIsoDateTime(startsAt);
-    const normalizedEndsAt = toIsoDateTime(endsAt);
+    if (liveOnly && responseMode !== 'anonymous') {
+      setValidationError('Liveøkter krever at svarmodus er satt til anonym.');
+      return;
+    }
+
+    const normalizedStartsAt = liveOnly ? null : toIsoDateTime(startsAt);
+    const normalizedEndsAt = liveOnly ? null : toIsoDateTime(endsAt);
 
     if (
       normalizedStartsAt &&
@@ -81,6 +81,7 @@ export function SurveyCreatePage() {
         title: normalizedTitle,
         description,
         responseMode,
+        liveOnly,
         startsAt: normalizedStartsAt,
         endsAt: normalizedEndsAt,
       });
@@ -138,40 +139,36 @@ export function SurveyCreatePage() {
               </select>
             </label>
           </div>
-          <div className="survey-create-date-grid">
-            <label>
-              Starter
-              <input
-                type="datetime-local"
-                value={startsAt}
-                onChange={(event) => setStartsAt(event.target.value)}
-              />
-            </label>
-            <label>
-              Slutter
-              <input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(event) => setEndsAt(event.target.value)}
-              />
-            </label>
-          </div>
-          <div className="duration-presets" aria-label="Hurtigvalg for varighet">
-            <span>Varighet</span>
-            <div>
-              {durationPresets.map((preset) => (
-                <button
-                  className="duration-preset-button"
-                  type="button"
-                  disabled={isSaving}
-                  key={preset.label}
-                  onClick={() => handleDurationPreset(preset)}
-                >
-                  {preset.label}
-                </button>
-              ))}
+          {!liveOnly ? (
+            <div className="survey-create-date-grid">
+              <label>
+                Starter
+                <input
+                  type="datetime-local"
+                  value={startsAt}
+                  onChange={(event) => setStartsAt(event.target.value)}
+                />
+              </label>
+              <label>
+                Slutter
+                <input
+                  type="datetime-local"
+                  value={endsAt}
+                  onChange={(event) => setEndsAt(event.target.value)}
+                />
+              </label>
             </div>
-          </div>
+          ) : null}
+          <SurveyDurationPresets
+            disabled={isSaving}
+            liveOnly={liveOnly}
+            onDurationPreset={handleDurationPreset}
+            onLiveOnlyChange={(selected) => {
+              setLiveOnly(selected);
+              setValidationError(null);
+            }}
+          />
+          {liveOnly ? <p>Verten åpner og avslutter svaringen. Liveøkter bruker anonyme svar.</p> : null}
           {validationError ? (
             <div className="form-alert form-alert--error" role="alert">
               {validationError}
@@ -242,7 +239,7 @@ function formatDateTimeInputValue(date: Date) {
 
 function addDuration(
   startDate: Date,
-  preset: (typeof durationPresets)[number],
+  preset: SurveyDurationPreset,
 ) {
   const endDate = new Date(startDate);
 

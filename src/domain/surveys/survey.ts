@@ -43,6 +43,7 @@ export type SurveySummary = {
   slug: string;
   status: SurveyStatus;
   responseMode: SurveyResponseMode;
+  liveOnly: boolean;
   startsAt: string | null;
   endsAt: string | null;
   publishedAt: string | null;
@@ -56,6 +57,7 @@ export type CreateSurveyDraftInput = {
   title: string;
   description: string | null;
   responseMode: SurveyResponseMode;
+  liveOnly: boolean;
   startsAt: string | null;
   endsAt: string | null;
 };
@@ -65,6 +67,7 @@ export type UpdateSurveyBasicInfoInput = {
   title: string;
   description: string | null;
   responseMode: SurveyResponseMode;
+  liveOnly: boolean;
   startsAt: string | null;
   endsAt: string | null;
 };
@@ -154,7 +157,7 @@ export type SurveyEditor = SurveySummary & {
   responseCount: number;
 };
 
-export type PublishedSurvey = Omit<SurveySummary, 'createdAt' | 'updatedAt'> & {
+export type PublishedSurvey = Omit<SurveySummary, 'createdAt' | 'updatedAt' | 'liveOnly'> & {
   sections: SurveySection[];
   questions: SurveyQuestion[];
   privacySettings: SurveyPrivacySettings | null;

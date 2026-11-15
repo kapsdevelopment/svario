@@ -7,14 +7,14 @@ import { routes } from '../../../app/routes';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useAdvanceLiveSurvey, useLiveSurveyHost } from '../../../application/live/useLiveSurvey';
 import {
-  getLiveSurveyChoiceResults,
+  getLiveSurveyResults,
   isLiveSurveyId,
   type LiveSurveyHostState,
   type LiveSurveyResult,
 } from '../../../domain/live/liveSurvey';
 import { Panel } from '../../shared/components/Panel';
 import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
-import { ChoiceResultView } from '../results/ResultsPage';
+import { ChoiceResultView, LikertResultView } from '../results/ResultsPage';
 
 export function LiveSurveyHostPage() {
   const { sessionId } = useParams();
@@ -158,7 +158,7 @@ function HostStatus({ title, detail, retry }: { title: string; detail?: string; 
 }
 
 function LiveQuestionSlide({ questionCount, result, url }: { questionCount: number; result: LiveSurveyResult; url: string }) {
-  const { total, results } = getLiveSurveyChoiceResults(result);
+  const { total, results, scale } = getLiveSurveyResults(result);
   const { question } = result;
 
   return (
@@ -178,10 +178,18 @@ function LiveQuestionSlide({ questionCount, result, url }: { questionCount: numb
       </div>
       {question.description ? <p className="presentation-slide__description">{question.description}</p> : null}
       <div className="presentation-slide__visual">
-        {total > 0 ? (
-          <ChoiceResultView chartType={question.chartType} colorMode={question.colorMode} results={results} />
-        ) : (
+        {total === 0 ? (
           <div className="empty-state live-survey-slide__waiting">Venter på de første svarene …</div>
+        ) : scale ? (
+          <LikertResultView
+            average={scale.average}
+            chartType={question.chartType}
+            colorMode={question.colorMode}
+            results={scale.results}
+            scaleVariant={scale.variant}
+          />
+        ) : (
+          <ChoiceResultView chartType={question.chartType} colorMode={question.colorMode} results={results} />
         )}
       </div>
     </section>
@@ -235,7 +243,7 @@ function LiveSurveySummary({ session }: { session: LiveSurveyHostState }) {
       {session.results.length === 0 ? <p>Ingen spørsmål ble åpnet.</p> : null}
       <div className="live-survey-summary__results">
         {session.results.map((result) => {
-          const { total, results } = getLiveSurveyChoiceResults(result);
+          const { total, results } = getLiveSurveyResults(result);
           return (
             <details key={result.question.id}>
               <summary>
