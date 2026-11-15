@@ -1,3 +1,5 @@
+import { Radio } from 'lucide-react';
+
 const durationPresets = [
   { label: '24 timer', days: 1 },
   { label: '1 uke', days: 7 },
@@ -36,11 +38,12 @@ export function SurveyDurationPresets({
         ))}
         <button
           aria-pressed={liveOnly}
-          className="duration-preset-button"
+          className="duration-preset-button duration-preset-button--live"
           disabled={disabled}
           onClick={() => onLiveOnlyChange(!liveOnly)}
           type="button"
         >
+          <Radio size={15} aria-hidden="true" />
           Liveøkt
         </button>
       </div>

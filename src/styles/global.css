@@ -1122,6 +1122,21 @@ select {
   color: #183a34;
 }
 
+.duration-preset-button--live {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-color: #9eb7a8;
+  background: #dce7df;
+  color: #183a34;
+}
+
+.duration-preset-button--live[aria-pressed='false']:not(:disabled):hover {
+  border-color: #729683;
+  background: #cddfd4;
+}
+
 .duration-preset-button[aria-pressed='true'] {
   border-color: #183a34;
   background: #183a34;
