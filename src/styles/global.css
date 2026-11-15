@@ -633,6 +633,17 @@ h2 {
 .survey-list-card .inline-actions {
   position: relative;
   z-index: 2;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.survey-publication-button {
+  font-size: 0.85rem;
+}
+
+.survey-live-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .survey-list-card--active {

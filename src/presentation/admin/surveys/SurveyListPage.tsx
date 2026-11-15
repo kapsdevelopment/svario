@@ -23,12 +23,17 @@ import type {
 } from '../../../domain/surveys/survey';
 import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
+import { useSurveyPublicationControls } from './SurveyPublicationControls';
 
 export function SurveyListPage() {
   const workspaceScope = useWorkspaceScope();
   const location = useLocation();
   const navigate = useNavigate();
   const { data: surveys = [], error, isError, isLoading } = useSurveyList();
+  const publication = useSurveyPublicationControls(
+    surveys,
+    (id) => navigate(routes.editSurvey(id)),
+  );
   const focusTarget = getSurveyFocusTarget(location.search);
   const surveyIds = surveys.map((survey) => survey.id);
   const retentionWarningsQuery = useSurveyRetentionWarnings(surveyIds);
@@ -142,6 +147,8 @@ export function SurveyListPage() {
         </div>
       ) : null}
 
+      {publication.feedback}
+
       {deleteSurvey.isError ? (
         <div className="form-alert form-alert--error" role="alert">
           {getUserFacingErrorMessage(
@@ -226,6 +233,7 @@ export function SurveyListPage() {
                 key={survey.id}
                 survey={survey}
                 workspaceNameById={workspaceNameById}
+                publicationAction={publication.renderButton(survey, 'survey-publication-button')}
                 isRepeatPending={repeatSurveyOnce.isPending}
                 isDeletePending={deleteSurvey.isPending}
                 onRepeat={handleRepeatSurvey}
@@ -260,6 +268,7 @@ export function SurveyListPage() {
         onCancel={() => setSurveyToDelete(null)}
         onConfirm={confirmDeleteSurvey}
       />
+      {publication.dialog}
     </div>
   );
 }
@@ -289,6 +298,7 @@ function SurveyGroup({ title, subtitle, count, children }: SurveyGroupProps) {
 type SurveyListCardProps = {
   survey: SurveySummary;
   workspaceNameById: Map<string, string>;
+  publicationAction: ReactNode;
   isRepeatPending: boolean;
   isDeletePending: boolean;
   onRepeat: (survey: SurveySummary) => void;
@@ -298,6 +308,7 @@ type SurveyListCardProps = {
 function SurveyListCard({
   survey,
   workspaceNameById,
+  publicationAction,
   isRepeatPending,
   isDeletePending,
   onRepeat,
@@ -323,6 +334,7 @@ function SurveyListCard({
         subtitle={formatSurveyMeta(survey, displayState)}
         action={
           <div className="inline-actions">
+            {publicationAction}
             <Link
               className="icon-button"
               to={routes.editSurvey(survey.id)}

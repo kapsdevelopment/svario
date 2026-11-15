@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Activity,
   ArrowLeft,
@@ -57,9 +57,11 @@ import type {
 import { downloadBlobFile } from '../../../infrastructure/files/downloadBlobFile';
 import { downloadTextFile } from '../../../infrastructure/files/downloadTextFile';
 import { Panel } from '../../shared/components/Panel';
+import { useSurveyPublicationControls } from '../surveys/SurveyPublicationControls';
 
 export function ResultsPage() {
   const { surveyId } = useParams();
+  const navigate = useNavigate();
   const {
     data: results,
     isError,
@@ -67,6 +69,10 @@ export function ResultsPage() {
     live,
   } = useSurveyResults(surveyId, { live: true });
   const livePulse = useLiveResultPulse(results);
+  const publication = useSurveyPublicationControls(
+    results ? [results] : [],
+    (id) => navigate(routes.editSurvey(id)),
+  );
 
   if (!surveyId) {
     return (
@@ -85,8 +91,12 @@ export function ResultsPage() {
           <p className="eyebrow">Analyse</p>
           <h1>{results?.title ?? 'Resultater'}</h1>
           {results ? <ResultsMetaPills results={results} /> : null}
-          {results && results.status !== 'draft' ? (
-            <LiveResultsStatus live={live} pulse={livePulse} />
+          {results?.status === 'published' ? (
+            <LiveResultsStatus
+              live={live}
+              pulse={livePulse}
+              publicationAction={publication.renderButton(results, 'live-results-status__toggle')}
+            />
           ) : null}
         </div>
         <Link className="button button--secondary" to={routes.surveys}>
@@ -94,6 +104,9 @@ export function ResultsPage() {
           Skjemaer
         </Link>
       </header>
+
+      {publication.feedback}
+      {publication.dialog}
 
       {isLoading ? (
         <Panel title="Laster resultater" subtitle="Henter svar." />
@@ -366,9 +379,11 @@ type LiveResultPulseState = {
 function LiveResultsStatus({
   live,
   pulse,
+  publicationAction,
 }: {
   live: LiveResultsState;
   pulse: LiveResultPulseState;
+  publicationAction: ReactNode;
 }) {
   const state = live.isPaused
     ? 'paused'
@@ -419,6 +434,7 @@ function LiveResultsStatus({
         )}
         {toggleLabel}
       </button>
+      {publicationAction}
     </div>
   );
 }

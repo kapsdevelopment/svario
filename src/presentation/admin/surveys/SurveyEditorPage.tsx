@@ -61,6 +61,7 @@ import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 import { LiveSurveyPanel } from '../live/LiveSurveyPanel';
 import { SurveyDurationPresets, type SurveyDurationPreset } from './SurveyDurationPresets';
+import { useSurveyPublicationControls } from './SurveyPublicationControls';
 
 const questionTypeLabels = {
   multiple_choice: 'Flervalg',
@@ -359,8 +360,9 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
   const [reorderError, setReorderError] = useState<string | null>(null);
   const questionPromptInputRef = useRef<HTMLInputElement | null>(null);
 
-  const currentStatus = publishSurvey.data?.status ?? survey.status;
-  const publishedAt = publishSurvey.data?.publishedAt ?? survey.publishedAt;
+  const publication = useSurveyPublicationControls([survey]);
+  const { status: currentStatus, publishedAt } = survey;
+  const publicationButton = publication.renderButton(survey);
   const isDraft = currentStatus === 'draft';
   const isPublished = currentStatus === 'published';
   const structureLockMessage = getStructureLockMessage(
@@ -1749,10 +1751,14 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
 
       <PrivacySettingsPanel survey={survey} />
 
+      {publication.feedback}
+      {publication.dialog}
+
       {basicLiveOnly ? (
         canEditSurvey ? (
           <LiveSurveyPanel
             issue={isDraft ? privacyIssues[0] : undefined}
+            publicationAction={publicationButton}
             prepare={async () => {
               if (
                 (!survey.liveOnly || basicTitle !== survey.title ||
@@ -1779,18 +1785,17 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
         <>
           <Panel
             title="Publisering"
-            subtitle={
-              isPublished
-                ? 'Delbar lenke er aktiv'
-                : 'Publiser når skjemaet er klart'
-            }
+            subtitle={isDraft ? 'Publiser når skjemaet er klart' : isPublished ? 'Delbar respondentlenke' : 'Stengt for nye svar'}
+            action={publicationButton}
           >
             <div className="publish-block">
               <div className="publish-block__intro">
                 <p>
-                  {isPublished
-                    ? getPublishedIntroText(survey.responseCount)
-                    : 'Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'}
+                  {isDraft
+                    ? 'Publisering gjør spørreundersøkelsen aktiv, og skjemaet låses automatisk når første svar kommer inn.'
+                    : isPublished
+                      ? getPublishedIntroText(survey.responseCount)
+                      : 'Skjemaet tar ikke lenger imot nye svar. Tidligere svar er tilgjengelige i resultatene.'}
                 </p>
                 {publishedAt ? (
                   <span>Publisert {formatDateTime(publishedAt)}</span>
@@ -1822,7 +1827,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                     <ExternalLink size={18} aria-hidden="true" />
                   </a>
                 </div>
-              ) : (
+              ) : isDraft ? (
                 <div className="form-actions">
                   <button
                     className="button button--primary"
@@ -1834,7 +1839,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                     {publishSurvey.isPending ? 'Publiserer...' : 'Publiser skjema'}
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
 
             {isDraft && survey.questions.length === 0 ? (
@@ -1857,7 +1862,7 @@ function SurveyEditorContent({ survey }: { survey: SurveyEditor }) {
                 {getErrorMessage(publishSurvey.error)}
               </div>
             ) : null}
-            {publishMessage ? (
+            {publishMessage && isPublished ? (
               <div className="form-alert form-alert--success" role="status">
                 {publishMessage}
               </div>

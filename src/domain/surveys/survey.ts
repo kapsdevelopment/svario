@@ -1,5 +1,7 @@
 export type SurveyStatus = 'draft' | 'published' | 'closed';
 
+export type SurveyPublicationAction = 'unpublish' | 'close';
+
 export type SurveyResponseMode = 'anonymous' | 'identified';
 
 export type SurveyVisibility = 'private' | 'workspace';

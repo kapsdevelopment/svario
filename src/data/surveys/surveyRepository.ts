@@ -15,6 +15,7 @@ import {
   type SurveyEditor,
   type SurveyFreeTextResult,
   type SurveyPrivacySettings,
+  type SurveyPublicationAction,
   type SurveyRetentionWarning,
   type SurveyLikertResult,
   type SurveyQuestion,
@@ -290,6 +291,33 @@ export async function publishSurvey(surveyId: string): Promise<SurveySummary> {
   }
 
   return mapSurveySummary(data);
+}
+
+export async function listSurveyPublicationActions(
+  surveyIds: string[],
+): Promise<Partial<Record<string, SurveyPublicationAction>>> {
+  const { data, error } = await requireSurveyClient().rpc('list_survey_publication_actions', {
+    p_survey_ids: surveyIds,
+  });
+
+  if (error) throw new Error(error.message);
+
+  const actions: Partial<Record<string, SurveyPublicationAction>> = {};
+  for (const row of data) {
+    if (row.action === 'unpublish' || row.action === 'close') {
+      actions[row.survey_id] = row.action;
+    }
+  }
+  return actions;
+}
+
+export async function stopSurveyPublication(surveyId: string, action: SurveyPublicationAction) {
+  const { error } = await requireSurveyClient().rpc('stop_survey_publication', {
+    p_survey_id: surveyId,
+    p_action: action,
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 export async function updateSurveyBasicInfo(

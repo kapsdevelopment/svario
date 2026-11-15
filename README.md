@@ -99,7 +99,9 @@ SVARIO_LIVE_TEST_KEY='<local public key>' npm run test:live
 Set `SVARIO_LIVE_TEST_URL` if the local API uses a different port. The test
 creates temporary users and a survey, runs 50 clients against the same room
 and checks the results, retry behavior, host permissions and the race between
-closing a question and submitting answers. It reports local request timings.
+closing a question and submitting answers. It also verifies withdrawing and
+republishing a survey, closing with preserved answers, and the race between
+withdrawing and receiving the first response. It reports local request timings.
 For a manual rehearsal, put the host on a large screen and join from five
 phones on shared Wi-Fi. Include a late join, a phone that temporarily loses
 its connection and a scan of the QR code from the back of the room.

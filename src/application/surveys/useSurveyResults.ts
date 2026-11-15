@@ -35,7 +35,8 @@ export function useSurveyResults(
       return getSurveyResults(surveyId);
     },
     enabled: Boolean(surveyId),
-    refetchInterval: shouldPoll ? livePollIntervalMs : false,
+    refetchInterval: (query) =>
+      shouldPoll && query.state.data?.status === 'published' ? livePollIntervalMs : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: options.live ? shouldPoll : true,
   });

@@ -108,6 +108,132 @@ test('a live-only draft starts directly in the lobby and stays closed to ordinar
   );
 });
 
+function submitOrdinaryResponse(anonymous, survey) {
+  const [choice, scale] = survey.questions;
+  return anonymous.rpc('submit_survey_response', {
+    p_survey_slug: survey.slug,
+    p_answers: [
+      { questionId: choice.id, optionIds: [choice.options[0].id] },
+      { questionId: scale.id, likertValue: 5 },
+    ],
+  });
+}
+
+function publicationActions(actor, id) {
+  return actor.rpc('list_survey_publication_actions', { p_survey_ids: [id] });
+}
+
+function stopPublication(actor, id, action) {
+  return actor.rpc('stop_survey_publication', { p_survey_id: id, p_action: action });
+}
+
+test('only managers can withdraw unanswered surveys or close answered surveys', async (t) => {
+  const owner = await signUp();
+  const outsider = await signUp();
+  const anonymous = client();
+  const survey = await createSurvey(owner);
+  t.after(() => read(owner.rpc('delete_survey', { p_survey_id: survey.id })));
+  const publish = () => read(owner.rpc('publish_survey', { p_survey_id: survey.id }));
+  const respondentLink = () => read(anonymous.from('surveys').select('slug').eq('slug', survey.slug));
+  const available = () => read(publicationActions(owner, survey.id));
+
+  await publish();
+  assert.deepEqual(await respondentLink(), [{ slug: survey.slug }]);
+  assert.deepEqual(await available(), [{ survey_id: survey.id, action: 'unpublish' }]);
+  assert.deepEqual(await read(publicationActions(outsider, survey.id)), []);
+  assert.ok((await publicationActions(anonymous, survey.id)).error);
+  assert.ok((await stopPublication(outsider, survey.id, 'unpublish')).error);
+  assert.ok((await stopPublication(anonymous, survey.id, 'unpublish')).error);
+  assert.ok((await stopPublication(owner, survey.id, 'close')).error);
+  assert.ok((await owner.from('surveys').update({ status: 'closed' }).eq('id', survey.id)).error);
+
+  const draft = await read(stopPublication(owner, survey.id, 'unpublish'));
+  assert.equal(draft.status, 'draft');
+  assert.equal(draft.published_at, null);
+  assert.equal(draft.slug, survey.slug);
+  assert.deepEqual(await available(), []);
+  assert.deepEqual(await respondentLink(), []);
+  assert.ok((await submitOrdinaryResponse(anonymous, survey)).error);
+  await read(owner.from('surveys').update({ title: 'Redigert utkast' }).eq('id', survey.id));
+
+  const publishedAgain = await publish();
+  assert.equal(publishedAgain.slug, survey.slug);
+  assert.equal(publishedAgain.title, 'Redigert utkast');
+  assert.deepEqual(await respondentLink(), [{ slug: survey.slug }]);
+
+  const responseId = await read(submitOrdinaryResponse(anonymous, survey));
+  assert.deepEqual(await available(), [{ survey_id: survey.id, action: 'close' }]);
+  assert.match((await stopPublication(owner, survey.id, 'unpublish')).error?.message ?? '', /har fått svar/);
+  assert.ok((await stopPublication(outsider, survey.id, 'close')).error);
+  const closed = await read(stopPublication(owner, survey.id, 'close'));
+  assert.equal(closed.status, 'closed');
+  assert.ok(closed.closed_at);
+  assert.equal(closed.published_at, publishedAgain.published_at);
+  assert.equal(closed.slug, survey.slug);
+  assert.deepEqual(await respondentLink(), []);
+  assert.ok((await submitOrdinaryResponse(anonymous, survey)).error);
+  assert.deepEqual(await read(owner.from('survey_responses').select('id').eq('survey_id', survey.id)),
+    [{ id: responseId }]);
+  assert.equal((await read(owner.from('answers').select('id').eq('response_id', responseId))).length, 2);
+});
+
+test('a first response racing with withdrawal can never be saved for a draft', async (t) => {
+  const owner = await signUp();
+  const anonymous = client();
+  for (let i = 0; i < 5; i++) {
+    const survey = await createSurvey(owner);
+    t.after(() => read(owner.rpc('delete_survey', { p_survey_id: survey.id })));
+    await read(owner.rpc('publish_survey', { p_survey_id: survey.id }));
+    const [withdraw, submit] = await Promise.all([
+      stopPublication(owner, survey.id, 'unpublish'),
+      submitOrdinaryResponse(anonymous, survey),
+    ]);
+    const [state, responses] = await Promise.all([
+      read(owner.from('surveys').select('status').eq('id', survey.id).single()),
+      read(owner.from('survey_responses').select('id').eq('survey_id', survey.id)),
+    ]);
+    if (!withdraw.error) {
+      assert.equal(state.status, 'draft');
+      assert.match(submit.error?.message ?? '', /not available for responses/);
+      assert.equal(responses.length, 0);
+    } else {
+      assert.equal(state.status, 'published');
+      assert.equal(responses.length, 1);
+      assert.equal(responses[0].id, submit.data);
+      assert.match(withdraw.error.message, /har fått svar/);
+    }
+  }
+});
+
+test('active live rooms must be finished first and their votes count as answers', async (t) => {
+  const owner = await signUp();
+  const anonymous = client();
+  const survey = await createSurvey(owner, { p_live_only: true });
+  t.after(() => read(owner.rpc('delete_survey', { p_survey_id: survey.id })));
+  const sessionId = await read(owner.rpc('start_live_survey', { p_survey_id: survey.id }));
+  const advance = (step, finish) => read(owner.rpc('advance_live_survey', {
+    p_session_id: sessionId, p_step: step, p_finish: finish,
+  }));
+  const voterKey = randomUUID();
+
+  assert.deepEqual(await read(publicationActions(owner, survey.id)), []);
+  assert.match((await stopPublication(owner, survey.id, 'unpublish')).error?.message ?? '', /Avslutt den aktive liveøkten/);
+  await advance(-1, false);
+  const state = await read(anonymous.rpc('get_live_survey_status', {
+    p_session_id: sessionId, p_voter_key: voterKey,
+  }));
+  await read(anonymous.rpc('submit_live_survey_vote', {
+    p_session_id: sessionId, p_step: 0, p_question_id: state.question.id,
+    p_option_id: state.question.options[0].id, p_voter_key: voterKey,
+  }));
+  await advance(0, true);
+  assert.deepEqual(await read(publicationActions(owner, survey.id)), [{ survey_id: survey.id, action: 'close' }]);
+  const sessionSummary = () => read(owner.rpc('get_live_survey_host', { p_session_id: sessionId }));
+  const summaryBeforeClose = await sessionSummary();
+  assert.equal((await read(stopPublication(owner, survey.id, 'close'))).status, 'closed');
+  assert.deepEqual(await sessionSummary(), summaryBeforeClose);
+});
+
 function timed(task) {
   const start = performance.now();
   return Promise.resolve(task).then((value) => ({ value, ms: performance.now() - start }));

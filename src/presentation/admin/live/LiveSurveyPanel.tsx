@@ -1,4 +1,5 @@
 import { ChevronRight, Play, Radio } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
@@ -16,10 +17,12 @@ const sessionDateFormat = new Intl.DateTimeFormat('nb-NO', {
 export function LiveSurveyPanel({
   issue,
   prepare,
+  publicationAction,
   survey,
 }: {
   issue?: string;
   prepare?: () => Promise<void>;
+  publicationAction?: ReactNode;
   survey: SurveyEditor;
 }) {
   const navigate = useNavigate();
@@ -34,24 +37,27 @@ export function LiveSurveyPanel({
       title="Liveøkt"
       subtitle="Vis ett spørsmål om gangen og la deltakerne svare med mobilen."
       action={
-        active ? (
-          <Link className="button button--primary" to={routes.liveSurveyHost(active.id)}>
-            <Radio size={18} aria-hidden="true" />
-            Åpne liveøkt
-          </Link>
-        ) : (
-          <button
-            className="button button--primary"
-            disabled={Boolean(eligibilityIssue) || start.isPending || sessions.isPending}
-            onClick={() => start.mutate(undefined, {
-              onSuccess: (id) => navigate(routes.liveSurveyHost(id)),
-            })}
-            type="button"
-          >
-            <Play size={18} aria-hidden="true" />
-            {start.isPending ? 'Klargjør…' : 'Start liveøkt'}
-          </button>
-        )
+        <div className="inline-actions survey-live-actions">
+          {publicationAction}
+          {active ? (
+            <Link className="button button--primary" to={routes.liveSurveyHost(active.id)}>
+              <Radio size={18} aria-hidden="true" />
+              Åpne liveøkt
+            </Link>
+          ) : (
+            <button
+              className="button button--primary"
+              disabled={Boolean(eligibilityIssue) || start.isPending || sessions.isPending}
+              onClick={() => start.mutate(undefined, {
+                onSuccess: (id) => navigate(routes.liveSurveyHost(id)),
+              })}
+              type="button"
+            >
+              <Play size={18} aria-hidden="true" />
+              {start.isPending ? 'Klargjør…' : 'Start liveøkt'}
+            </button>
+          )}
+        </div>
       }
     >
       <p>
