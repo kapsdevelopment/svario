@@ -1442,6 +1442,19 @@ select {
   text-align: center;
 }
 
+.auth-text-link {
+  color: #183a34;
+  justify-self: start;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+
+.auth-field-hint {
+  margin: -8px 0 0;
+  color: #556960;
+  font-size: 0.9rem;
+}
+
 .auth-support-links a {
   color: #183a34;
   font-size: 0.92rem;

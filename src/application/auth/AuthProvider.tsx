@@ -15,6 +15,7 @@ import {
   deleteCurrentAccount as deleteCurrentAccountRequest,
   getCurrentSession,
   hasAuthClient,
+  requestPasswordReset as requestPasswordResetRequest,
   signInWithMagicLink as signInWithMagicLinkRequest,
   signInWithPassword as signInWithPasswordRequest,
   signOut as signOutRequest,
@@ -46,6 +47,7 @@ type AuthContextValue = AuthState & {
     redirectTo: string,
   ) => Promise<void>;
   signInWithMagicLink: (email: string, redirectTo: string) => Promise<void>;
+  requestPasswordReset: (email: string, redirectTo: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   deleteCurrentAccount: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -192,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword: signInWithPasswordRequest,
       signUpWithPassword: signUpWithPasswordRequest,
       signInWithMagicLink: signInWithMagicLinkRequest,
+      requestPasswordReset: requestPasswordResetRequest,
       updatePassword: updatePasswordRequest,
       deleteCurrentAccount: deleteCurrentAccountRequest,
       signOut: signOutRequest,

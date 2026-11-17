@@ -33,9 +33,30 @@ If Vite chooses another local port, add that port too. For the deployed custom
 domain, set Site URL to `https://svario.no` and add both `https://svario.no`
 and `https://svario.no/**` as Redirect URLs.
 
-If Supabase email templates are customized, make sure confirmation and magic
-link templates use `{{ .RedirectTo }}` or `{{ .ConfirmationURL }}` rather than
-hard-coding `{{ .SiteURL }}` into the user-facing link.
+If Supabase email templates are customized, use `{{ .ConfirmationURL }}` for
+confirmation and magic links so Supabase verifies the token before redirecting
+to the app. A plain `{{ .RedirectTo }}` or `{{ .SiteURL }}` link skips verification.
+
+### Password recovery
+
+The login page links to `/#/forgot-password`. Supabase Auth sends the recovery
+email through the project's configured SMTP provider. The return URL is the
+configured `VITE_AUTH_REDIRECT_URL` (or the current origin) with `?auth=recovery`,
+for example `https://svario.no/?auth=recovery`. Allow this URL in Supabase Auth
+Redirect URLs; the `https://svario.no/**` entry above also covers it. Add the
+equivalent URL for local development and each customer installation.
+
+Keep `{{ .ConfirmationURL }}` as the link in Supabase's Reset Password email
+template so Supabase verifies the recovery token before returning to the app.
+The app consumes the auth fragment before starting its hash router, removes
+tokens from the address, then opens `/#/reset-password`. Expired or malformed
+links offer a new recovery email. An authenticated session is required
+to save the new password; account bootstrap does not block recovery.
+
+Run `npm run test:auth` for password validation, callback routing, Auth requests,
+and form behavior. For a full SMTP check, use a test account: request recovery,
+open the email, save matching passwords, sign out, and check that only the new
+password works. Also check an expired/reused link and refresh the reset page.
 
 Start the dev server:
 

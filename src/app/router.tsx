@@ -23,6 +23,18 @@ const LoginPage = lazyRoute(
   () => import('../presentation/admin/auth/LoginPage'),
   'LoginPage',
 );
+const RegisterPage = lazyRoute(
+  () => import('../presentation/admin/auth/RegisterPage'),
+  'RegisterPage',
+);
+const ForgotPasswordPage = lazyRoute(
+  () => import('../presentation/admin/auth/ForgotPasswordPage'),
+  'ForgotPasswordPage',
+);
+const ResetPasswordPage = lazyRoute(
+  () => import('../presentation/admin/auth/ResetPasswordPage'),
+  'ResetPasswordPage',
+);
 const LandingPage = lazyRoute(
   () => import('../presentation/public/landing/LandingPage'),
   'LandingPage',
@@ -97,6 +109,21 @@ export const router = createHashRouter([
   {
     path: routes.login,
     element: page(<LoginPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.register,
+    element: page(<RegisterPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.forgotPassword,
+    element: page(<ForgotPasswordPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.resetPassword,
+    element: page(<ResetPasswordPage />),
     errorElement: <RouteErrorPage />,
   },
   {

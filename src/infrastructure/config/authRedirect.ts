@@ -6,6 +6,13 @@ export function getAuthRedirectUrl() {
   );
 }
 
+export function getPasswordResetRedirectUrl() {
+  const url = new URL(getAuthRedirectUrl());
+  // Keep the redirect on the deployed index page; Supabase needs the hash for its auth tokens.
+  url.searchParams.set('auth', 'recovery');
+  return url.toString();
+}
+
 function normalizeAuthRedirectUrl(value: string) {
   const parsedUrl = parseAuthRedirectUrl(value);
   parsedUrl.search = '';
