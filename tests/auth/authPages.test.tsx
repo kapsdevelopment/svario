@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { AuthApiError } from '@supabase/supabase-js';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -160,16 +161,41 @@ it('checks both reset passwords and saves only after they match', async () => {
   expect(screen.queryByLabelText('Nytt passord')).toBeNull();
 });
 
-it('keeps the form available and explains rejected password changes', async () => {
+it('lets the user continue with an unchanged password without claiming it was updated', async () => {
   const user = userEvent.setup();
   auth.status = 'authenticated';
   auth.user = { id: 'recovered-user' };
-  auth.updatePassword.mockRejectedValue(new Error('New password should be different from the old password.'));
+  auth.updatePassword.mockRejectedValue(new AuthApiError('New password should be different from the old password.', 422, 'same_password'));
   openPage('/reset-password');
   await user.type(screen.getByLabelText('Nytt passord'), 'Password1');
   await user.type(screen.getByLabelText('Gjenta nytt passord'), 'Password1');
   await user.click(screen.getByRole('button', { name: 'Lagre nytt passord' }));
-  expect(screen.getByRole('alert').textContent).toContain('forskjellig fra det gamle');
+  expect(auth.updatePassword).toHaveBeenCalledExactlyOnceWith('Password1');
+  expect(screen.getByRole('status').textContent).toBe('Dette er allerede passordet ditt. Du kan fortsette å bruke det.');
+  expect(screen.getByRole('status').textContent).not.toContain('oppdatert');
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.queryByLabelText('Nytt passord')).toBeNull();
+  expect(screen.queryByLabelText('Gjenta nytt passord')).toBeNull();
+  await user.click(screen.getByRole('link', { name: 'Gå til Svario' }));
+  expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy();
+});
+
+it.each([
+  new AuthApiError('Password is too short.', 422, 'weak_password'),
+  new AuthApiError('New password should be different from the old password.', 500, 'unexpected_failure'),
+  new Error('New password should be different from the old password.'),
+])('keeps other errors actionable rather than treating them as an unchanged password (%s)', async (error) => {
+  const user = userEvent.setup();
+  auth.status = 'authenticated';
+  auth.user = { id: 'recovered-user' };
+  auth.updatePassword.mockRejectedValue(error);
+  openPage('/reset-password');
+  await user.type(screen.getByLabelText('Nytt passord'), 'Password1');
+  await user.type(screen.getByLabelText('Gjenta nytt passord'), 'Password1');
+  await user.click(screen.getByRole('button', { name: 'Lagre nytt passord' }));
+  expect(screen.getByRole('alert')).toBeTruthy();
+  expect(screen.queryByRole('status')).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Gå til Svario' })).toBeNull();
   expect(screen.getByLabelText('Nytt passord')).toBeTruthy();
 });
 

@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { isUnchangedPasswordError } from '../../../application/auth/passwordErrors';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { validateNewPassword } from '../../../domain/auth/passwordValidation';
 import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
@@ -16,7 +17,7 @@ export function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
+  const [completion, setCompletion] = useState<'updated' | 'unchanged' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasValidSession = auth.status === 'authenticated' && auth.user !== null && !searchParams.has('error');
 
@@ -32,9 +33,15 @@ export function ResetPasswordPage() {
       await auth.updatePassword(password);
       setPassword('');
       setConfirmation('');
-      setIsComplete(true);
+      setCompletion('updated');
     } catch (error) {
-      setErrorMessage(getUserFacingErrorMessage(error, 'Kunne ikke oppdatere passordet. Prøv igjen.'));
+      if (isUnchangedPasswordError(error)) {
+        setPassword('');
+        setConfirmation('');
+        setCompletion('unchanged');
+      } else {
+        setErrorMessage(getUserFacingErrorMessage(error, 'Kunne ikke oppdatere passordet. Prøv igjen.'));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -43,11 +50,13 @@ export function ResetPasswordPage() {
   let content;
   if (auth.status === 'loading') {
     content = <p role="status">Kontrollerer lenken...</p>;
-  } else if (isComplete) {
+  } else if (completion) {
     content = (
       <>
         <p className="form-alert form-alert--success" role="status">
-          Passordet er oppdatert. Du er innlogget og kan fortsette til {instanceBrand.name}.
+          {completion === 'unchanged'
+            ? 'Dette er allerede passordet ditt. Du kan fortsette å bruke det.'
+            : `Passordet er oppdatert. Du er innlogget og kan fortsette til ${instanceBrand.name}.`}
         </p>
         <Link className="button button--primary" to={routes.dashboard}>
           Gå til {instanceBrand.name}
