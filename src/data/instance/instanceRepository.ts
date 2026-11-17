@@ -24,6 +24,8 @@ export async function updateRegistrationPolicy(mode: RegistrationMode, domains: 
   const { data, error } = await supabase.rpc('instance_update_signup_policy', {
     p_mode: mode, p_domains: domains, p_expected_version: version,
   });
-  if (error) throw error;
+  if (error) throw new Error(error.code === 'PT409'
+    ? 'Reglene er endret av en annen administrator. Last inn på nytt før du lagrer.'
+    : 'Kunne ikke lagre registreringsreglene. Kontroller domenene og administratorrettighetene.');
   return data as unknown as RegistrationPolicy;
 }

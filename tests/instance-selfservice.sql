@@ -30,7 +30,7 @@ do $$ declare p jsonb; page jsonb; begin
   begin
     perform public.instance_update_signup_policy('open','{}',1);
     raise exception 'Stale write accepted';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   begin
     perform public.instance_update_signup_policy('domains',array['*.test'],2);
     raise exception 'Wildcard accepted';
