@@ -10,7 +10,8 @@
     "package:customer": "node scripts/package-customer.mjs",
     "preview": "vite preview",
     "test:customer": "node --test tests/customer-brand.test.mjs",
-    "test:live": "node --test tests/live-survey.test.mjs"
+    "test:live": "node --test tests/live-survey.test.mjs",
+    "test:selfservice": "node --test tests/instance-selfservice.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",

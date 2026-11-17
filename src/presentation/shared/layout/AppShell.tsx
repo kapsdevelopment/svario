@@ -28,6 +28,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { useInstanceAdmin } from '../../../application/instance/useInstanceAdministration';
 import {
   type WorkspaceScope,
   useWorkspaceScope,
@@ -60,6 +61,7 @@ const mobileNavItems = [
 
 export function AppShell() {
   const auth = useAuth();
+  const instanceAdmin = useInstanceAdmin();
   const workspaceScope = useWorkspaceScope();
   const location = useLocation();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -113,6 +115,7 @@ export function AppShell() {
         </NavLink>
 
         <div className="sidebar-account">
+          {instanceAdmin.isInstanceAdmin && <NavLink to={routes.instanceAdmin} className="sidebar-profile-link">Instansadministrasjon</NavLink>}
           <NavLink to={routes.profile} className="sidebar-profile-link">
             <UserRound size={18} aria-hidden="true" />
             <span>Profil</span>
@@ -136,6 +139,7 @@ export function AppShell() {
       ) : null}
 
       <main className="app-main">
+        {instanceAdmin.isInstanceAdmin && <div className="mobile-instance-admin"><Link to={routes.instanceAdmin}>Instansadministrasjon</Link></div>}
         <Outlet />
       </main>
 

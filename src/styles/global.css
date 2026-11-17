@@ -5330,3 +5330,7 @@ select {
     justify-items: center;
   }
 }
+.mobile-instance-admin { display: none; }
+@media (max-width: 800px) {
+  .mobile-instance-admin { display: block; padding: 1rem; text-align: right; }
+}

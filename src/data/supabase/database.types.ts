@@ -883,6 +883,13 @@ export type Database = {
         Args: { p_token: string }
         Returns: string
       }
+      instance_is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      instance_signup_policy: { Args: Record<PropertyKey, never>; Returns: Json }
+      instance_list_users: { Args: { p_offset?: number; p_limit?: number }; Returns: Json }
+      instance_update_signup_policy: {
+        Args: { p_mode: string; p_domains: string[]; p_expected_version: number }
+        Returns: Json
+      }
       create_workspace: {
         Args: {
           p_name: string

@@ -28,6 +28,8 @@ const ProfilePage = lazyRoute(
   () => import('../presentation/admin/profile/ProfilePage'),
   'ProfilePage',
 );
+const CustomerAccountPage = lazyRoute(() => import('../presentation/admin/auth/CustomerAccountPage'), 'CustomerAccountPage');
+const InstanceAdminPage = lazyRoute(() => import('../presentation/admin/instance/InstanceAdminPage'), 'InstanceAdminPage');
 const JoinWorkspacePage = lazyRoute(
   () => import('../presentation/admin/workspaces/JoinWorkspacePage'),
   'JoinWorkspacePage',
@@ -66,6 +68,9 @@ const publicSiteRoutes: RouteObject[] = isCustomerBuild
 
 export const router = createHashRouter([
   ...publicSiteRoutes,
+  ...(isCustomerBuild ? [routes.register, routes.forgotPassword, routes.resetPassword].map((path) => ({
+    path, element: page(<CustomerAccountPage />), errorElement: <RouteErrorPage />,
+  })) : []),
   {
     path: routes.login,
     element: page(<LoginPage />),
@@ -98,6 +103,7 @@ export const router = createHashRouter([
     ),
     errorElement: <RouteErrorPage />,
     children: [
+      ...(isCustomerBuild ? [{ path: routes.instanceAdmin, element: page(<InstanceAdminPage />) }] : []),
       {
         path: routes.dashboard,
         element: page(<DashboardPage />),

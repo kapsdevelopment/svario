@@ -106,7 +106,7 @@ export function LoginPage() {
 
   return (
     <main className="auth-page image-page image-page--pine">
-      <Panel title="Logg inn" subtitle={`${instanceBrand.name} admin`}>
+      <Panel title="Logg inn" subtitle={isCustomerBuild ? instanceBrand.name : `${instanceBrand.name} admin`}>
         {instanceBrand.logoUrl ? (
           <img alt="" className="auth-brand__logo" src={instanceBrand.logoUrl} />
         ) : null}
@@ -142,6 +142,7 @@ export function LoginPage() {
         {auth.status === 'misconfigured' ? (
           <p className="form-alert form-alert--error">{auth.errorMessage}</p>
         ) : null}
+        {isCustomerBuild && location.search.includes('emailLink=invalid') && <p role="alert" className="form-alert form-alert--error">E-postlenken er utløpt eller ugyldig. Be om en ny lenke.</p>}
 
         {auth.status === 'authenticated' && !auth.isAdminReady ? (
           <p className="form-alert form-alert--error">{auth.errorMessage}</p>
@@ -224,6 +225,7 @@ export function LoginPage() {
           <p className="form-alert form-alert--error">{errorMessage}</p>
         ) : null}
 
+        {isCustomerBuild && <div className="auth-support-links"><Link to={routes.register}>Opprett konto</Link><Link to={routes.forgotPassword}>Glemt passord?</Link></div>}
         {!isCustomerBuild ? (
           <div className="auth-support-links">
             <Link to={routes.security}>Les om sikkerhet og personvern</Link>
