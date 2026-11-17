@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { normalizeEmailDomains, emailMatchesPolicy } from '../src/domain/instance/registrationPolicy.ts';
-import { emailCallbackKind } from '../src/domain/instance/emailCallback.ts';
+import { emailCallbackKind, captureEmailCallback } from '../src/domain/instance/emailCallback.ts';
 
 test('email domains are exact, canonical and deduplicated', () => {
   assert.deepEqual(normalizeEmailDomains('Example.TEST, other.test\nEXAMPLE.test'), ['example.test', 'other.test']);
@@ -26,4 +26,12 @@ test('email callback is detected before hash routing without treating route frag
   assert.equal(emailCallbackKind('#access_token=x&refresh_token=y&type=recovery'), 'recovery');
   assert.equal(emailCallbackKind('#access_token=x&refresh_token=y&type=signup'), 'confirmation');
   assert.equal(emailCallbackKind('#error=access_denied&error_code=otp_expired'), 'error');
+});
+test('callback identity survives Auth clearing the fragment and cannot reuse an unrelated session', () => {
+  const saved = captureEmailCallback('#access_token=incoming&refresh_token=refresh&type=recovery');
+  const cleared = captureEmailCallback('');
+  assert.equal(saved.kind, 'recovery');
+  assert.equal(saved.accessToken, 'incoming');
+  assert.equal(cleared.kind, null);
+  assert.notEqual(saved.accessToken, 'previous-session');
 });

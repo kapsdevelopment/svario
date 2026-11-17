@@ -1,14 +1,14 @@
 import { getCurrentSession, hasAuthClient, requestPasswordRecovery, resendConfirmation } from '../../data/auth/authRepository';
-import { emailCallbackKind } from '../../domain/instance/emailCallback';
+import type { captureEmailCallback } from '../../domain/instance/emailCallback';
 import { getAuthRedirectUrl } from '../../infrastructure/config/authRedirect';
 
 const recoveryKey = 'svario-recovery-user';
-export async function initializeCustomerEmailFlow() {
-  const kind = emailCallbackKind(window.location.hash);
+export async function initializeCustomerEmailFlow(callback: ReturnType<typeof captureEmailCallback>) {
+  const { kind, accessToken } = callback;
   if (!kind || !hasAuthClient()) return;
   try {
     const session = await getCurrentSession(); // Lets Auth verify and consume the implicit callback first.
-    if (kind === 'error' || !session) throw new Error('Invalid email link');
+    if (kind === 'error' || !session || !accessToken || session.access_token !== accessToken) throw new Error('Invalid email link');
     if (kind === 'recovery') sessionStorage.setItem(recoveryKey, session.user.id);
     window.history.replaceState(null, '', `${window.location.pathname}#/${kind === 'recovery' ? 'reset-password' : 'dashboard'}`);
   } catch {

@@ -6,3 +6,7 @@ export function emailCallbackKind(hash: string): 'recovery' | 'confirmation' | '
   if (!params.has('access_token') || !params.has('refresh_token')) return null;
   return params.get('type') === 'recovery' ? 'recovery' : 'confirmation';
 }
+
+export function captureEmailCallback(hash: string) {
+  return { kind: emailCallbackKind(hash), accessToken: new URLSearchParams(hash.replace(/^#/, '')).get('access_token') };
+}
