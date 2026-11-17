@@ -12,6 +12,7 @@ import {
   type SurveySection,
   type SubmitSurveyAnswerInput,
 } from '../../../domain/surveys/survey';
+import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
 import { Panel } from '../../shared/components/Panel';
 import { RespondentPrivacyNotice } from './RespondentPrivacyNotice';
 import { SurveyChoiceList } from './SurveyChoiceList';
@@ -34,7 +35,7 @@ export function RespondentPage() {
   return (
     <main className="respondent-page image-page image-page--fjord">
       <div className="respondent-card">
-        <p className="eyebrow">Svario</p>
+        <p className="eyebrow">{instanceBrand.name}</p>
         {isLoading ? (
           <Panel title="Laster skjema" subtitle="Henter spørsmålene." />
         ) : null}

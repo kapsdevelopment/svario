@@ -115,6 +115,26 @@ h2 {
   font-weight: 800;
 }
 
+.brand__logo {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.auth-brand__logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.auth-brand__logo--presentation {
+  width: 180px;
+  max-width: 100%;
+  height: 64px;
+  object-position: left center;
+}
+
 .brand span {
   display: block;
   color: #607681;
@@ -861,7 +881,7 @@ h2 {
 }
 
 .button--primary {
-  background: #183a34;
+  background: var(--svario-customer-accent, #183a34);
   color: #fff;
 }
 

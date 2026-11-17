@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:pages": "tsc -b && vite build --mode github-pages",
+    "package:customer": "node scripts/package-customer.mjs",
     "preview": "vite preview",
+    "test:customer": "node --test tests/customer-brand.test.mjs",
     "test:live": "node --test tests/live-survey.test.mjs"
   },
   "dependencies": {

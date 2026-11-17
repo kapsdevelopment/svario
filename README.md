@@ -49,6 +49,19 @@ Build for production:
 npm run build
 ```
 
+## Customer packages (C pilot)
+
+The same product can be built with a versioned instance profile from the
+separate `svario-deploy` repository. Use the exact Node version in `.node-version`
+for customer packaging. Customer packages contain the static web build,
+database migrations and a provenance manifest; they do not contain the
+platform, credentials or customer data, and do not deploy themselves.
+
+See [the v0.0.103 C-pilot release notes](docs/releases/v0.0.103.md) for scope,
+tagged build instructions and the separation from B-workspace branding.
+
+## GitHub Pages build
+
 Build the GitHub Pages variant locally:
 
 ```bash

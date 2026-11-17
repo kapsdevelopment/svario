@@ -34,6 +34,7 @@ import {
 } from '../../../application/workspaces/WorkspaceScopeProvider';
 import workspaceSliderMountains from '../../../assets/images/workspace-slider-mountains.png';
 import workspaceSliderStone from '../../../assets/images/workspace-slider-stone.png';
+import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
 
 const primaryNavItems = [
   {
@@ -81,10 +82,14 @@ export function AppShell() {
     <div className="app-shell">
       <aside className="sidebar">
         <Link className="brand" to={routes.home} aria-label="Gå til forsiden">
-          <div className="brand__mark">S</div>
+          {instanceBrand.logoUrl ? (
+            <img alt="" className="brand__logo" src={instanceBrand.logoUrl} />
+          ) : (
+            <div className="brand__mark">S</div>
+          )}
           <div>
-            <strong>Svario</strong>
-            <span>Spørsmål og innsikt</span>
+            <strong>{instanceBrand.name}</strong>
+            <span>{instanceBrand.tagline}</span>
           </div>
         </Link>
 

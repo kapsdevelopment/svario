@@ -33,6 +33,7 @@ import type {
   WorkspaceType,
   WorkspaceWithMembership,
 } from '../../../domain/workspaces/workspace';
+import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
 import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 
@@ -434,19 +435,21 @@ export function ProfilePage() {
                       handleOrganizationNumberChange(event.target.value)
                     }
                   />
-                  <button
-                    className="button button--secondary"
-                    type="button"
-                    disabled={
-                      createWorkspace.isPending ||
-                      lookupOrganization.isPending ||
-                      organizationNumber.replace(/\D/g, '').length === 0
-                    }
-                    onClick={handleLookupOrganization}
-                  >
-                    <Search size={18} aria-hidden="true" />
-                    {lookupOrganization.isPending ? 'Henter...' : 'Hent fra BRREG'}
-                  </button>
+                  {!isCustomerBuild ? (
+                    <button
+                      className="button button--secondary"
+                      type="button"
+                      disabled={
+                        createWorkspace.isPending ||
+                        lookupOrganization.isPending ||
+                        organizationNumber.replace(/\D/g, '').length === 0
+                      }
+                      onClick={handleLookupOrganization}
+                    >
+                      <Search size={18} aria-hidden="true" />
+                      {lookupOrganization.isPending ? 'Henter...' : 'Hent fra BRREG'}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -631,7 +634,7 @@ export function ProfilePage() {
                 <dd>{auth.account?.status ?? 'Ukjent'}</dd>
               </div>
               <div>
-                <dt>Svario-konto</dt>
+                <dt>{instanceBrand.name}-konto</dt>
                 <dd>{auth.account?.id ?? 'Ikke klargjort'}</dd>
               </div>
               <div>
@@ -641,26 +644,28 @@ export function ProfilePage() {
             </dl>
           </section>
 
-          <section className="account-section account-section--danger">
-            <h3>Permanent sletting av konto</h3>
-            <div className="danger-zone">
-              <p>
-                Sletter kontoen din, alle spørreundersøkelser, innsendte svar
-                og resultater. Dette kan ikke angres.
-              </p>
-              <div className="form-actions">
-                <button
-                  className="button button--danger"
-                  disabled={isDeletingAccount}
-                  type="button"
-                  onClick={handleDeleteAccount}
-                >
-                  <Trash2 size={18} aria-hidden="true" />
-                  {isDeletingAccount ? 'Sletter...' : 'Slett min konto'}
-                </button>
+          {!isCustomerBuild ? (
+            <section className="account-section account-section--danger">
+              <h3>Permanent sletting av konto</h3>
+              <div className="danger-zone">
+                <p>
+                  Sletter kontoen din, alle spørreundersøkelser, innsendte svar
+                  og resultater. Dette kan ikke angres.
+                </p>
+                <div className="form-actions">
+                  <button
+                    className="button button--danger"
+                    disabled={isDeletingAccount}
+                    type="button"
+                    onClick={handleDeleteAccount}
+                  >
+                    <Trash2 size={18} aria-hidden="true" />
+                    {isDeletingAccount ? 'Sletter...' : 'Slett min konto'}
+                  </button>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </div>
 
         {deleteAccountError ? (
@@ -902,20 +907,22 @@ function WorkspaceCard({
                 lookupWorkspaceOrganization.reset();
               }}
             />
-            <button
-              className="button button--secondary"
-              type="button"
-              disabled={
-                lookupWorkspaceOrganization.isPending ||
-                setWorkspaceOrganizationNumber.isPending
-              }
-              onClick={handleLookupWorkspaceOrganization}
-            >
-              <Search size={18} aria-hidden="true" />
-              {lookupWorkspaceOrganization.isPending
-                ? 'Henter...'
-                : 'Sjekk BRREG'}
-            </button>
+            {!isCustomerBuild ? (
+              <button
+                className="button button--secondary"
+                type="button"
+                disabled={
+                  lookupWorkspaceOrganization.isPending ||
+                  setWorkspaceOrganizationNumber.isPending
+                }
+                onClick={handleLookupWorkspaceOrganization}
+              >
+                <Search size={18} aria-hidden="true" />
+                {lookupWorkspaceOrganization.isPending
+                  ? 'Henter...'
+                  : 'Sjekk BRREG'}
+              </button>
+            ) : null}
           </div>
 
           {lookupWorkspaceOrganization.isSuccess ? (

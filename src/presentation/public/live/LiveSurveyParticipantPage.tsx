@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { useLiveSurveyParticipant, useSubmitLiveSurveyVote } from '../../../application/live/useLiveSurvey';
 import { isLiveSurveyId, type LiveSurveyQuestion } from '../../../domain/live/liveSurvey';
+import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
 import { getLiveSurveyVoterKey } from '../../../infrastructure/config/liveSurveyVoterKey';
 import { Panel } from '../../shared/components/Panel';
 import { RespondentPrivacyNotice } from '../respondent/RespondentPrivacyNotice';
@@ -17,7 +18,7 @@ export function LiveSurveyParticipantPage() {
   return (
     <main className="respondent-page image-page image-page--fjord">
       <div className="respondent-card">
-        <p className="eyebrow">Svario · Liveøkt</p>
+        <p className="eyebrow">{instanceBrand.name} · Liveøkt</p>
         {isLiveSurveyId(sessionId) ? (
           <LiveSurveyParticipant key={sessionId} sessionId={sessionId} />
         ) : (
