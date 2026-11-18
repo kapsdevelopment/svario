@@ -6,6 +6,7 @@ import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { getAuthRedirectUrl } from '../../../infrastructure/config/authRedirect';
+import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
 import { Panel } from '../../shared/components/Panel';
 
 type AuthMode = 'password' | 'magic-link';
@@ -26,9 +27,7 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(() =>
-    new URLSearchParams(location.search).has('error')
-      ? 'Lenken er utløpt eller ugyldig. Prøv å logge inn på nytt.'
-      : null,
+    new URLSearchParams(location.search).has('error') ? 'Lenken er utløpt eller ugyldig. Prøv å logge inn på nytt.' : null,
   );
 
   const redirectTarget = useMemo(
@@ -36,6 +35,22 @@ export function LoginPage() {
     [location.state],
   );
   const canSubmit = auth.status !== 'misconfigured' && !isSubmitting;
+
+  if (instanceBrand.presentationOnly) {
+    return (
+      <main className="auth-page image-page image-page--pine">
+        <Panel title="Skjemaportal" subtitle={instanceBrand.name}>
+          {instanceBrand.logoUrl ? (
+            <img alt="" className="auth-brand__logo auth-brand__logo--presentation" src={instanceBrand.logoUrl} />
+          ) : null}
+          <p>{instanceBrand.tagline}</p>
+          <p className="form-alert form-alert--info">
+            Privat Svario-prototype. Ingen innlogging eller innsamling av opplysninger.
+          </p>
+        </Panel>
+      </main>
+    );
+  }
 
   if (auth.isAdminReady) {
     return <Navigate to={redirectTarget} replace />;
@@ -76,33 +91,38 @@ export function LoginPage() {
 
   return (
     <main className="auth-page image-page image-page--pine">
-      <Panel title="Logg inn" subtitle="Svario admin">
-        <div
-          className="segmented-control"
-          role="tablist"
-          aria-label="Innloggingsvalg"
-        >
-          <button
-            aria-selected={mode === 'password'}
-            className="segmented-control__item"
-            onClick={() => setMode('password')}
-            role="tab"
-            type="button"
+      <Panel title="Logg inn" subtitle={`${instanceBrand.name} admin`}>
+        {instanceBrand.logoUrl ? (
+          <img alt="" className="auth-brand__logo" src={instanceBrand.logoUrl} />
+        ) : null}
+        {!isCustomerBuild ? (
+          <div
+            className="segmented-control"
+            role="tablist"
+            aria-label="Innloggingsvalg"
           >
-            <KeyRound size={17} aria-hidden="true" />
-            Passord
-          </button>
-          <button
-            aria-selected={mode === 'magic-link'}
-            className="segmented-control__item"
-            onClick={() => setMode('magic-link')}
-            role="tab"
-            type="button"
-          >
-            <Mail size={17} aria-hidden="true" />
-            E-postlenke
-          </button>
-        </div>
+            <button
+              aria-selected={mode === 'password'}
+              className="segmented-control__item"
+              onClick={() => setMode('password')}
+              role="tab"
+              type="button"
+            >
+              <KeyRound size={17} aria-hidden="true" />
+              Passord
+            </button>
+            <button
+              aria-selected={mode === 'magic-link'}
+              className="segmented-control__item"
+              onClick={() => setMode('magic-link')}
+              role="tab"
+              type="button"
+            >
+              <Mail size={17} aria-hidden="true" />
+              E-postlenke
+            </button>
+          </div>
+        ) : null}
 
         {auth.status === 'misconfigured' ? (
           <p className="form-alert form-alert--error">{auth.errorMessage}</p>
@@ -137,14 +157,16 @@ export function LoginPage() {
             </label>
             <Link className="auth-text-link" to={routes.forgotPassword}>Glemt passord?</Link>
             <div className="form-actions form-actions--split">
-              <Link
-                className="button button--secondary"
-                to={routes.register}
-                state={location.state}
-              >
-                <UserPlus size={18} aria-hidden="true" />
-                Opprett konto
-              </Link>
+              {!isCustomerBuild ? (
+                <Link
+                  className="button button--secondary"
+                  to={routes.register}
+                  state={location.state}
+                >
+                  <UserPlus size={18} aria-hidden="true" />
+                  Opprett konto
+                </Link>
+              ) : null}
               <button
                 className="button button--primary"
                 disabled={!canSubmit}
@@ -187,9 +209,11 @@ export function LoginPage() {
           <p className="form-alert form-alert--error" role="alert">{errorMessage}</p>
         ) : null}
 
-        <div className="auth-support-links">
-          <Link to={routes.security}>Les om sikkerhet og personvern</Link>
-        </div>
+        {!isCustomerBuild ? (
+          <div className="auth-support-links">
+            <Link to={routes.security}>Les om sikkerhet og personvern</Link>
+          </div>
+        ) : null}
       </Panel>
     </main>
   );

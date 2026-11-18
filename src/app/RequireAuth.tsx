@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../application/auth/AuthProvider';
+import { instanceBrand } from '../infrastructure/config/instanceBrand';
 import { Panel } from '../presentation/shared/components/Panel';
 import { routes } from './routes';
 
@@ -12,7 +13,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (auth.status === 'loading' || auth.bootstrapStatus === 'loading') {
     return (
       <main className="auth-page image-page image-page--pine">
-        <Panel title="Klargjør konto" subtitle="Svario admin" />
+        <Panel title="Klargjør konto" subtitle={`${instanceBrand.name} admin`} />
       </main>
     );
   }

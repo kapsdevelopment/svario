@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:pages": "tsc -b && vite build --mode github-pages",
+    "package:customer": "node scripts/package-customer.mjs",
     "preview": "vite preview",
-    "test:live": "node --test tests/live-survey.test.mjs",
-    "test:auth": "vitest run --config vitest.config.ts"
+    "test:customer": "node --test tests/customer-brand.test.mjs",
+    "test:auth": "vitest run --config vitest.config.ts",
+    "test:live": "node --test tests/live-survey.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",

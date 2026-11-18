@@ -1,6 +1,7 @@
 import { Suspense, useEffect, type ReactNode } from 'react';
-import { createHashRouter, useLocation } from 'react-router-dom';
+import { createHashRouter, Navigate, useLocation, type RouteObject } from 'react-router-dom';
 
+import { isCustomerBuild } from '../infrastructure/config/instanceBrand';
 import { AppShell } from '../presentation/shared/layout/AppShell';
 import { lazyRoute } from './lazyRoute';
 import { RequireAuth } from './RequireAuth';
@@ -35,22 +36,6 @@ const ResetPasswordPage = lazyRoute(
   () => import('../presentation/admin/auth/ResetPasswordPage'),
   'ResetPasswordPage',
 );
-const LandingPage = lazyRoute(
-  () => import('../presentation/public/landing/LandingPage'),
-  'LandingPage',
-);
-const DemoPage = lazyRoute(
-  () => import('../presentation/public/demo/DemoPage'),
-  'DemoPage',
-);
-const AboutPage = lazyRoute(
-  () => import('../presentation/public/about/AboutPage'),
-  'AboutPage',
-);
-const PrivacyPage = lazyRoute(
-  () => import('../presentation/public/privacy/PrivacyPage'),
-  'PrivacyPage',
-);
 const ProfilePage = lazyRoute(
   () => import('../presentation/admin/profile/ProfilePage'),
   'ProfilePage',
@@ -58,6 +43,14 @@ const ProfilePage = lazyRoute(
 const JoinWorkspacePage = lazyRoute(
   () => import('../presentation/admin/workspaces/JoinWorkspacePage'),
   'JoinWorkspacePage',
+);
+const WorkspaceBrandingAdminPage = lazyRoute(
+  () => import('../presentation/admin/workspaces/WorkspaceBrandingAdminPage'),
+  'WorkspaceBrandingAdminPage',
+);
+const WorkspaceBrandingPage = lazyRoute(
+  () => import('../presentation/admin/workspaces/WorkspaceBrandingPage'),
+  'WorkspaceBrandingPage',
 );
 const ResultsPage = lazyRoute(
   () => import('../presentation/admin/results/ResultsPage'),
@@ -87,25 +80,12 @@ const RespondentPage = lazyRoute(
   () => import('../presentation/public/respondent/RespondentPage'),
   'RespondentPage',
 );
-const SecurityPage = lazyRoute(
-  () => import('../presentation/public/security/SecurityPage'),
-  'SecurityPage',
-);
-const TrustCenterPage = lazyRoute(
-  () => import('../presentation/public/trust/TrustCenterPage'),
-  'TrustCenterPage',
-);
-const TrustDocumentPage = lazyRoute(
-  () => import('../presentation/public/trust/TrustDocumentPage'),
-  'TrustDocumentPage',
-);
+const publicSiteRoutes: RouteObject[] = isCustomerBuild
+  ? [{ path: routes.home, element: <Navigate to={routes.login} replace />, errorElement: <RouteErrorPage /> }]
+  : cloudPublicSiteRoutes();
 
 export const router = createHashRouter([
-  {
-    path: '/',
-    element: page(<LandingPage />),
-    errorElement: <RouteErrorPage />,
-  },
+  ...publicSiteRoutes,
   {
     path: routes.login,
     element: page(<LoginPage />),
@@ -124,36 +104,6 @@ export const router = createHashRouter([
   {
     path: routes.resetPassword,
     element: page(<ResetPasswordPage />),
-    errorElement: <RouteErrorPage />,
-  },
-  {
-    path: routes.demo,
-    element: page(<DemoPage />),
-    errorElement: <RouteErrorPage />,
-  },
-  {
-    path: routes.about,
-    element: page(<AboutPage />),
-    errorElement: <RouteErrorPage />,
-  },
-  {
-    path: routes.privacy,
-    element: page(<PrivacyPage />),
-    errorElement: <RouteErrorPage />,
-  },
-  {
-    path: routes.security,
-    element: page(<SecurityPage />),
-    errorElement: <RouteErrorPage />,
-  },
-  {
-    path: routes.trust,
-    element: page(<TrustCenterPage />),
-    errorElement: <RouteErrorPage />,
-  },
-  {
-    path: '/trust/:documentSlug',
-    element: page(<TrustDocumentPage />),
     errorElement: <RouteErrorPage />,
   },
   {
@@ -211,6 +161,13 @@ export const router = createHashRouter([
         path: routes.profile,
         element: page(<ProfilePage />),
       },
+      ...(isCustomerBuild ? [] : [{
+        path: routes.workspaceBrandingAdmin,
+        element: page(<WorkspaceBrandingAdminPage />),
+      }, {
+        path: '/workspaces/:workspaceId/profilering',
+        element: page(<WorkspaceBrandingPage />),
+      }]),
       {
         path: '/join/:token',
         element: page(<JoinWorkspacePage />),
@@ -223,6 +180,25 @@ export const router = createHashRouter([
     errorElement: <RouteErrorPage />,
   },
 ]);
+
+function cloudPublicSiteRoutes(): RouteObject[] {
+  const LandingPage = lazyRoute(() => import('../presentation/public/landing/LandingPage'), 'LandingPage');
+  const DemoPage = lazyRoute(() => import('../presentation/public/demo/DemoPage'), 'DemoPage');
+  const AboutPage = lazyRoute(() => import('../presentation/public/about/AboutPage'), 'AboutPage');
+  const PrivacyPage = lazyRoute(() => import('../presentation/public/privacy/PrivacyPage'), 'PrivacyPage');
+  const SecurityPage = lazyRoute(() => import('../presentation/public/security/SecurityPage'), 'SecurityPage');
+  const TrustCenterPage = lazyRoute(() => import('../presentation/public/trust/TrustCenterPage'), 'TrustCenterPage');
+  const TrustDocumentPage = lazyRoute(() => import('../presentation/public/trust/TrustDocumentPage'), 'TrustDocumentPage');
+  return [
+    { path: routes.home, element: page(<LandingPage />), errorElement: <RouteErrorPage /> },
+    { path: routes.demo, element: page(<DemoPage />), errorElement: <RouteErrorPage /> },
+    { path: routes.about, element: page(<AboutPage />), errorElement: <RouteErrorPage /> },
+    { path: routes.privacy, element: page(<PrivacyPage />), errorElement: <RouteErrorPage /> },
+    { path: routes.security, element: page(<SecurityPage />), errorElement: <RouteErrorPage /> },
+    { path: routes.trust, element: page(<TrustCenterPage />), errorElement: <RouteErrorPage /> },
+    { path: '/trust/:documentSlug', element: page(<TrustDocumentPage />), errorElement: <RouteErrorPage /> },
+  ];
+}
 
 function page(element: ReactNode) {
   return (

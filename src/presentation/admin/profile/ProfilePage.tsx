@@ -10,7 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
@@ -25,6 +25,7 @@ import { useDeleteWorkspace } from '../../../application/workspaces/useDeleteWor
 import { useLookupOrganizationByNumber } from '../../../application/workspaces/useLookupOrganizationByNumber';
 import { useRemoveWorkspaceMember } from '../../../application/workspaces/useRemoveWorkspaceMember';
 import { useSetWorkspaceOrganizationNumber } from '../../../application/workspaces/useSetWorkspaceOrganizationNumber';
+import { useSvarioAdminAccess } from '../../../application/workspaces/useWorkspaceBrandingAdmin';
 import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import type {
   BusinessRegistryOrganization,
@@ -33,6 +34,7 @@ import type {
   WorkspaceType,
   WorkspaceWithMembership,
 } from '../../../domain/workspaces/workspace';
+import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
 import { ConfirmDialog } from '../../shared/components/ConfirmDialog';
 import { Panel } from '../../shared/components/Panel';
 
@@ -40,6 +42,7 @@ const minimumPasswordLength = 6;
 
 export function ProfilePage() {
   const auth = useAuth();
+  const adminAccess = useSvarioAdminAccess(!isCustomerBuild);
   const navigate = useNavigate();
   const [profilePersonalName, setProfilePersonalName] = useState('');
   const [profilePersonalNameEdited, setProfilePersonalNameEdited] =
@@ -322,6 +325,11 @@ export function ProfilePage() {
           <p className="eyebrow">Konto</p>
           <h1>Min profil</h1>
         </div>
+        {!isCustomerBuild && adminAccess.data && !adminAccess.isError ? (
+          <Link className="button button--secondary" to={routes.workspaceBrandingAdmin}>
+            B-profiler
+          </Link>
+        ) : null}
       </header>
 
       <Panel
@@ -434,19 +442,21 @@ export function ProfilePage() {
                       handleOrganizationNumberChange(event.target.value)
                     }
                   />
-                  <button
-                    className="button button--secondary"
-                    type="button"
-                    disabled={
-                      createWorkspace.isPending ||
-                      lookupOrganization.isPending ||
-                      organizationNumber.replace(/\D/g, '').length === 0
-                    }
-                    onClick={handleLookupOrganization}
-                  >
-                    <Search size={18} aria-hidden="true" />
-                    {lookupOrganization.isPending ? 'Henter...' : 'Hent fra BRREG'}
-                  </button>
+                  {!isCustomerBuild ? (
+                    <button
+                      className="button button--secondary"
+                      type="button"
+                      disabled={
+                        createWorkspace.isPending ||
+                        lookupOrganization.isPending ||
+                        organizationNumber.replace(/\D/g, '').length === 0
+                      }
+                      onClick={handleLookupOrganization}
+                    >
+                      <Search size={18} aria-hidden="true" />
+                      {lookupOrganization.isPending ? 'Henter...' : 'Hent fra BRREG'}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -631,7 +641,7 @@ export function ProfilePage() {
                 <dd>{auth.account?.status ?? 'Ukjent'}</dd>
               </div>
               <div>
-                <dt>Svario-konto</dt>
+                <dt>{instanceBrand.name}-konto</dt>
                 <dd>{auth.account?.id ?? 'Ikke klargjort'}</dd>
               </div>
               <div>
@@ -641,26 +651,28 @@ export function ProfilePage() {
             </dl>
           </section>
 
-          <section className="account-section account-section--danger">
-            <h3>Permanent sletting av konto</h3>
-            <div className="danger-zone">
-              <p>
-                Sletter kontoen din, alle spørreundersøkelser, innsendte svar
-                og resultater. Dette kan ikke angres.
-              </p>
-              <div className="form-actions">
-                <button
-                  className="button button--danger"
-                  disabled={isDeletingAccount}
-                  type="button"
-                  onClick={handleDeleteAccount}
-                >
-                  <Trash2 size={18} aria-hidden="true" />
-                  {isDeletingAccount ? 'Sletter...' : 'Slett min konto'}
-                </button>
+          {!isCustomerBuild ? (
+            <section className="account-section account-section--danger">
+              <h3>Permanent sletting av konto</h3>
+              <div className="danger-zone">
+                <p>
+                  Sletter kontoen din, alle spørreundersøkelser, innsendte svar
+                  og resultater. Dette kan ikke angres.
+                </p>
+                <div className="form-actions">
+                  <button
+                    className="button button--danger"
+                    disabled={isDeletingAccount}
+                    type="button"
+                    onClick={handleDeleteAccount}
+                  >
+                    <Trash2 size={18} aria-hidden="true" />
+                    {isDeletingAccount ? 'Sletter...' : 'Slett min konto'}
+                  </button>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </div>
 
         {deleteAccountError ? (
@@ -827,6 +839,9 @@ function WorkspaceCard({
           </p>
         </div>
         <div className="inline-actions">
+          {canManageMembers && !isCustomerBuild ? (
+            <Link className="button button--secondary" to={routes.workspaceBranding(workspace.id)}>Profilering</Link>
+          ) : null}
           {canManageMembers ? (
             <button
               className="button button--secondary"
@@ -902,20 +917,22 @@ function WorkspaceCard({
                 lookupWorkspaceOrganization.reset();
               }}
             />
-            <button
-              className="button button--secondary"
-              type="button"
-              disabled={
-                lookupWorkspaceOrganization.isPending ||
-                setWorkspaceOrganizationNumber.isPending
-              }
-              onClick={handleLookupWorkspaceOrganization}
-            >
-              <Search size={18} aria-hidden="true" />
-              {lookupWorkspaceOrganization.isPending
-                ? 'Henter...'
-                : 'Sjekk BRREG'}
-            </button>
+            {!isCustomerBuild ? (
+              <button
+                className="button button--secondary"
+                type="button"
+                disabled={
+                  lookupWorkspaceOrganization.isPending ||
+                  setWorkspaceOrganizationNumber.isPending
+                }
+                onClick={handleLookupWorkspaceOrganization}
+              >
+                <Search size={18} aria-hidden="true" />
+                {lookupWorkspaceOrganization.isPending
+                  ? 'Henter...'
+                  : 'Sjekk BRREG'}
+              </button>
+            ) : null}
           </div>
 
           {lookupWorkspaceOrganization.isSuccess ? (

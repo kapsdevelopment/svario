@@ -1,13 +1,14 @@
 import { Home, RefreshCw } from 'lucide-react';
 import { Link, isRouteErrorResponse, useRouteError } from 'react-router-dom';
 
+import { instanceBrand } from '../infrastructure/config/instanceBrand';
 import { isRouteLoadError } from './lazyRoute';
 import { routes } from './routes';
 
 export function RouteErrorPage() {
   const error = useRouteError();
   const isLoadError = isRouteLoadError(error);
-  const title = isLoadError ? 'Svario må lastes inn på nytt' : 'Noe gikk galt';
+  const title = isLoadError ? `${instanceBrand.name} må lastes inn på nytt` : 'Noe gikk galt';
   const message = isLoadError
     ? 'En ny versjon kan ha blitt publisert mens siden var åpen. Last inn på nytt for å hente de siste filene.'
     : getRouteErrorMessage(error);
@@ -15,7 +16,7 @@ export function RouteErrorPage() {
   return (
     <main className="app-error-page">
       <section className="app-error-panel" aria-labelledby="route-error-title">
-        <p className="eyebrow">Svario</p>
+        <p className="eyebrow">{instanceBrand.name}</p>
         <h1 id="route-error-title">{title}</h1>
         <p>{message}</p>
         <div className="form-actions form-actions--split">

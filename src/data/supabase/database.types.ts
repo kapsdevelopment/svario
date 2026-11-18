@@ -928,6 +928,68 @@ export type Database = {
       ensure_account_initialized_v2: { Args: never; Returns: string }
       ensure_domain_account: { Args: never; Returns: string }
       ensure_user: { Args: never; Returns: string }
+      get_survey_respondent_branding: {
+        Args: { p_slug: string }
+        Returns: {
+          accent_color: string
+          display_name: string
+          logo_png_base64: string
+        }[]
+      }
+      get_workspace_respondent_branding: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          accent_color: string
+          display_name: string
+          is_active: boolean
+          logo_png_base64: string
+        }[]
+      }
+      get_workspace_branding_editor: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          accent_color: string
+          display_name: string
+          is_active: boolean
+          logo_png_base64: string
+          revision: number
+        }[]
+      }
+      get_my_workspace_branding: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          accent_color: string
+          display_name: string
+          is_active: boolean
+          logo_png_base64: string
+          revision: number
+        }[]
+      }
+      is_svario_admin: { Args: never; Returns: boolean }
+      get_my_branding_access: {
+        Args: { p_workspace_id: string }
+        Returns: { is_allowed: boolean; request_status: string | null; requested_at: string | null }[]
+      }
+      request_workspace_branding: {
+        Args: { p_workspace_id: string; p_contact_name: string; p_contact_email: string; p_message: string }
+        Returns: string
+      }
+      count_new_branding_requests: { Args: never; Returns: number }
+      list_workspace_branding_requests: {
+        Args: { p_status?: string | null; p_offset?: number }
+        Returns: {
+          id: string; workspace_id: string; workspace_name: string; organization_number: string | null
+          contact_name: string; contact_email: string; message: string; status: string; requested_at: string; revision: number
+        }[]
+      }
+      review_workspace_branding_request: {
+        Args: { p_request_id: string; p_expected_revision: number; p_status: string }
+        Returns: undefined
+      }
+      list_branding_workspaces: {
+        Args: { p_search: string }
+        Returns: { id: string; name: string; slug: string }[]
+      }
       list_my_workspace_owners: {
         Args: never
         Returns: {
@@ -955,6 +1017,10 @@ export type Database = {
       set_workspace_organization_number: {
         Args: { p_organization_number: string; p_workspace_id: string }
         Returns: Database["public"]["Tables"]["workspaces"]["Row"]
+      }
+      set_workspace_respondent_branding_active: {
+        Args: { p_is_active: boolean; p_workspace_id: string }
+        Returns: boolean
       }
       publish_survey: {
         Args: { p_survey_id: string }
