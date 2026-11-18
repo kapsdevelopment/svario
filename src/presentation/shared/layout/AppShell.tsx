@@ -115,7 +115,14 @@ export function AppShell() {
         </NavLink>
 
         <div className="sidebar-account">
-          {instanceAdmin.isInstanceAdmin && <NavLink to={routes.instanceAdmin} className="sidebar-profile-link">Instansadministrasjon</NavLink>}
+          {instanceAdmin.isInstanceAdmin && (
+            <NavLink
+              to={routes.instanceAdmin}
+              className="sidebar-profile-link sidebar-instance-admin-link"
+            >
+              Administrasjon
+            </NavLink>
+          )}
           <NavLink to={routes.profile} className="sidebar-profile-link">
             <UserRound size={18} aria-hidden="true" />
             <span>Profil</span>
@@ -139,7 +146,7 @@ export function AppShell() {
       ) : null}
 
       <main className="app-main">
-        {instanceAdmin.isInstanceAdmin && <div className="mobile-instance-admin"><Link to={routes.instanceAdmin}>Instansadministrasjon</Link></div>}
+        {instanceAdmin.isInstanceAdmin && <div className="mobile-instance-admin"><Link to={routes.instanceAdmin}>Administrasjon</Link></div>}
         <Outlet />
       </main>
 

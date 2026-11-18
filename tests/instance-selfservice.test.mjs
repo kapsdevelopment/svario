@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { normalizeEmailDomains, emailMatchesPolicy } from '../src/domain/instance/registrationPolicy.ts';
 import { emailCallbackKind, captureEmailCallback } from '../src/domain/instance/emailCallback.ts';
@@ -34,4 +35,30 @@ test('callback identity survives Auth clearing the fragment and cannot reuse an 
   assert.equal(saved.accessToken, 'incoming');
   assert.equal(cleared.kind, null);
   assert.notEqual(saved.accessToken, 'previous-session');
+});
+
+test('customer-facing administration names match in desktop, mobile, page and role', () => {
+  const source = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const shell = source('../src/presentation/shared/layout/AppShell.tsx');
+  const page = source('../src/presentation/admin/instance/InstanceAdminPage.tsx');
+  assert.doesNotMatch(shell + page, /Instansadministrasjon|Instansadministrator/);
+  assert.equal((shell.match(/>\s*Administrasjon\s*</g) ?? []).length, 2);
+  assert.match(page, /<h1>Administrasjon<\/h1>/);
+  assert.match(page, /<Panel title="Administrasjon">/);
+  assert.match(page, /user\.isAdmin \? 'Administrator' : 'Skjemabruker'/);
+});
+
+test('administration controls keep their scoped spacing and accessible page status', () => {
+  const source = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const page = source('../src/presentation/admin/instance/InstanceAdminPage.tsx');
+  const css = source('../src/presentation/admin/instance/instanceAdmin.css');
+  const globalCss = source('../src/styles/global.css');
+  assert.match(page, /className="instance-admin__actions"/);
+  assert.match(page, /<nav className="instance-admin__pagination" aria-label="Sider med registrerte brukere">/);
+  assert.match(page, /className="instance-admin__page-status" aria-live="polite" aria-atomic="true"/);
+  assert.match(css, /\.instance-admin__actions\s*\{[^}]*gap: 12px;/);
+  assert.match(css, /\.instance-admin__pagination\s*\{[^}]*align-items: center;[^}]*gap: 12px;/);
+  assert.match(css, /@media \(max-width: 600px\)/);
+  assert.match(globalCss, /\.sidebar-instance-admin-link\s*\{[^}]*grid-column: 1 \/ -1;/);
+  assert.match(globalCss, /@media \(max-width: 840px\)\s*\{\s*\.mobile-instance-admin/);
 });
