@@ -32,6 +32,14 @@ const JoinWorkspacePage = lazyRoute(
   () => import('../presentation/admin/workspaces/JoinWorkspacePage'),
   'JoinWorkspacePage',
 );
+const WorkspaceBrandingAdminPage = lazyRoute(
+  () => import('../presentation/admin/workspaces/WorkspaceBrandingAdminPage'),
+  'WorkspaceBrandingAdminPage',
+);
+const WorkspaceBrandingPage = lazyRoute(
+  () => import('../presentation/admin/workspaces/WorkspaceBrandingPage'),
+  'WorkspaceBrandingPage',
+);
 const ResultsPage = lazyRoute(
   () => import('../presentation/admin/results/ResultsPage'),
   'ResultsPage',
@@ -126,6 +134,13 @@ export const router = createHashRouter([
         path: routes.profile,
         element: page(<ProfilePage />),
       },
+      ...(isCustomerBuild ? [] : [{
+        path: routes.workspaceBrandingAdmin,
+        element: page(<WorkspaceBrandingAdminPage />),
+      }, {
+        path: '/workspaces/:workspaceId/profilering',
+        element: page(<WorkspaceBrandingPage />),
+      }]),
       {
         path: '/join/:token',
         element: page(<JoinWorkspacePage />),

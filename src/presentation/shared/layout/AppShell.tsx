@@ -34,7 +34,8 @@ import {
 } from '../../../application/workspaces/WorkspaceScopeProvider';
 import workspaceSliderMountains from '../../../assets/images/workspace-slider-mountains.png';
 import workspaceSliderStone from '../../../assets/images/workspace-slider-stone.png';
-import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
+import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
+import { BrandingAdminNotice } from '../../admin/workspaces/BrandingAdminNotice';
 
 const primaryNavItems = [
   {
@@ -66,7 +67,8 @@ export function AppShell() {
   const isResultsRoute =
     location.pathname === routes.resultsHome ||
     /^\/surveys\/[^/]+\/results$/.test(location.pathname);
-  const shouldShowWorkspaceSwitcher = workspaceScope.hasWorkspaceChoices;
+  const isWorkspaceBrandingRoute = /^\/workspaces\/[^/]+\/profilering$/.test(location.pathname);
+  const shouldShowWorkspaceSwitcher = workspaceScope.hasWorkspaceChoices && !isWorkspaceBrandingRoute;
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -136,6 +138,7 @@ export function AppShell() {
       ) : null}
 
       <main className="app-main">
+        {!isCustomerBuild ? <BrandingAdminNotice /> : null}
         <Outlet />
       </main>
 

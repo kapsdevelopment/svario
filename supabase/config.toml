@@ -400,3 +400,10 @@ entrypoint = "./functions/delete-account/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/delete-account/*.html" ]
+
+[functions.save-workspace-branding]
+enabled = true
+# The function verifies the token with Auth and checks the domain admin role.
+verify_jwt = false
+import_map = "./functions/save-workspace-branding/deno.json"
+entrypoint = "./functions/save-workspace-branding/index.ts"
