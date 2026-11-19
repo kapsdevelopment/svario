@@ -85,13 +85,13 @@ export function AppShell() {
       <aside className="sidebar">
         <Link className="brand" to={routes.home} aria-label="Gå til forsiden">
           {instanceBrand.logoUrl ? (
-            <img alt="" className="brand__logo" src={instanceBrand.logoUrl} />
+            <img alt={instanceBrand.identity?.organization ?? ''} className="brand__logo" src={instanceBrand.logoUrl} />
           ) : (
             <div className="brand__mark">S</div>
           )}
           <div>
-            <strong>{instanceBrand.name}</strong>
-            <span>{instanceBrand.tagline}</span>
+            <strong>{instanceBrand.identity?.service ?? instanceBrand.name}</strong>
+            {!instanceBrand.identity && <span>{instanceBrand.tagline}</span>}
           </div>
         </Link>
 

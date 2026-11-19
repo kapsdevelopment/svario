@@ -14,6 +14,7 @@ import {
 } from '../../../domain/surveys/survey';
 import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
 import { Panel } from '../../shared/components/Panel';
+import { CustomerSurface } from '../../shared/layout/CustomerSurface';
 import { RespondentPrivacyNotice } from './RespondentPrivacyNotice';
 import { SurveyChoiceList } from './SurveyChoiceList';
 import { SurveyScaleInput } from './SurveyScaleInput';
@@ -26,7 +27,7 @@ export function RespondentPage() {
     return (
       <main className="respondent-page image-page image-page--fjord">
         <div className="respondent-card">
-          <Panel title="Skjemaet mangler" subtitle="Lenken er ikke komplett." />
+          <CustomerSurface><Panel title="Skjemaet mangler" subtitle="Lenken er ikke komplett." /></CustomerSurface>
         </div>
       </main>
     );
@@ -35,7 +36,8 @@ export function RespondentPage() {
   return (
     <main className="respondent-page image-page image-page--fjord">
       <div className="respondent-card">
-        <p className="eyebrow">{instanceBrand.name}</p>
+        <CustomerSurface>
+        {!instanceBrand.identity && <p className="eyebrow">{instanceBrand.name}</p>}
         {isLoading ? (
           <Panel title="Laster skjema" subtitle="Henter spørsmålene." />
         ) : null}
@@ -52,6 +54,7 @@ export function RespondentPage() {
         ) : null}
 
         {survey ? <PublishedSurveyForm survey={survey} /> : null}
+        </CustomerSurface>
       </div>
     </main>
   );
@@ -121,6 +124,14 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
     }));
   }
 
+  if (isSubmitted && instanceBrand.identity) {
+    return <section className="c-receipt" role="status" aria-live="polite">
+      <CheckCircle2 size={34} aria-hidden="true" />
+      <h2>Takk for svaret</h2>
+      <p>Svaret ditt på «{survey.title}» er mottatt.</p>
+      <p className="c-receipt__ref">{submittedLabel}</p>
+    </section>;
+  }
   return (
     <Panel title={survey.title} subtitle={formatSurveyMeta(survey)}>
       {isSubmitted ? (

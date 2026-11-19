@@ -9,6 +9,7 @@ import { emailMatchesPolicy } from '../../../domain/instance/registrationPolicy'
 import { getAuthRedirectUrl } from '../../../infrastructure/config/authRedirect';
 import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
 import { Panel } from '../../shared/components/Panel';
+import { CustomerSurface } from '../../shared/layout/CustomerSurface';
 
 export function CustomerAccountPage() {
   const auth = useAuth();
@@ -56,8 +57,9 @@ export function CustomerAccountPage() {
     });
   }
   return <main className="auth-page image-page image-page--pine">
-    <Panel title={registering ? 'Opprett konto' : resetting ? 'Velg nytt passord' : 'Glemt passord'} subtitle={instanceBrand.name}>
-      {instanceBrand.logoUrl && <img alt="" className="auth-brand__logo" src={instanceBrand.logoUrl} />}
+    <CustomerSurface>
+    <Panel title={registering ? 'Opprett konto' : resetting ? 'Velg nytt passord' : 'Glemt passord'} subtitle={instanceBrand.identity ? undefined : instanceBrand.name}>
+      {instanceBrand.logoUrl && !instanceBrand.identity && <img alt="" className="auth-brand__logo" src={instanceBrand.logoUrl} />}
       {registering && <p>Opprett din egen konto for å lage spørreskjemaer. Kontoen gir ikke administratorrettigheter.</p>}
       {registering && !registrationAllowed && <p className="form-alert form-alert--info">
         {policy.isLoading ? 'Henter registreringsregler…' : policy.isError ? 'Kunne ikke hente registreringsreglene. Prøv igjen senere.' : 'Selvregistrering er stengt på denne instansen.'}
@@ -79,5 +81,6 @@ export function CustomerAccountPage() {
       })}>Send bekreftelse på nytt</button>}
       <p><Link to={routes.login}>Til innlogging</Link></p>
     </Panel>
+    </CustomerSurface>
   </main>;
 }

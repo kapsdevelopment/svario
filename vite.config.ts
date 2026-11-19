@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
 import {
   customerIconPath,
   customerStylePath,
@@ -32,6 +33,7 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_AUTH_REDIRECT_URL': browserValue(`${instance.supabaseUrl}/`),
       'import.meta.env.VITE_CUSTOMER_BRAND': JSON.stringify({
         name: brand.name,
+        identity: brand.identity,
         tagline: brand.tagline,
         logoUrl: `/brand/${brand.logoFileName}`,
         presentationOnly: brand.presentationOnly,
@@ -51,7 +53,8 @@ function customerBrandPlugin(brand: ReturnType<typeof readCustomerBrand>, origin
       );
       const title = escapeHtml(brand.name);
       const description = escapeHtml(brand.description);
-      return customerHtml.replace('</head>', `  <title>${title}</title>
+      const shell = brand.identity ? customerHtml.replace('<html ', '<html data-c-identity ') : customerHtml;
+      return shell.replace('</head>', `  <title>${title}</title>
     <meta name="description" content="${description}" />
     <meta name="theme-color" content="${brand.accent}" />
     <meta property="og:title" content="${title}" />
@@ -65,7 +68,9 @@ function customerBrandPlugin(brand: ReturnType<typeof readCustomerBrand>, origin
     generateBundle() {
       this.emitFile({ type: 'asset', fileName: `brand/${brand.logoFileName}`, source: brand.logo });
       this.emitFile({ type: 'asset', fileName: customerIconPath, source: brand.favicon });
-      this.emitFile({ type: 'asset', fileName: customerStylePath, source: `:root{--svario-customer-accent:${brand.accent}}\n` });
+      const colors = `:root{--svario-customer-accent:${brand.accent}${brand.identity ? ';--c-highlight:' + brand.identity.highlight : ''}}\n`;
+      const identityCss = brand.identity ? readFileSync(new URL('./build/customerIdentity.css', import.meta.url), 'utf8') : '';
+      this.emitFile({ type: 'asset', fileName: customerStylePath, source: colors + identityCss });
     },
   };
 }

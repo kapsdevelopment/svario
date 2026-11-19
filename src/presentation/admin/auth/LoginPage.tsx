@@ -8,6 +8,7 @@ import { getUserFacingErrorMessage } from '../../../application/errors/userFacin
 import { getAuthRedirectUrl } from '../../../infrastructure/config/authRedirect';
 import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
 import { Panel } from '../../shared/components/Panel';
+import { CustomerSurface } from '../../shared/layout/CustomerSurface';
 
 type AuthMode = 'password' | 'magic-link';
 type LoginLocationState = {
@@ -106,8 +107,9 @@ export function LoginPage() {
 
   return (
     <main className="auth-page image-page image-page--pine">
-      <Panel title="Logg inn" subtitle={isCustomerBuild ? instanceBrand.name : `${instanceBrand.name} admin`}>
-        {instanceBrand.logoUrl ? (
+      <CustomerSurface>
+      <Panel title="Logg inn" subtitle={instanceBrand.identity ? undefined : isCustomerBuild ? instanceBrand.name : `${instanceBrand.name} admin`}>
+        {instanceBrand.logoUrl && !instanceBrand.identity ? (
           <img alt="" className="auth-brand__logo" src={instanceBrand.logoUrl} />
         ) : null}
         {!isCustomerBuild ? (
@@ -232,6 +234,7 @@ export function LoginPage() {
           </div>
         ) : null}
       </Panel>
+      </CustomerSurface>
     </main>
   );
 }
