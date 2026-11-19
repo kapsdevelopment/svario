@@ -1461,6 +1461,11 @@ select {
 }
 
 .auth-support-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 28px;
   border-top: 1px solid #e6e0d6;
   margin-top: 18px;
   padding-top: 14px;
