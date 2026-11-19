@@ -5,6 +5,7 @@ import {
   FileText,
   LockKeyhole,
   MessageSquare,
+  Presentation,
   ShieldCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -82,6 +83,22 @@ export function LandingPage() {
               Sikkerhet og personvern
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="marketing-live-news" aria-labelledby="landing-live-news-title">
+        <div className="marketing-live-news__inner">
+          <div>
+            <p className="eyebrow">
+              <Presentation size={17} aria-hidden="true" />
+              Nyhet: Liveøkt
+            </p>
+            <h2 id="landing-live-news-title">Spør publikum. Vis svarene live på storskjerm.</h2>
+          </div>
+          <p>
+            Publikum skanner en QR-kode og svarer anonymt på mobilen.
+            Resultatene vises på storskjermen etter hvert som svarene kommer inn.
+          </p>
         </div>
       </section>
 
