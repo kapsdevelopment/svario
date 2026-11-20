@@ -66,6 +66,21 @@ it('turns an SDK token rejection into the expired-link route and removes all tok
   expect(window.location.href).toBe('http://localhost:3000/#/reset-password?error=invalid_link');
 });
 
+it('uses the customer recovery marker for the recovered user only and clears it after reset', async () => {
+  installAuthClient(async () => Response.json(user));
+  window.history.replaceState(null, '', `/#${fragment}`);
+  const { captureEmailCallback } = await import('../../src/domain/instance/emailCallback');
+  const callback = captureEmailCallback(window.location.hash);
+  const { initializeCustomerEmailFlow, canResetPassword, finishPasswordRecovery } =
+    await import('../../src/application/auth/customerEmailFlow');
+  await initializeCustomerEmailFlow(callback);
+  expect(window.location.hash).toBe('#/reset-password');
+  expect(canResetPassword(user.id)).toBe(true);
+  expect(canResetPassword('another-user')).toBe(false);
+  finishPasswordRecovery();
+  expect(canResetPassword(user.id)).toBe(false);
+});
+
 it('uses the SDK recover endpoint with a hash-free, allow-listable return URL', async () => {
   let requestUrl = '';
   let requestBody: unknown;

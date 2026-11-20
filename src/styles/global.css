@@ -345,6 +345,11 @@ h2 {
   padding-top: 18px;
 }
 
+.sidebar-account--customer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .sidebar-profile-link {
   display: inline-flex;
   min-height: 44px;
@@ -362,6 +367,11 @@ h2 {
   background: #f9f6ef;
   box-shadow: inset 0 0 0 1px rgba(217, 211, 199, 0.58);
   color: #183a34;
+}
+
+.sidebar-instance-admin-link {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
 }
 
 .app-main {
@@ -1460,6 +1470,14 @@ select {
   margin-top: 18px;
   padding-top: 14px;
   text-align: center;
+}
+
+.auth-support-links--customer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 28px;
 }
 
 .auth-text-link {
@@ -5380,4 +5398,8 @@ select {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
   }
+}
+.mobile-instance-admin { display: none; }
+@media (max-width: 840px) {
+  .mobile-instance-admin { display: block; padding: 1rem; text-align: right; }
 }

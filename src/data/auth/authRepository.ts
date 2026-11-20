@@ -92,6 +92,11 @@ export async function signInWithMagicLink(email: string, redirectTo: string) {
   }
 }
 
+export async function resendConfirmation(email: string, emailRedirectTo: string) {
+  const { error } = await requireAuthClient().auth.resend({ type: 'signup', email, options: { emailRedirectTo } });
+  if (error) throw error;
+}
+
 export async function requestPasswordReset(email: string, redirectTo: string) {
   const client = requireAuthClient();
   const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });

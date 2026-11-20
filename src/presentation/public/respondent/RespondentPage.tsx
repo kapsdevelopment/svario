@@ -16,6 +16,7 @@ import {
 import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
 import type { RespondentBranding } from '../../../domain/workspaces/workspace';
 import { Panel } from '../../shared/components/Panel';
+import { CustomerSurface } from '../../shared/layout/CustomerSurface';
 import { RespondentBrandingCredit, RespondentBrandingService, RespondentSurveyCard } from '../../shared/components/RespondentBranding';
 import { RespondentPrivacyNotice } from './RespondentPrivacyNotice';
 import { SurveyChoiceList } from './SurveyChoiceList';
@@ -31,7 +32,7 @@ export function RespondentPage() {
     return (
       <main className="respondent-page image-page image-page--fjord">
         <div className="respondent-card">
-          <Panel title="Skjemaet mangler" subtitle="Lenken er ikke komplett." />
+          <CustomerSurface><Panel title="Skjemaet mangler" subtitle="Lenken er ikke komplett." /></CustomerSurface>
         </div>
       </main>
     );
@@ -40,7 +41,8 @@ export function RespondentPage() {
   return (
     <main className={visibleBranding ? 'respondent-page respondent-page--branded' : 'respondent-page image-page image-page--fjord'}>
       <div className={visibleBranding ? 'respondent-card respondent-card--branded' : 'respondent-card'}>
-        {visibleBranding ? <RespondentBrandingService /> : <p className="eyebrow">{instanceBrand.name}</p>}
+        <CustomerSurface>
+        {visibleBranding ? <RespondentBrandingService /> : !instanceBrand.identity && <p className="eyebrow">{instanceBrand.name}</p>}
         {isLoading ? (
           <Panel title="Laster skjema" subtitle="Henter spørsmålene." />
         ) : null}
@@ -58,6 +60,7 @@ export function RespondentPage() {
 
         {survey ? <PublishedSurveyForm key={survey.id} survey={survey} branding={visibleBranding} /> : null}
         {visibleBranding ? <RespondentBrandingCredit /> : null}
+        </CustomerSurface>
       </div>
     </main>
   );
@@ -127,6 +130,14 @@ function PublishedSurveyForm({ survey, branding }: { survey: PublishedSurvey; br
     }));
   }
 
+  if (isSubmitted && instanceBrand.identity) {
+    return <section className="c-receipt" role="status" aria-live="polite">
+      <CheckCircle2 size={34} aria-hidden="true" />
+      <h2>Takk for svaret</h2>
+      <p>Svaret ditt på «{survey.title}» er mottatt.</p>
+      <p className="c-receipt__ref">{submittedLabel}</p>
+    </section>;
+  }
   return (
     <RespondentSurveyCard branding={branding} title={survey.title} subtitle={formatSurveyMeta(survey)}>
       {isSubmitted ? (

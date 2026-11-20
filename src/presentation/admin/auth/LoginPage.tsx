@@ -8,6 +8,7 @@ import { getUserFacingErrorMessage } from '../../../application/errors/userFacin
 import { getAuthRedirectUrl } from '../../../infrastructure/config/authRedirect';
 import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
 import { Panel } from '../../shared/components/Panel';
+import { CustomerSurface } from '../../shared/layout/CustomerSurface';
 
 type AuthMode = 'password' | 'magic-link';
 type LoginLocationState = {
@@ -91,8 +92,9 @@ export function LoginPage() {
 
   return (
     <main className="auth-page image-page image-page--pine">
-      <Panel title="Logg inn" subtitle={`${instanceBrand.name} admin`}>
-        {instanceBrand.logoUrl ? (
+      <CustomerSurface>
+      <Panel title="Logg inn" subtitle={instanceBrand.identity ? undefined : isCustomerBuild ? instanceBrand.name : `${instanceBrand.name} admin`}>
+        {instanceBrand.logoUrl && !instanceBrand.identity ? (
           <img alt="" className="auth-brand__logo" src={instanceBrand.logoUrl} />
         ) : null}
         {!isCustomerBuild ? (
@@ -127,6 +129,7 @@ export function LoginPage() {
         {auth.status === 'misconfigured' ? (
           <p className="form-alert form-alert--error">{auth.errorMessage}</p>
         ) : null}
+        {isCustomerBuild && location.search.includes('emailLink=invalid') && <p role="alert" className="form-alert form-alert--error">E-postlenken er utløpt eller ugyldig. Be om en ny lenke.</p>}
 
         {auth.status === 'authenticated' && !auth.isAdminReady ? (
           <p className="form-alert form-alert--error">{auth.errorMessage}</p>
@@ -155,7 +158,7 @@ export function LoginPage() {
                 value={password}
               />
             </label>
-            <Link className="auth-text-link" to={routes.forgotPassword}>Glemt passord?</Link>
+            {!isCustomerBuild && <Link className="auth-text-link" to={routes.forgotPassword}>Glemt passord?</Link>}
             <div className="form-actions form-actions--split">
               {!isCustomerBuild ? (
                 <Link
@@ -209,12 +212,14 @@ export function LoginPage() {
           <p className="form-alert form-alert--error" role="alert">{errorMessage}</p>
         ) : null}
 
+        {isCustomerBuild && <div className="auth-support-links auth-support-links--customer"><Link to={routes.register}>Opprett konto</Link><Link to={routes.forgotPassword}>Glemt passord?</Link></div>}
         {!isCustomerBuild ? (
           <div className="auth-support-links">
             <Link to={routes.security}>Les om sikkerhet og personvern</Link>
           </div>
         ) : null}
       </Panel>
+      </CustomerSurface>
     </main>
   );
 }

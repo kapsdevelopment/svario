@@ -22,6 +22,18 @@ function fixture(t) {
   return dir;
 }
 
+test('sender identity is opt-in; validates every field including decorative color', t => {
+  const dir = fixture(t), file = join(dir, 'brand.json');
+  assert.equal(readCustomerBrand(dir).identity, null);
+  const identity = {organization: 'Eksempel', service: 'Skjemaportal', highlight: '#d47b22'};
+  writeFileSync(file, JSON.stringify({...brand, identity}));
+  assert.deepEqual(readCustomerBrand(dir).identity, {...identity, notice: null});
+  for (const invalid of [null, [], {...identity, url:'unsafe'}, {...identity, highlight:'red;'}, {...identity, notice:''}]) {
+    writeFileSync(file, JSON.stringify({...brand, identity: invalid}));
+    assert.throws(() => readCustomerBrand(dir));
+  }
+});
+
 test('the profile hash changes only when profile content changes', (t) => {
   const dir = fixture(t);
   const first = readCustomerBrand(dir);

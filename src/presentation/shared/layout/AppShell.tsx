@@ -28,6 +28,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
+import { useInstanceAdmin } from '../../../application/instance/useInstanceAdministration';
 import {
   type WorkspaceScope,
   useWorkspaceScope,
@@ -61,6 +62,7 @@ const mobileNavItems = [
 
 export function AppShell() {
   const auth = useAuth();
+  const instanceAdmin = useInstanceAdmin();
   const workspaceScope = useWorkspaceScope();
   const location = useLocation();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -85,13 +87,13 @@ export function AppShell() {
       <aside className="sidebar">
         <Link className="brand" to={routes.home} aria-label="Gå til forsiden">
           {instanceBrand.logoUrl ? (
-            <img alt="" className="brand__logo" src={instanceBrand.logoUrl} />
+            <img alt={instanceBrand.identity?.organization ?? ''} className="brand__logo" src={instanceBrand.logoUrl} />
           ) : (
             <div className="brand__mark">S</div>
           )}
           <div>
-            <strong>{instanceBrand.name}</strong>
-            <span>{instanceBrand.tagline}</span>
+            <strong>{instanceBrand.identity?.service ?? instanceBrand.name}</strong>
+            {!instanceBrand.identity && <span>{instanceBrand.tagline}</span>}
           </div>
         </Link>
 
@@ -114,7 +116,15 @@ export function AppShell() {
           Nytt skjema
         </NavLink>
 
-        <div className="sidebar-account">
+        <div className={isCustomerBuild ? 'sidebar-account sidebar-account--customer' : 'sidebar-account'}>
+          {instanceAdmin.isInstanceAdmin && (
+            <NavLink
+              to={routes.instanceAdmin}
+              className="sidebar-profile-link sidebar-instance-admin-link"
+            >
+              Administrasjon
+            </NavLink>
+          )}
           <NavLink to={routes.profile} className="sidebar-profile-link">
             <UserRound size={18} aria-hidden="true" />
             <span>Profil</span>
@@ -138,6 +148,7 @@ export function AppShell() {
       ) : null}
 
       <main className="app-main">
+        {instanceAdmin.isInstanceAdmin && <div className="mobile-instance-admin"><Link to={routes.instanceAdmin}>Administrasjon</Link></div>}
         {!isCustomerBuild ? <BrandingAdminNotice /> : null}
         <Outlet />
       </main>

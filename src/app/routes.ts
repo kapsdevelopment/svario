@@ -6,6 +6,7 @@ export const routes = {
   register: '/register',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
+  instanceAdmin: '/instance-admin',
   privacy: '/privacy',
   security: '/security',
   trust: '/trust',

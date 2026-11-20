@@ -8,7 +8,7 @@ const staticSvgTags = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 
 
 export function readCustomerBrand(directory: string) {
   const values = readFile(directory, 'brand.json');
-  const data = readRecord(values, ['schemaVersion', 'name', 'description', 'tagline', 'accent', 'presentationOnly']);
+  const data = readRecord(values, ['schemaVersion', 'name', 'description', 'tagline', 'accent', 'presentationOnly', 'identity']);
   if (data.schemaVersion !== 1) {
     throw new Error('Ukjent versjon av kundeprofilen (schemaVersion må være 1).');
   }
@@ -26,7 +26,9 @@ export function readCustomerBrand(directory: string) {
   const logoFileName = hasPngLogo ? 'logo.png' : 'logo.svg';
   const logo = hasPngLogo ? readPngLogo(directory) : readSvg(directory, logoFileName);
   const favicon = readSvg(directory, 'favicon.svg');
+  const identity = data.identity === undefined ? null : readIdentity(data.identity);
   return {
+    identity,
     name: readText(data.name, 'name', 80),
     description: readText(data.description, 'description', 180),
     tagline: readText(data.tagline, 'tagline', 80),
@@ -37,6 +39,19 @@ export function readCustomerBrand(directory: string) {
     favicon,
     sha256: sha256(JSON.stringify([sha256(values), sha256(logo), sha256(favicon)])),
   };
+}
+
+function readIdentity(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) ||
+      Object.keys(value).some(k => !['organization', 'service', 'highlight', 'notice'].includes(k))) {
+    throw new Error('Ugyldig avsenderprofil (identity).');
+  }
+  const item = value as Record<string, unknown>;
+  const highlight = readText(item.highlight, 'identity.highlight', 7);
+  if (!/^#[a-f\d]{6}$/i.test(highlight)) throw new Error('identity.highlight må være #RRGGBB.');
+  return { organization: readText(item.organization, 'identity.organization', 80),
+    service: readText(item.service, 'identity.service', 48), highlight,
+    notice: item.notice === undefined ? null : readText(item.notice, 'identity.notice', 150) };
 }
 
 export function readCustomerInstallation(path: string) {
