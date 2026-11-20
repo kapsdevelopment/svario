@@ -1,0 +1,73 @@
+.branding-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.branding-admin-fields {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.branding-admin-fields > label {
+  display: grid;
+  gap: 6px;
+}
+
+.branding-admin-fields input[type="file"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.branding-admin-color {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.branding-admin-color input[type="color"] {
+  width: 100%;
+  height: 44px;
+  padding: 4px;
+}
+
+.branding-admin-help {
+  margin: 0;
+  color: #596962;
+  font-size: 0.875rem;
+}
+
+.branding-admin-notice { width: min(100%, 1180px); margin: 0 auto; padding: 22px 44px 0; }
+.branding-admin-notice a { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-weight: 650; }
+.branding-inbox > .panel__header { flex-wrap: wrap; }
+.branding-inbox > .panel__header > div:first-child { flex: 1 1 220px; }
+.branding-inbox > .panel__header > .panel__action { flex: 0 0 auto; white-space: nowrap; }
+.branding-interest > .panel__body { display: grid; gap: 16px; }
+.branding-inbox-controls, .branding-request-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.branding-inbox-controls label { display: grid; gap: 6px; }
+.branding-inbox-list { display: grid; gap: 16px; margin-top: 20px; }
+.branding-request { min-width: 0; padding: 16px; border: 1px solid #ded7cb; border-radius: 8px; overflow-wrap: anywhere; }
+.branding-request-heading h3 { margin: 0; }
+.branding-request p { margin-top: 8px; }
+.branding-request-message { white-space: pre-wrap; }
+.branding-request .inline-actions { flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.branding-request .button { flex: 0 0 auto; overflow-wrap: normal; white-space: nowrap; }
+
+@media (max-width: 840px) {
+  .branding-admin-notice { width: auto; padding: 16px 22px 0; }
+}
+
+@media (max-width: 600px) {
+  .branding-request .inline-actions { display: grid; }
+}
+
+@media (max-width: 900px) {
+  .branding-admin-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

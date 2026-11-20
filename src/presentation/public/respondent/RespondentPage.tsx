@@ -5,6 +5,7 @@ import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 import { getUserFacingErrorMessage } from '../../../application/errors/userFacingError';
 import { usePublishedSurvey } from '../../../application/surveys/usePublishedSurvey';
 import { useSubmitSurveyResponse } from '../../../application/surveys/useSubmitSurveyResponse';
+import { useRespondentBranding } from '../../../application/workspaces/useRespondentBranding';
 import {
   getQuestionScaleValues,
   type PublishedSurvey,
@@ -12,9 +13,11 @@ import {
   type SurveySection,
   type SubmitSurveyAnswerInput,
 } from '../../../domain/surveys/survey';
-import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
+import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
+import type { RespondentBranding } from '../../../domain/workspaces/workspace';
 import { Panel } from '../../shared/components/Panel';
 import { CustomerSurface } from '../../shared/layout/CustomerSurface';
+import { RespondentBrandingCredit, RespondentBrandingService, RespondentSurveyCard } from '../../shared/components/RespondentBranding';
 import { RespondentPrivacyNotice } from './RespondentPrivacyNotice';
 import { SurveyChoiceList } from './SurveyChoiceList';
 import { SurveyScaleInput } from './SurveyScaleInput';
@@ -22,6 +25,8 @@ import { SurveyScaleInput } from './SurveyScaleInput';
 export function RespondentPage() {
   const { slug } = useParams();
   const { data: survey, error, isError, isLoading } = usePublishedSurvey(slug);
+  const branding = useRespondentBranding(isCustomerBuild ? undefined : slug);
+  const visibleBranding = survey && !isError ? branding : null;
 
   if (!slug) {
     return (
@@ -34,10 +39,10 @@ export function RespondentPage() {
   }
 
   return (
-    <main className="respondent-page image-page image-page--fjord">
-      <div className="respondent-card">
+    <main className={visibleBranding ? 'respondent-page respondent-page--branded' : 'respondent-page image-page image-page--fjord'}>
+      <div className={visibleBranding ? 'respondent-card respondent-card--branded' : 'respondent-card'}>
         <CustomerSurface>
-        {!instanceBrand.identity && <p className="eyebrow">{instanceBrand.name}</p>}
+        {visibleBranding ? <RespondentBrandingService /> : !instanceBrand.identity && <p className="eyebrow">{instanceBrand.name}</p>}
         {isLoading ? (
           <Panel title="Laster skjema" subtitle="Henter spørsmålene." />
         ) : null}
@@ -53,14 +58,15 @@ export function RespondentPage() {
           </Panel>
         ) : null}
 
-        {survey ? <PublishedSurveyForm survey={survey} /> : null}
+        {survey ? <PublishedSurveyForm key={survey.id} survey={survey} branding={visibleBranding} /> : null}
+        {visibleBranding ? <RespondentBrandingCredit /> : null}
         </CustomerSurface>
       </div>
     </main>
   );
 }
 
-function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
+function PublishedSurveyForm({ survey, branding }: { survey: PublishedSurvey; branding?: RespondentBranding | null }) {
   const submitResponse = useSubmitSurveyResponse();
   const [answers, setAnswers] = useState<Record<string, DraftAnswer>>({});
   const [respondentName, setRespondentName] = useState('');
@@ -133,7 +139,7 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
     </section>;
   }
   return (
-    <Panel title={survey.title} subtitle={formatSurveyMeta(survey)}>
+    <RespondentSurveyCard branding={branding} title={survey.title} subtitle={formatSurveyMeta(survey)}>
       {isSubmitted ? (
         <div className="receipt-state" role="status">
           <CheckCircle2 size={34} aria-hidden="true" />
@@ -184,7 +190,8 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
         ) : null}
 
         {questionGroups.map((group) => (
-          <section className="respondent-section" key={group.id}>
+          <section className={group.id === 'unsectioned' && survey.sections.length === 0
+            ? 'respondent-section respondent-section--unsectioned' : 'respondent-section'} key={group.id}>
             <div className="respondent-section__header">
               <h2>{group.title}</h2>
               {group.description ? <p>{group.description}</p> : null}
@@ -247,7 +254,7 @@ function PublishedSurveyForm({ survey }: { survey: PublishedSurvey }) {
           </button>
         </div>
       </form>
-    </Panel>
+    </RespondentSurveyCard>
   );
 }
 

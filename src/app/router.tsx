@@ -24,6 +24,18 @@ const LoginPage = lazyRoute(
   () => import('../presentation/admin/auth/LoginPage'),
   'LoginPage',
 );
+const RegisterPage = lazyRoute(
+  () => import('../presentation/admin/auth/RegisterPage'),
+  'RegisterPage',
+);
+const ForgotPasswordPage = lazyRoute(
+  () => import('../presentation/admin/auth/ForgotPasswordPage'),
+  'ForgotPasswordPage',
+);
+const ResetPasswordPage = lazyRoute(
+  () => import('../presentation/admin/auth/ResetPasswordPage'),
+  'ResetPasswordPage',
+);
 const ProfilePage = lazyRoute(
   () => import('../presentation/admin/profile/ProfilePage'),
   'ProfilePage',
@@ -33,6 +45,14 @@ const InstanceAdminPage = lazyRoute(() => import('../presentation/admin/instance
 const JoinWorkspacePage = lazyRoute(
   () => import('../presentation/admin/workspaces/JoinWorkspacePage'),
   'JoinWorkspacePage',
+);
+const WorkspaceBrandingAdminPage = lazyRoute(
+  () => import('../presentation/admin/workspaces/WorkspaceBrandingAdminPage'),
+  'WorkspaceBrandingAdminPage',
+);
+const WorkspaceBrandingPage = lazyRoute(
+  () => import('../presentation/admin/workspaces/WorkspaceBrandingPage'),
+  'WorkspaceBrandingPage',
 );
 const ResultsPage = lazyRoute(
   () => import('../presentation/admin/results/ResultsPage'),
@@ -68,12 +88,24 @@ const publicSiteRoutes: RouteObject[] = isCustomerBuild
 
 export const router = createHashRouter([
   ...publicSiteRoutes,
-  ...(isCustomerBuild ? [routes.register, routes.forgotPassword, routes.resetPassword].map((path) => ({
-    path, element: page(<CustomerAccountPage />), errorElement: <RouteErrorPage />,
-  })) : []),
   {
     path: routes.login,
     element: page(<LoginPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.register,
+    element: page(isCustomerBuild ? <CustomerAccountPage /> : <RegisterPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.forgotPassword,
+    element: page(isCustomerBuild ? <CustomerAccountPage /> : <ForgotPasswordPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: routes.resetPassword,
+    element: page(isCustomerBuild ? <CustomerAccountPage /> : <ResetPasswordPage />),
     errorElement: <RouteErrorPage />,
   },
   {
@@ -132,6 +164,13 @@ export const router = createHashRouter([
         path: routes.profile,
         element: page(<ProfilePage />),
       },
+      ...(isCustomerBuild ? [] : [{
+        path: routes.workspaceBrandingAdmin,
+        element: page(<WorkspaceBrandingAdminPage />),
+      }, {
+        path: '/workspaces/:workspaceId/profilering',
+        element: page(<WorkspaceBrandingPage />),
+      }]),
       {
         path: '/join/:token',
         element: page(<JoinWorkspacePage />),

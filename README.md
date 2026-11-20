@@ -33,9 +33,30 @@ If Vite chooses another local port, add that port too. For the deployed custom
 domain, set Site URL to `https://svario.no` and add both `https://svario.no`
 and `https://svario.no/**` as Redirect URLs.
 
-If Supabase email templates are customized, make sure confirmation and magic
-link templates use `{{ .RedirectTo }}` or `{{ .ConfirmationURL }}` rather than
-hard-coding `{{ .SiteURL }}` into the user-facing link.
+If Supabase email templates are customized, use `{{ .ConfirmationURL }}` for
+confirmation and magic links so Supabase verifies the token before redirecting
+to the app. A plain `{{ .RedirectTo }}` or `{{ .SiteURL }}` link skips verification.
+
+### Password recovery
+
+The login page links to `/#/forgot-password`. Supabase Auth sends the recovery
+email through the project's configured SMTP provider. The return URL is the
+configured `VITE_AUTH_REDIRECT_URL` (or the current origin) with `?auth=recovery`,
+for example `https://svario.no/?auth=recovery`. Allow this URL in Supabase Auth
+Redirect URLs; the `https://svario.no/**` entry above also covers it. Add the
+equivalent URL for local development and each customer installation.
+
+Keep `{{ .ConfirmationURL }}` as the link in Supabase's Reset Password email
+template so Supabase verifies the recovery token before returning to the app.
+The app consumes the auth fragment before starting its hash router, removes
+tokens from the address, then opens `/#/reset-password`. Expired or malformed
+links offer a new recovery email. An authenticated session is required
+to save the new password; account bootstrap does not block recovery.
+
+Run `npm run test:auth` for password validation, callback routing, Auth requests,
+and form behavior. For a full SMTP check, use a test account: request recovery,
+open the email, save matching passwords, sign out, and check that only the new
+password works. Also check an expired/reused link and refresh the reset page.
 
 Start the dev server:
 
@@ -59,6 +80,59 @@ platform, credentials or customer data, and do not deploy themselves.
 
 See [the v0.0.103 C-pilot release notes](docs/releases/v0.0.103.md) for scope,
 tagged build instructions and the separation from B-workspace branding.
+
+## Workspace branding (B)
+
+There are two administration levels in the shared Svario app:
+
+- `#/admin/profilering`: Svario admins can find workspaces across companies,
+  follow up interest in the inbox, allow branding, create profiles, edit display
+  name/color/logo, and activate or deactivate them. Access is checked against the
+  private Svario-admin role on the server. A notification in the admin area counts
+  new requests and refreshes every 30 seconds while the app is open.
+- **Min profil → workspace → Profilering** (`#/workspaces/:id/profilering`):
+  active workspace owners and admins can send a non-binding **Meld interesse**
+  request with contact details and an optional comment. Repeated submissions
+  produce one request per workspace. They see **Interesse meldt** until reviewed.
+  This page is scoped to that workspace; changing the URL does not grant access
+  to another company's profile or request.
+
+The inbox supports New, In review, Approved and Closed. **Tillat profilering**
+approves the request and grants permission atomically, without requiring a logo.
+The customer can then upload their first logo. It creates an active profile with
+the workspace name and the default accent color. Existing profiles retain their
+permission; their logos, names, colors and publication status are preserved.
+Closed requests can be reopened by the customer. Revision checks prevent stale
+admin decisions and simultaneous first uploads from overwriting newer changes.
+The request and permission tables are private, with RLS enabled and no direct
+client access. All operations check current domain account roles on the server.
+
+Unbranded workspaces remain free. Price and startup are agreed manually before
+granting permission. This MVP has in-app notifications only, with no email,
+Stripe, billing or payment processing. Both Business and Team workspaces can
+request branding; personal surveys do not acquire workspace branding.
+
+Both pages upload PNG/WebP through `save-workspace-branding`. The function
+verifies the signed-in user, validates/decodes the image, strips metadata and
+stores normalized PNG bytes privately. The database rechecks the domain account
+and role at save time. Subsequent tenant uploads preserve name, accent color and activation.
+Revision checks prevent overwriting newer edits from either administration level.
+Only an active profile on an answerable public survey is exposed to respondents.
+These B-branding pages are excluded from customer C builds.
+
+Local checks: run the SQL files in `supabase/tests` against a local database and
+serve the Edge Function locally before running the API test:
+
+```bash
+SVARIO_BRANDING_TEST_URL='http://127.0.0.1:54321' \
+SVARIO_BRANDING_TEST_KEY='<local browser key>' \
+SVARIO_BRANDING_TEST_ADMIN_EMAIL='<local Svario admin>' \
+SVARIO_BRANDING_TEST_ADMIN_PASSWORD='<local test password>' \
+node --test tests/workspace-branding.test.mjs
+```
+
+The test refuses remote hosts. Run these automated checks against a local
+Supabase instance; deployment verification must not create customer test data.
 
 ## GitHub Pages build
 

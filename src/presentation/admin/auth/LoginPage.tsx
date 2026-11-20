@@ -27,7 +27,9 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(() =>
+    new URLSearchParams(location.search).has('error') ? 'Lenken er utløpt eller ugyldig. Prøv å logge inn på nytt.' : null,
+  );
 
   const redirectTarget = useMemo(
     () => getRedirectTarget(location.state),
@@ -60,23 +62,6 @@ export function LoginPage() {
     await submitAuthAction(async () => {
       await auth.signInWithPassword(email.trim(), password);
       setMessage('Logger inn...');
-    });
-  }
-
-  async function handlePasswordSignUp() {
-    if (!email.trim() || password.length < 6) {
-      setMessage(null);
-      setErrorMessage('Fyll inn e-post og minst 6 tegn passord.');
-      return;
-    }
-
-    await submitAuthAction(async () => {
-      await auth.signUpWithPassword(
-        email.trim(),
-        password,
-        getAuthRedirectUrl(),
-      );
-      setMessage('Sjekk e-posten din.');
     });
   }
 
@@ -173,17 +158,17 @@ export function LoginPage() {
                 value={password}
               />
             </label>
+            {!isCustomerBuild && <Link className="auth-text-link" to={routes.forgotPassword}>Glemt passord?</Link>}
             <div className="form-actions form-actions--split">
               {!isCustomerBuild ? (
-                <button
+                <Link
                   className="button button--secondary"
-                  disabled={!canSubmit}
-                  type="button"
-                  onClick={handlePasswordSignUp}
+                  to={routes.register}
+                  state={location.state}
                 >
                   <UserPlus size={18} aria-hidden="true" />
                   Opprett konto
-                </button>
+                </Link>
               ) : null}
               <button
                 className="button button--primary"
@@ -221,13 +206,13 @@ export function LoginPage() {
         )}
 
         {message ? (
-          <p className="form-alert form-alert--success">{message}</p>
+          <p className="form-alert form-alert--success" role="status">{message}</p>
         ) : null}
         {errorMessage ? (
-          <p className="form-alert form-alert--error">{errorMessage}</p>
+          <p className="form-alert form-alert--error" role="alert">{errorMessage}</p>
         ) : null}
 
-        {isCustomerBuild && <div className="auth-support-links"><Link to={routes.register}>Opprett konto</Link><Link to={routes.forgotPassword}>Glemt passord?</Link></div>}
+        {isCustomerBuild && <div className="auth-support-links auth-support-links--customer"><Link to={routes.register}>Opprett konto</Link><Link to={routes.forgotPassword}>Glemt passord?</Link></div>}
         {!isCustomerBuild ? (
           <div className="auth-support-links">
             <Link to={routes.security}>Les om sikkerhet og personvern</Link>

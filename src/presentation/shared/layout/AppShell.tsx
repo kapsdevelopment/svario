@@ -35,7 +35,8 @@ import {
 } from '../../../application/workspaces/WorkspaceScopeProvider';
 import workspaceSliderMountains from '../../../assets/images/workspace-slider-mountains.png';
 import workspaceSliderStone from '../../../assets/images/workspace-slider-stone.png';
-import { instanceBrand } from '../../../infrastructure/config/instanceBrand';
+import { instanceBrand, isCustomerBuild } from '../../../infrastructure/config/instanceBrand';
+import { BrandingAdminNotice } from '../../admin/workspaces/BrandingAdminNotice';
 
 const primaryNavItems = [
   {
@@ -68,7 +69,8 @@ export function AppShell() {
   const isResultsRoute =
     location.pathname === routes.resultsHome ||
     /^\/surveys\/[^/]+\/results$/.test(location.pathname);
-  const shouldShowWorkspaceSwitcher = workspaceScope.hasWorkspaceChoices;
+  const isWorkspaceBrandingRoute = /^\/workspaces\/[^/]+\/profilering$/.test(location.pathname);
+  const shouldShowWorkspaceSwitcher = workspaceScope.hasWorkspaceChoices && !isWorkspaceBrandingRoute;
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -114,7 +116,7 @@ export function AppShell() {
           Nytt skjema
         </NavLink>
 
-        <div className="sidebar-account">
+        <div className={isCustomerBuild ? 'sidebar-account sidebar-account--customer' : 'sidebar-account'}>
           {instanceAdmin.isInstanceAdmin && (
             <NavLink
               to={routes.instanceAdmin}
@@ -147,6 +149,7 @@ export function AppShell() {
 
       <main className="app-main">
         {instanceAdmin.isInstanceAdmin && <div className="mobile-instance-admin"><Link to={routes.instanceAdmin}>Administrasjon</Link></div>}
+        {!isCustomerBuild ? <BrandingAdminNotice /> : null}
         <Outlet />
       </main>
 

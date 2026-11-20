@@ -1,4 +1,4 @@
-import { getCurrentSession, hasAuthClient, requestPasswordRecovery, resendConfirmation } from '../../data/auth/authRepository';
+import { getCurrentSession, hasAuthClient, requestPasswordReset, resendConfirmation } from '../../data/auth/authRepository';
 import type { captureEmailCallback } from '../../domain/instance/emailCallback';
 import { getAuthRedirectUrl } from '../../infrastructure/config/authRedirect';
 
@@ -20,5 +20,5 @@ export function canResetPassword(userId: string | undefined) {
   return !!userId && sessionStorage.getItem(recoveryKey) === userId;
 }
 export function finishPasswordRecovery() { sessionStorage.removeItem(recoveryKey); }
-export function sendPasswordRecovery(email: string) { return requestPasswordRecovery(email, getAuthRedirectUrl()); }
+export function sendPasswordRecovery(email: string) { return requestPasswordReset(email, getAuthRedirectUrl()); }
 export function sendConfirmationAgain(email: string) { return resendConfirmation(email, getAuthRedirectUrl()); }

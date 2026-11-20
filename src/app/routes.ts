@@ -22,6 +22,8 @@ export const routes = {
     `/surveys/${surveyId}/edit#questions`,
   editSurveyPrivacy: (surveyId: string) => `/surveys/${surveyId}/edit#privacy`,
   profile: '/profile',
+  workspaceBrandingAdmin: '/admin/profilering',
+  workspaceBranding: (workspaceId: string) => `/workspaces/${workspaceId}/profilering`,
   resultsHome: '/results',
   results: (surveyId: string) => `/surveys/${surveyId}/results`,
   resultsPresentation: (surveyId: string) =>

@@ -17,6 +17,15 @@ export function hasAuthClient() {
   return supabase !== null;
 }
 
+export async function initializeAuthSession() {
+  const client = requireAuthClient();
+  const { error } = await client.auth.initialize();
+  if (error) throw error;
+  if (!(await getCurrentSession())) {
+    throw new Error('Lenken er utløpt eller ugyldig.');
+  }
+}
+
 export async function getCurrentSession() {
   const client = requireAuthClient();
   const { data, error } = await client.auth.getSession();
@@ -83,13 +92,14 @@ export async function signInWithMagicLink(email: string, redirectTo: string) {
   }
 }
 
-export async function requestPasswordRecovery(email: string, redirectTo: string) {
-  const { error } = await requireAuthClient().auth.resetPasswordForEmail(email, { redirectTo });
+export async function resendConfirmation(email: string, emailRedirectTo: string) {
+  const { error } = await requireAuthClient().auth.resend({ type: 'signup', email, options: { emailRedirectTo } });
   if (error) throw error;
 }
 
-export async function resendConfirmation(email: string, emailRedirectTo: string) {
-  const { error } = await requireAuthClient().auth.resend({ type: 'signup', email, options: { emailRedirectTo } });
+export async function requestPasswordReset(email: string, redirectTo: string) {
+  const client = requireAuthClient();
+  const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) throw error;
 }
 

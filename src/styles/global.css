@@ -337,12 +337,17 @@ h2 {
 }
 
 .sidebar-account {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   border-top: 1px solid #e6e0d6;
   padding-top: 18px;
+}
+
+.sidebar-account--customer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .sidebar-profile-link {
@@ -1461,15 +1466,31 @@ select {
 }
 
 .auth-support-links {
+  border-top: 1px solid #e6e0d6;
+  margin-top: 18px;
+  padding-top: 14px;
+  text-align: center;
+}
+
+.auth-support-links--customer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 12px 28px;
-  border-top: 1px solid #e6e0d6;
-  margin-top: 18px;
-  padding-top: 14px;
-  text-align: center;
+}
+
+.auth-text-link {
+  color: #183a34;
+  justify-self: start;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+
+.auth-field-hint {
+  margin: -8px 0 0;
+  color: #556960;
+  font-size: 0.9rem;
 }
 
 .auth-support-links a {
@@ -3214,6 +3235,7 @@ select {
 }
 
 .marketing-hero__content,
+.marketing-live-news__inner,
 .marketing-intro,
 .marketing-benefits,
 .marketing-live-demo,
@@ -3244,6 +3266,37 @@ select {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 28px;
+}
+
+.marketing-live-news {
+  background: #183a34;
+  color: #fffdf8;
+}
+
+.marketing-live-news__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 20px 0;
+}
+
+.marketing-live-news .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ecc0a2;
+  letter-spacing: 0;
+}
+
+.marketing-live-news h2 {
+  font-size: 1.45rem;
+  text-wrap: balance;
+}
+
+.marketing-live-news__inner > p {
+  max-width: 48ch;
+  color: #e1e8e3;
 }
 
 .marketing-intro {
@@ -4917,6 +4970,7 @@ select {
   }
 
   .marketing-hero__content,
+  .marketing-live-news__inner,
   .marketing-intro,
   .marketing-benefits,
   .marketing-live-demo,
@@ -4940,6 +4994,11 @@ select {
 
   .marketing-hero__content p:not(.eyebrow) {
     font-size: 1rem;
+  }
+
+  .marketing-live-news__inner {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .marketing-intro {

@@ -10,7 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { routes } from '../../../app/routes';
 import { useAuth } from '../../../application/auth/AuthProvider';
@@ -25,6 +25,7 @@ import { useDeleteWorkspace } from '../../../application/workspaces/useDeleteWor
 import { useLookupOrganizationByNumber } from '../../../application/workspaces/useLookupOrganizationByNumber';
 import { useRemoveWorkspaceMember } from '../../../application/workspaces/useRemoveWorkspaceMember';
 import { useSetWorkspaceOrganizationNumber } from '../../../application/workspaces/useSetWorkspaceOrganizationNumber';
+import { useSvarioAdminAccess } from '../../../application/workspaces/useWorkspaceBrandingAdmin';
 import { useWorkspaces } from '../../../application/workspaces/useWorkspaces';
 import type {
   BusinessRegistryOrganization,
@@ -41,6 +42,7 @@ const minimumPasswordLength = 6;
 
 export function ProfilePage() {
   const auth = useAuth();
+  const adminAccess = useSvarioAdminAccess(!isCustomerBuild);
   const navigate = useNavigate();
   const [profilePersonalName, setProfilePersonalName] = useState('');
   const [profilePersonalNameEdited, setProfilePersonalNameEdited] =
@@ -323,6 +325,11 @@ export function ProfilePage() {
           <p className="eyebrow">Konto</p>
           <h1>Min profil</h1>
         </div>
+        {!isCustomerBuild && adminAccess.data && !adminAccess.isError ? (
+          <Link className="button button--secondary" to={routes.workspaceBrandingAdmin}>
+            B-profiler
+          </Link>
+        ) : null}
       </header>
 
       <Panel
@@ -832,6 +839,9 @@ function WorkspaceCard({
           </p>
         </div>
         <div className="inline-actions">
+          {canManageMembers && !isCustomerBuild ? (
+            <Link className="button button--secondary" to={routes.workspaceBranding(workspace.id)}>Profilering</Link>
+          ) : null}
           {canManageMembers ? (
             <button
               className="button button--secondary"

@@ -10,6 +10,7 @@
     "package:customer": "node scripts/package-customer.mjs",
     "preview": "vite preview",
     "test:customer": "node --test tests/customer-brand.test.mjs",
+    "test:auth": "vitest run --config vitest.config.ts",
     "test:live": "node --test tests/live-survey.test.mjs",
     "test:selfservice": "node --test tests/instance-selfservice.test.mjs"
   },
@@ -28,11 +29,15 @@
     "recharts": "^3.5.1"
   },
   "devDependencies": {
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.12",
     "@types/papaparse": "^5.3.16",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
+    "jsdom": "29.1.1",
     "typescript": "^5.9.3",
-    "vite": "^7.2.7"
+    "vite": "^7.2.7",
+    "vitest": "5.1.0"
   }
 }

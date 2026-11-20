@@ -6,6 +6,17 @@ export type WorkspaceMemberStatus = 'active' | 'removed';
 
 export type WorkspaceStatus = 'active' | 'deleted';
 
+export type RespondentBranding = {
+  displayName: string;
+  accentColor: string;
+  logoSrc: string;
+};
+
+export type WorkspaceRespondentBranding = RespondentBranding & {
+  isActive: boolean;
+  revision: number;
+};
+
 export type SurveyVisibility = 'private' | 'workspace';
 
 export type Workspace = {
